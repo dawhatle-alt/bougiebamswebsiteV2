@@ -1,0 +1,50 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "AHFKNQsamHCjr5XcwUCIC"
+uri = "file://attached_assets/images/mahjong-tiles-closeup.png"
+type = "image"
+title = "Mahjong tile close-ups"
+
+[[generated]]
+id = "fkAM1h_o0VENBzCEMkOr-"
+uri = "file://attached_assets/images/mahjong-lifestyle.png"
+type = "image"
+title = "Lifestyle players at table"
+
+[[generated]]
+id = "82B0xenqNX0BP76Xr2arG"
+uri = "file://attached_assets/images/product-jade.png"
+type = "image"
+title = "Product flat lay jade"
+
+[[generated]]
+id = "4VDY5aSTkxbvoHHEg1_3V"
+uri = "file://attached_assets/images/product-rosegold.png"
+type = "image"
+title = "Product flat lay rose gold"
+
+[[generated]]
+id = "WUgBcAw_zETEGiXlSb3OW"
+uri = "file://attached_assets/images/hero-tile-1.png"
+type = "image"
+title = "Hero grid tile 1"
+
+[[generated]]
+id = "dqWc0lSd22Wb0L6TBPTva"
+uri = "file://attached_assets/images/hero-tile-2.png"
+type = "image"
+title = "Hero grid tile 2"
+
+[[generated]]
+id = "0RYPYZM44h8CSuyBMQq3K"
+uri = "file://attached_assets/images/hero-tile-3.png"
+type = "image"
+title = "Hero grid tile 3"
+
+[[generated]]
+id = "RzaE_HYyuowmI3nOVpztm"
+uri = "file://attached_assets/images/hero-tile-4.png"
+type = "image"
+title = "Hero grid tile 4"
