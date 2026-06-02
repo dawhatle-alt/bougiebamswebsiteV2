@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
-import { products } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Heart, Minus, Plus, Star } from "lucide-react";
+import { ChevronRight, Heart, Minus, Plus, Star, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const VARIANTS: Record<string, { label: string; options: string[] }[]> = {
@@ -26,11 +26,33 @@ const VARIANTS: Record<string, { label: string; options: string[] }[]> = {
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const { products, loading, error } = useProducts();
   const product = products.find(p => p.id === id);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const { addItem } = useCart();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center pt-20 text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+        <p className="font-serif text-lg">Loading…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center pt-20 text-center px-6">
+        <h1 className="font-serif text-4xl mb-4">Something went wrong</h1>
+        <p className="text-muted-foreground mb-8 max-w-md">{error} Please refresh to try again.</p>
+        <Button onClick={() => window.location.reload()} variant="outline" className="rounded-none">
+          Refresh
+        </Button>
+      </div>
+    );
+  }
 
   if (!product) {
     return (

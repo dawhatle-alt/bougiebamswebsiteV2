@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import { Button } from "@/components/ui/button";
-import { products } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { images } from "@/data/images";
 import { useCart } from "@/context/CartContext";
 import useEmblaCarousel from "embla-carousel-react";
@@ -11,6 +11,7 @@ import { ChevronRight, ArrowRight, Quote, Star, ShoppingBag } from "lucide-react
 export default function Home() {
   const [emblaRef] = useEmblaCarousel({ loop: true });
   const { addItem } = useCart();
+  const { products } = useProducts();
 
   const bestsellers = products.filter(p => p.isBestseller).slice(0, 4);
 

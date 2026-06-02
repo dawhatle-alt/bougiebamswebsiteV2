@@ -19,143 +19,61 @@ export interface Product {
   inStock: boolean;
   isNew?: boolean;
   isBestseller?: boolean;
+  sku?: string;
 }
 
-export const products: Product[] = [
-  {
-    id: "prod_1",
-    name: "The Jade Collection",
-    price: 350,
-    category: "Complete Sets",
-    description: "Our signature jade green mahjong set with custom gold engraving. Elevate your game night with tiles that look as good as they play. Includes 166 tiles, custom dice, and a luxury velvet carrying case.",
-    images: [productJade],
-    rating: 4.9,
-    reviewCount: 42,
-    inStock: true,
-    isBestseller: true,
-  },
-  {
-    id: "prod_2",
-    name: "The Rose Gold Edition",
-    price: 325,
-    category: "Complete Sets",
-    description: "A stunning blush and rose gold set that catches the light beautifully. Perfect for the modern player who loves a touch of warmth.",
-    images: [productRosegold],
-    rating: 4.8,
-    reviewCount: 28,
-    inStock: true,
-    isNew: true,
-  },
-  {
-    id: "prod_3",
-    name: "Classic Ivory & Navy",
-    price: 295,
-    category: "Complete Sets",
-    description: "Timeless sophistication. Crisp ivory tiles with deep navy and gold detailing. The perfect set for the purist.",
-    images: [heroTile1],
-    rating: 5.0,
-    reviewCount: 15,
-    inStock: true,
-  },
-  {
-    id: "prod_4",
-    name: "Blush Playing Mat",
-    price: 85,
-    category: "Tiles & Accessories",
-    description: "A premium neoprene playing mat in our signature blush color with gold stitched edging. Provides the perfect surface for smooth tile shuffling.",
-    images: [heroTile3],
-    rating: 4.7,
-    reviewCount: 56,
-    inStock: true,
-    isBestseller: true,
-  },
-  {
-    id: "prod_5",
-    name: "Gold Foil Playing Cards",
-    price: 35,
-    category: "Tiles & Accessories",
-    description: "For when you want the mahjong aesthetic in a portable format. Beautifully illustrated cards featuring our tile designs.",
-    images: [heroTile2],
-    rating: 4.6,
-    reviewCount: 19,
-    inStock: true,
-  },
-  {
-    id: "prod_6",
-    name: "The Hostess Gift Set",
-    price: 150,
-    category: "Gift Sets",
-    description: "The perfect gift for your mahjong group host. Includes custom cocktail napkins, a set of luxury score cards, and our signature gold pen.",
-    images: [mahjongLifestyle],
-    rating: 4.9,
-    reviewCount: 33,
-    inStock: true,
-  },
-  {
-    id: "prod_7",
-    name: "Midnight Blue Racks",
-    price: 110,
-    category: "Tiles & Accessories",
-    description: "Set of 4 deep navy acrylic racks with integrated pushers. A sleek upgrade to standard plastic racks.",
-    images: [heroTile4],
-    rating: 4.8,
-    reviewCount: 21,
-    inStock: true,
-  },
-  {
-    id: "prod_8",
-    name: "BougieBams Silk Scarf",
-    price: 65,
-    category: "Apparel & Lifestyle",
-    description: "A 100% silk scarf featuring a custom print of our most iconic tile designs. Wear it, frame it, or tie it to your mahjong bag.",
-    images: [mahjongTilesCloseup],
-    rating: 5.0,
-    reviewCount: 8,
-    inStock: true,
-  },
-  {
-    id: "prod_9",
-    name: "The Beginner's Bundle",
-    price: 395,
-    category: "Gift Sets",
-    description: "Everything you need to start playing in style. Includes the Classic Ivory Set, a playing mat, and our beautifully illustrated rulebook.",
-    images: [heroTile1],
-    rating: 4.9,
-    reviewCount: 45,
-    inStock: true,
-    isBestseller: true,
-  },
-  {
-    id: "prod_10",
-    name: "Champagne Coin Set",
-    price: 45,
-    category: "Tiles & Accessories",
-    description: "A set of heavy, metal coins in a champagne gold finish for keeping score in style.",
-    images: [heroTile3],
-    rating: 4.7,
-    reviewCount: 12,
-    inStock: true,
-  },
-  {
-    id: "prod_11",
-    name: "Embroidered Crewneck",
-    price: 95,
-    category: "Apparel & Lifestyle",
-    description: "A cozy, premium cotton crewneck subtly embroidered with a single gold Bam tile.",
-    images: [mahjongLifestyle],
-    rating: 4.8,
-    reviewCount: 27,
-    inStock: true,
-  },
-  {
-    id: "prod_12",
-    name: "Travel Mahjong Set",
-    price: 185,
-    category: "Complete Sets",
-    description: "A beautifully compact set for the player on the go. Smaller tiles in a chic vegan leather zip case.",
-    images: [productJade],
-    rating: 4.5,
-    reviewCount: 14,
-    inStock: false,
-  }
-];
+// Shape returned by GET /api/products (Square = source of truth for commerce data).
+export interface ApiProduct {
+  id: string; // Square variation id
+  sku: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  inStock: boolean;
+}
+
+// Curated brand content that Square does not store, keyed by SKU.
+interface ProductMeta {
+  images: string[];
+  rating: number;
+  reviewCount: number;
+  isNew?: boolean;
+  isBestseller?: boolean;
+}
+
+const DEFAULT_IMAGE = heroTile1;
+
+export const productMeta: Record<string, ProductMeta> = {
+  prod_1: { images: [productJade], rating: 4.9, reviewCount: 42, isBestseller: true },
+  prod_2: { images: [productRosegold], rating: 4.8, reviewCount: 28, isNew: true },
+  prod_3: { images: [heroTile1], rating: 5.0, reviewCount: 15 },
+  prod_4: { images: [heroTile3], rating: 4.7, reviewCount: 56, isBestseller: true },
+  prod_5: { images: [heroTile2], rating: 4.6, reviewCount: 19 },
+  prod_6: { images: [mahjongLifestyle], rating: 4.9, reviewCount: 33 },
+  prod_7: { images: [heroTile4], rating: 4.8, reviewCount: 21 },
+  prod_8: { images: [mahjongTilesCloseup], rating: 5.0, reviewCount: 8 },
+  prod_9: { images: [heroTile1], rating: 4.9, reviewCount: 45, isBestseller: true },
+  prod_10: { images: [heroTile3], rating: 4.7, reviewCount: 12 },
+  prod_11: { images: [mahjongLifestyle], rating: 4.8, reviewCount: 27 },
+  prod_12: { images: [productJade], rating: 4.5, reviewCount: 14 },
+};
+
+// Merge live Square data with curated local metadata into a full Product.
+export function mergeProduct(api: ApiProduct): Product {
+  const meta = productMeta[api.sku];
+  return {
+    id: api.id,
+    sku: api.sku,
+    name: api.name,
+    price: api.price,
+    category: api.category,
+    description: api.description,
+    inStock: api.inStock,
+    images: meta?.images ?? [DEFAULT_IMAGE],
+    rating: meta?.rating ?? 5,
+    reviewCount: meta?.reviewCount ?? 0,
+    isNew: meta?.isNew,
+    isBestseller: meta?.isBestseller,
+  };
+}

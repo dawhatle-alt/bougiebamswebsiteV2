@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { products } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function Shop() {
@@ -16,6 +16,7 @@ export default function Shop() {
   const [sortBy, setSortBy] = useState("featured");
   const [quickViewProduct, setQuickViewProduct] = useState<string | null>(null);
   const { addItem } = useCart();
+  const { products, loading, error } = useProducts();
 
   const categories = ["All", "Complete Sets", "Tiles & Accessories", "Gift Sets", "Apparel & Lifestyle"];
 
@@ -35,7 +36,7 @@ export default function Shop() {
     }
     
     return result;
-  }, [activeCategory, sortBy]);
+  }, [products, activeCategory, sortBy]);
 
   const selectedProduct = products.find(p => p.id === quickViewProduct);
 
@@ -86,7 +87,26 @@ export default function Shop() {
           </div>
         </div>
 
+        {/* Loading / Error states */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+            <p className="font-serif text-lg">Loading the collection…</p>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="text-center py-24">
+            <h3 className="font-serif text-2xl mb-4">We couldn't load the collection</h3>
+            <p className="text-muted-foreground mb-8">{error} Please refresh to try again.</p>
+            <Button onClick={() => window.location.reload()} variant="outline" className="rounded-none">
+              Refresh
+            </Button>
+          </div>
+        )}
+
         {/* Product Grid */}
+        {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
           {filteredProducts.map((product, i) => (
             <motion.div 
@@ -151,8 +171,9 @@ export default function Shop() {
             </motion.div>
           ))}
         </div>
+        )}
 
-        {filteredProducts.length === 0 && (
+        {!loading && !error && filteredProducts.length === 0 && (
           <div className="text-center py-24">
             <h3 className="font-serif text-2xl mb-4">No products found</h3>
             <p className="text-muted-foreground mb-8">Try adjusting your filters to find what you're looking for.</p>
