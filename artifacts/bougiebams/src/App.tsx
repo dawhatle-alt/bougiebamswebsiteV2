@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 
 import Layout from "@/components/Layout";
+import WelcomeOfferDialog from "@/components/WelcomeOfferDialog";
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import ProductDetail from "@/pages/ProductDetail";
@@ -59,6 +60,7 @@ function Router() {
   return (
     <Layout>
       <AnimatedRoutes />
+      <WelcomeOfferDialog />
     </Layout>
   );
 }
