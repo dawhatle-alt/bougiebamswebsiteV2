@@ -88,7 +88,7 @@ export default function Blog() {
               className="group cursor-pointer flex flex-col"
             >
               <BorderRotate
-                animationMode="rotate-on-hover"
+                animationMode="auto-rotate"
                 animationSpeed={4}
                 backgroundColor="hsl(var(--card))"
                 borderRadius={12}

@@ -115,7 +115,7 @@ export default function Home() {
                 className="group relative aspect-[3/4]"
               >
                 <BorderRotate
-                  animationMode="rotate-on-hover"
+                  animationMode="auto-rotate"
                   animationSpeed={4}
                   backgroundColor="hsl(var(--card))"
                   borderRadius={12}
@@ -209,7 +209,7 @@ export default function Home() {
                 className="group"
               >
                 <BorderRotate
-                  animationMode="rotate-on-hover"
+                  animationMode="auto-rotate"
                   animationSpeed={4}
                   backgroundColor="hsl(var(--card))"
                   borderRadius={12}

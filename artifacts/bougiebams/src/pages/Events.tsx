@@ -28,7 +28,7 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
       className="group flex flex-col hover:shadow-md transition-shadow duration-300"
     >
       <BorderRotate
-        animationMode="rotate-on-hover"
+        animationMode="auto-rotate"
         animationSpeed={4}
         backgroundColor="hsl(var(--card))"
         borderRadius={12}

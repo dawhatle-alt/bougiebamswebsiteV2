@@ -118,7 +118,7 @@ export default function Shop() {
               className="group flex flex-col"
             >
               <BorderRotate
-                animationMode="rotate-on-hover"
+                animationMode="auto-rotate"
                 animationSpeed={4}
                 backgroundColor="hsl(var(--card))"
                 borderRadius={12}
