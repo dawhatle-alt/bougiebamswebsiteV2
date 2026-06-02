@@ -1,0 +1,148 @@
+Build a new website for our company, BougieBams, using the project files provided as the primary source of truth.
+
+## Project Overview
+
+BougieBams is a premium Mahjong lifestyle brand focused on stylish, high-quality Mahjong products and accessories. The website should position the company as a luxury, modern, and aspirational brand while remaining approachable and easy to shop.
+
+The primary goal of the website is to:
+
+1. Sell Mahjong products directly to consumers.
+2. Build brand awareness.
+3. Grow an email subscriber list.
+4. Showcase the unique BougieBams brand identity.
+5. Create a foundation that can scale as new products are introduced.
+
+## Project Files
+
+Business Plan:
+C:\Projects\Bougiebams\Documents\Bougiebams_Tier_1_Business_Plan.pdf
+
+Website Project Folder:
+C:\Projects\Bougiebams\bougiebams
+
+Reference Files:
+
+* mahjong_websites.md
+
+  * Contains competitor and inspiration websites.
+  * Use these as design and functionality references.
+
+* Oh My Mahjong - Website Structure.md
+
+  * Contains a breakdown of the Oh My Mahjong website architecture.
+  * Use this as a starting point for navigation and content organization, but do not copy it directly.
+
+* website colors.png
+
+  * Contains the approved BougieBams color palette.
+  * Use these colors throughout the design system.
+
+* shuffle-grid.md
+
+  * Contains a hero section animation/component I want incorporated into the homepage.
+
+## Target Audience
+
+Primary Audience:
+
+* Women ages 35-70
+* Mahjong enthusiasts
+* Affluent and design-conscious consumers
+* Social players who view Mahjong as both a game and a lifestyle activity
+
+Secondary Audience:
+
+* Gift buyers
+* New Mahjong players
+* Event hosts and Mahjong groups
+
+## Brand Personality
+
+The brand should feel:
+
+* Premium
+* Elegant
+* Fun
+* Modern
+* Sophisticated
+* Social
+* Confident
+
+Avoid anything that feels:
+
+* Cheap
+* Generic
+* Corporate
+* Overly playful
+* Cartoonish
+
+## Design Direction
+
+The website should have a luxury lifestyle feel similar to premium direct-to-consumer brands.
+
+Focus on:
+
+* Large photography
+* Strong typography
+* Generous whitespace
+* Smooth animations
+* Mobile-first design
+* Fast page loads
+* Call on the ui-us-pro-max skill to help with design direction
+
+The design should feel comparable to luxury lifestyle and boutique retail brands rather than traditional gaming websites.
+
+## Required Pages
+
+Create recommendations for:
+
+* Home
+* Shop
+* Product Detail Page
+* About Us
+* Learn Mahjong
+* Blog/Content Hub
+* FAQ
+* Contact
+* Cart
+* Checkout
+
+Also recommend any additional pages needed to improve conversions.
+
+## Homepage Requirements
+
+The homepage should:
+
+* Immediately communicate the BougieBams brand.
+* Include the shuffle-grid hero component.
+* Feature best-selling products.
+* Explain what makes BougieBams unique.
+* Include customer testimonials.
+* Highlight featured collections.
+* Capture email subscribers.
+* Include strong calls-to-action throughout.
+
+## Deliverables
+
+Please provide:
+
+1. Recommended site architecture.
+2. Navigation structure.
+3. Homepage wireframe.
+4. Individual page wireframes.
+5. Content recommendations for each section.
+6. Ecommerce best practices.
+7. SEO recommendations.
+8. Conversion optimization recommendations.
+9. Mobile design recommendations.
+10. Technical implementation recommendations.
+
+Review all supplied files before making recommendations and use them as the foundation for the website design.
+
+additional callouts:
+"The site should feel closer to a luxury lifestyle brand than a gaming website."
+
+1. "Assume Shopify is the ecommerce platform unless project files specify otherwise."
+2. "Prioritize conversion rate optimization and email list growth."
+3. "Recommend photography styles, fonts, and imagery guidelines."
+4. "Create a complete design system including colors, typography, buttons, spacing, and component standards."
