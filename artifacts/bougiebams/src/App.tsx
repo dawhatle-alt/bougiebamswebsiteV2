@@ -16,14 +16,17 @@ import Blog from "@/pages/Blog";
 import Faq from "@/pages/Faq";
 import Events from "@/pages/Events";
 import Contact from "@/pages/Contact";
+import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
+const ease: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+
 const pageVariants = {
   initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] } },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.2, ease } },
 };
 
 function AnimatedRoutes() {
@@ -56,12 +59,21 @@ function AnimatedRoutes() {
   );
 }
 
-function Router() {
+function MarketingRouter() {
   return (
     <Layout>
       <AnimatedRoutes />
       <WelcomeOfferDialog />
     </Layout>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/admin" component={Admin} />
+      <Route component={MarketingRouter} />
+    </Switch>
   );
 }
 
