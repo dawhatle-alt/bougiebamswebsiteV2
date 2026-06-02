@@ -92,7 +92,7 @@ export default function Blog() {
                 animationSpeed={4}
                 backgroundColor="hsl(var(--card))"
                 borderRadius={12}
-                borderWidth={2}
+                borderWidth={3}
                 className="p-2 h-full flex flex-col"
               >
               <div className="aspect-[4/3] overflow-hidden mb-4 rounded-md bg-muted">

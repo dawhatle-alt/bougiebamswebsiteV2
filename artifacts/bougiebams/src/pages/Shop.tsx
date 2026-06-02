@@ -122,7 +122,7 @@ export default function Shop() {
                 animationSpeed={4}
                 backgroundColor="hsl(var(--card))"
                 borderRadius={12}
-                borderWidth={2}
+                borderWidth={3}
                 className="p-2 h-full flex flex-col"
               >
               <div className="relative aspect-square mb-4 overflow-hidden rounded-md bg-muted/30">

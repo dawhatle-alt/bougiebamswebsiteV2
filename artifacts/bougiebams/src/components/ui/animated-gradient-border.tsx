@@ -36,57 +36,69 @@ const BorderRotate: React.FC<BorderRotateProps> = ({
   style = {},
   ...props
 }) => {
-  const getAnimationClass = () => {
+  const getSpinClass = () => {
     switch (animationMode) {
       case 'auto-rotate':
-        return 'gradient-border-auto';
+        return 'spin-auto';
       case 'rotate-on-hover':
-        return 'gradient-border-hover';
+        return 'spin-on-hover';
       case 'stop-rotate-on-hover':
-        return 'gradient-border-stop-hover';
+        return 'spin-stop-on-hover';
       default:
         return '';
     }
   };
 
-  const combinedStyle = {
-    '--gradient-primary': gradientColors.primary,
-    '--gradient-secondary': gradientColors.secondary,
-    '--gradient-accent': gradientColors.accent,
-    '--bg-color': backgroundColor,
-    '--border-width': `${borderWidth}px`,
-    '--border-radius': `${borderRadius}px`,
-    '--animation-duration': `${animationSpeed}s`,
-    border: `${borderWidth}px solid transparent`,
+  const outerStyle = {
+    position: 'relative',
     borderRadius: `${borderRadius}px`,
-    backgroundImage: `
-      linear-gradient(${backgroundColor}, ${backgroundColor}),
-      conic-gradient(
-        from var(--gradient-angle, 0deg),
-        ${gradientColors.primary} 0%,
-        ${gradientColors.secondary} 37%,
-        ${gradientColors.accent} 30%,
-        ${gradientColors.secondary} 33%,
-        ${gradientColors.primary} 40%,
-        ${gradientColors.primary} 50%,
-        ${gradientColors.secondary} 77%,
-        ${gradientColors.accent} 80%,
-        ${gradientColors.secondary} 83%,
-        ${gradientColors.primary} 90%
-      )
-    `,
-    backgroundClip: 'padding-box, border-box',
-    backgroundOrigin: 'padding-box, border-box',
+    backgroundColor,
     ...style,
+  } as CSSProperties;
+
+  const ringStyle = {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 30,
+    pointerEvents: 'none',
+    borderRadius: `${borderRadius}px`,
+    padding: `${borderWidth}px`,
+    overflow: 'hidden',
+    WebkitMask:
+      'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    WebkitMaskComposite: 'xor',
+    mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    maskComposite: 'exclude',
+  } as CSSProperties;
+
+  const spinnerStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: '200%',
+    aspectRatio: '1 / 1',
+    animationDuration: `${animationSpeed}s`,
+    backgroundImage: `conic-gradient(
+      from 0deg,
+      ${gradientColors.secondary} 0deg,
+      ${gradientColors.primary} 100deg,
+      ${gradientColors.secondary} 200deg,
+      ${gradientColors.accent} 270deg,
+      ${gradientColors.secondary} 340deg,
+      ${gradientColors.secondary} 360deg
+    )`,
   } as CSSProperties;
 
   return (
     <div
-      className={`gradient-border-component ${getAnimationClass()} ${className}`}
-      style={combinedStyle}
+      className={`gradient-border-component ${className}`}
+      style={outerStyle}
       {...props}
     >
       {children}
+      <div className="gb-ring" style={ringStyle} aria-hidden="true">
+        <div className={`gb-spinner ${getSpinClass()}`} style={spinnerStyle} />
+      </div>
     </div>
   );
 };

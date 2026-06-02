@@ -32,7 +32,7 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
         animationSpeed={4}
         backgroundColor="hsl(var(--card))"
         borderRadius={12}
-        borderWidth={2}
+        borderWidth={3}
         className="overflow-hidden flex flex-col h-full"
       >
       <div className="relative aspect-[16/9] overflow-hidden">

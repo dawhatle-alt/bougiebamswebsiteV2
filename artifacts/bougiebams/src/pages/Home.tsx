@@ -119,7 +119,7 @@ export default function Home() {
                   animationSpeed={4}
                   backgroundColor="hsl(var(--card))"
                   borderRadius={12}
-                  borderWidth={2}
+                  borderWidth={3}
                   className="h-full w-full overflow-hidden cursor-pointer"
                 >
                 <Link href={collection.path} className="block relative h-full w-full overflow-hidden rounded-[10px]">
@@ -213,7 +213,7 @@ export default function Home() {
                   animationSpeed={4}
                   backgroundColor="hsl(var(--card))"
                   borderRadius={12}
-                  borderWidth={2}
+                  borderWidth={3}
                   className="p-2 h-full"
                 >
                 <Link href={`/shop/${product.id}`} className="block">
