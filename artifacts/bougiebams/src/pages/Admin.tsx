@@ -94,11 +94,17 @@ export default function Admin() {
         headers: { Authorization: `Bearer ${password}` },
       });
       if (res.ok) {
-        sessionStorage.setItem(STORAGE_KEY, password);
-        setToken(password);
+        const data = await res.json();
+        const issued = data.token as string;
+        sessionStorage.setItem(STORAGE_KEY, issued);
+        setToken(issued);
         setPassword("");
       } else if (res.status === 401) {
         setLoginError("Incorrect password.");
+      } else if (res.status === 429) {
+        setLoginError(
+          "Too many attempts. Please wait a few minutes and try again.",
+        );
       } else {
         setLoginError("Admin access is not available right now.");
       }
