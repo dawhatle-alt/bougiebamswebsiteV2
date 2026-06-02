@@ -45,6 +45,11 @@ function getRedirectBase(): string {
   return "";
 }
 
+// Welcome promo: 15% off the whole order. Kept in lockstep with the value shown
+// in the welcome popup / email (see routes/subscribe.ts).
+const DISCOUNT_CODE = "BOUGIE15";
+const DISCOUNT_PERCENTAGE = "15";
+
 // All sellable variation ids in the catalog. Used to reject checkout requests
 // referencing ids that are not part of the storefront.
 async function getCatalogVariationIds(): Promise<Set<string>> {
@@ -181,6 +186,15 @@ router.post("/checkout", async (req, res) => {
     return res.status(400).json({ error: "Your cart is empty." });
   }
 
+  const rawCode =
+    typeof req.body?.discountCode === "string"
+      ? req.body.discountCode.trim().toUpperCase()
+      : "";
+  if (rawCode && rawCode !== DISCOUNT_CODE) {
+    return res.status(400).json({ error: "That discount code isn't valid." });
+  }
+  const applyDiscount = rawCode === DISCOUNT_CODE;
+
   try {
     // Reject any variation ids that are not part of the live storefront catalog.
     const validIds = await getCatalogVariationIds();
@@ -206,16 +220,28 @@ router.post("/checkout", async (req, res) => {
 
     const idempotencyKey = `bb_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
+    const order: Record<string, unknown> = {
+      location_id: locationId,
+      line_items: safeLineItems,
+    };
+    if (applyDiscount) {
+      order.discounts = [
+        {
+          uid: "welcome15",
+          name: `${DISCOUNT_CODE} — ${DISCOUNT_PERCENTAGE}% off`,
+          percentage: DISCOUNT_PERCENTAGE,
+          scope: "ORDER",
+        },
+      ];
+    }
+
     const result = await squareFetch<{ payment_link?: { url?: string } }>(
       "/v2/online-checkout/payment-links",
       {
         method: "POST",
         body: JSON.stringify({
           idempotency_key: idempotencyKey,
-          order: {
-            location_id: locationId,
-            line_items: safeLineItems,
-          },
+          order,
           checkout_options: checkoutOptions,
         }),
       },
