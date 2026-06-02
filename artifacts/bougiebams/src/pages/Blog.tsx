@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { blogPosts } from "@/data/blog";
 
 export default function Blog() {
@@ -86,13 +87,22 @@ export default function Blog() {
               transition={{ delay: i * 0.1 }}
               className="group cursor-pointer flex flex-col"
             >
-              <div className="aspect-[4/3] overflow-hidden mb-6 bg-muted">
+              <BorderRotate
+                animationMode="rotate-on-hover"
+                animationSpeed={4}
+                backgroundColor="hsl(var(--card))"
+                borderRadius={12}
+                borderWidth={2}
+                className="p-2 h-full flex flex-col"
+              >
+              <div className="aspect-[4/3] overflow-hidden mb-4 rounded-md bg-muted">
                 <img 
                   src={post.image} 
                   alt={post.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
+              <div className="flex flex-col flex-1 px-2 pb-2">
               <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-3 block">
                 {post.category}
               </span>
@@ -106,6 +116,8 @@ export default function Blog() {
                 <span className="text-xs uppercase tracking-wider">{post.author}</span>
                 <span className="text-xs text-muted-foreground">{post.date}</span>
               </div>
+              </div>
+              </BorderRotate>
             </motion.div>
           ))}
         </div>

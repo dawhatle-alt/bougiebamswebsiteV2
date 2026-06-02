@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
+import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -116,7 +117,15 @@ export default function Shop() {
               transition={{ duration: 0.5, delay: i * 0.05 }}
               className="group flex flex-col"
             >
-              <div className="relative aspect-square mb-6 overflow-hidden bg-muted/30">
+              <BorderRotate
+                animationMode="rotate-on-hover"
+                animationSpeed={4}
+                backgroundColor="hsl(var(--card))"
+                borderRadius={12}
+                borderWidth={2}
+                className="p-2 h-full flex flex-col"
+              >
+              <div className="relative aspect-square mb-4 overflow-hidden rounded-md bg-muted/30">
                 {product.isNew && (
                   <div className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground text-xs font-semibold tracking-widest uppercase px-3 py-1">
                     New
@@ -159,7 +168,7 @@ export default function Shop() {
                 </div>
               </div>
               
-              <div className="flex flex-col flex-1">
+              <div className="flex flex-col flex-1 px-2 pb-2">
                 <div className="flex justify-between items-start mb-2">
                   <Link href={`/shop/${product.id}`} className="hover:text-primary transition-colors">
                     <h3 className="font-serif text-xl">{product.name}</h3>
@@ -168,6 +177,7 @@ export default function Shop() {
                 </div>
                 <p className="text-muted-foreground text-sm font-sans tracking-wide">{product.category}</p>
               </div>
+              </BorderRotate>
             </motion.div>
           ))}
         </div>

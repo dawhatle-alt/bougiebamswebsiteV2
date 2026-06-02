@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { events, BougieBamsEvent, EventCategory } from "@/data/events";
 import { Button } from "@/components/ui/button";
+import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle } from "lucide-react";
 
@@ -24,8 +25,16 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5 }}
-      className="group bg-card border border-border rounded-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-300"
+      className="group flex flex-col hover:shadow-md transition-shadow duration-300"
     >
+      <BorderRotate
+        animationMode="rotate-on-hover"
+        animationSpeed={4}
+        backgroundColor="hsl(var(--card))"
+        borderRadius={12}
+        borderWidth={2}
+        className="overflow-hidden flex flex-col h-full"
+      >
       <div className="relative aspect-[16/9] overflow-hidden">
         <img
           src={event.image}
@@ -97,6 +106,7 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
           </Button>
         </div>
       </div>
+      </BorderRotate>
     </motion.div>
   );
 }

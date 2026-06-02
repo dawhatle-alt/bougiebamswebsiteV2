@@ -3,3 +3,4 @@
 - [Monorepo TS project references](monorepo-project-references.md) — editing a `lib/*` source (e.g. a Drizzle column) passes at runtime but fails dependents' typecheck until you `tsc -b` that lib's dist.
 - [drizzle-zod / zod version](db-zod-version.md) — drizzle-zod emits zod-v4 types; keep `lib/db` schemas refinement-free, validate in routes (api-server can't resolve `zod/v4`).
 - [Resend test mode](resend-test-mode.md) — Resend only delivers to the account owner until a domain is verified; treat email sends as best-effort, not a bug.
+- [Animated gradient border](animated-gradient-border.md) — rotating conic-gradient borders need `@property --gradient-angle` registered or the angle snaps; full CSS in bougiebams index.css.

@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import { Button } from "@/components/ui/button";
+import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { useProducts } from "@/hooks/useProducts";
 import { images } from "@/data/images";
 import { useCart } from "@/context/CartContext";
@@ -104,9 +105,17 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative block overflow-hidden rounded-sm cursor-pointer aspect-[3/4]"
+                className="group relative aspect-[3/4]"
               >
-                <Link href={collection.path}>
+                <BorderRotate
+                  animationMode="rotate-on-hover"
+                  animationSpeed={4}
+                  backgroundColor="hsl(var(--card))"
+                  borderRadius={12}
+                  borderWidth={2}
+                  className="h-full w-full overflow-hidden cursor-pointer"
+                >
+                <Link href={collection.path} className="block relative h-full w-full overflow-hidden rounded-[10px]">
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500 z-10" />
                   <img 
                     src={collection.img} 
@@ -124,6 +133,7 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
+                </BorderRotate>
               </motion.div>
             ))}
           </div>
@@ -191,8 +201,16 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: i * 0.08 }}
                 className="group"
               >
+                <BorderRotate
+                  animationMode="rotate-on-hover"
+                  animationSpeed={4}
+                  backgroundColor="hsl(var(--card))"
+                  borderRadius={12}
+                  borderWidth={2}
+                  className="p-2 h-full"
+                >
                 <Link href={`/shop/${product.id}`} className="block">
-                  <div className="relative aspect-square bg-muted mb-4 overflow-hidden rounded-sm">
+                  <div className="relative aspect-square bg-muted mb-3 overflow-hidden rounded-md">
                     {product.isBestseller && (
                       <div className="absolute top-4 left-4 z-10 bg-background text-foreground text-xs font-semibold tracking-widest uppercase px-3 py-1 shadow-sm">
                         Best Seller
@@ -204,25 +222,28 @@ export default function Home() {
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>
-                  <h3 className="font-serif text-xl mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center text-primary">
-                      {[...Array(5)].map((_, j) => (
-                        <Star key={j} className={`w-3 h-3 ${j < Math.floor(product.rating) ? 'fill-current' : ''}`} />
-                      ))}
+                  <div className="px-2 pb-2">
+                    <h3 className="font-serif text-xl mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center text-primary">
+                        {[...Array(5)].map((_, j) => (
+                          <Star key={j} className={`w-3 h-3 ${j < Math.floor(product.rating) ? 'fill-current' : ''}`} />
+                        ))}
+                      </div>
+                      <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-medium">${product.price}</span>
-                    <button
-                      onClick={(e) => { e.preventDefault(); addItem(product, 1); }}
-                      className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <ShoppingBag className="w-4 h-4" /> Add
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-medium">${product.price}</span>
+                      <button
+                        onClick={(e) => { e.preventDefault(); addItem(product, 1); }}
+                        className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <ShoppingBag className="w-4 h-4" /> Add
+                      </button>
+                    </div>
                   </div>
                 </Link>
+                </BorderRotate>
               </motion.div>
             ))}
           </div>
