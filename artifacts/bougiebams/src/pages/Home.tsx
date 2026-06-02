@@ -67,7 +67,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
-            <p className="text-xl md:text-2xl text-foreground/70 font-serif max-w-2xl mx-auto mb-10">
+            <p className="text-xl md:text-2xl text-foreground font-serif max-w-2xl mx-auto mb-10 [text-shadow:0_1px_10px_hsl(var(--background)),0_0_24px_hsl(var(--background))]">
               Premium Mahjong collections for the modern player. Curated, confident, and unapologetically stylish.
             </p>
             <Button size="lg" className="h-14 px-8 text-lg bg-foreground text-background hover:bg-primary transition-all duration-300 rounded-none group" asChild>
