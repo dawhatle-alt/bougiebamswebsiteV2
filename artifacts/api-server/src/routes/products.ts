@@ -1,7 +1,11 @@
 import { Router } from "express";
+import { db, subscribersTable } from "@workspace/db";
+import { and, eq, isNull } from "drizzle-orm";
 import { squareFetch, getLocationId, getSquareToken, SquareError } from "../lib/square";
 
 const router = Router();
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface NormalizedProduct {
   id: string; // Square variation id
@@ -190,10 +194,18 @@ router.post("/checkout", async (req, res) => {
     typeof req.body?.discountCode === "string"
       ? req.body.discountCode.trim().toUpperCase()
       : "";
+  const rawEmail =
+    typeof req.body?.email === "string"
+      ? req.body.email.trim().toLowerCase()
+      : "";
   if (rawCode && rawCode !== DISCOUNT_CODE) {
     return res.status(400).json({ error: "That discount code isn't valid." });
   }
-  const applyDiscount = rawCode === DISCOUNT_CODE;
+  const wantsDiscount = rawCode === DISCOUNT_CODE;
+
+  // Tracks a reserved (atomically claimed) welcome redemption so it can be rolled
+  // back if anything downstream fails before a checkout link is returned.
+  let discountSubscriberId: number | null = null;
 
   try {
     // Reject any variation ids that are not part of the live storefront catalog.
@@ -206,6 +218,55 @@ router.post("/checkout", async (req, res) => {
         .status(400)
         .json({ error: "These items are no longer available." });
     }
+
+    // The welcome discount is one-time and reserved for subscribers: it requires
+    // the email used to claim the offer and can only be redeemed once.
+    if (wantsDiscount) {
+      if (!EMAIL_REGEX.test(rawEmail)) {
+        return res.status(400).json({
+          error: "Enter the email you subscribed with to use this code.",
+        });
+      }
+      const [subscriber] = await db
+        .select({
+          id: subscribersTable.id,
+          redeemedAt: subscribersTable.discountRedeemedAt,
+        })
+        .from(subscribersTable)
+        .where(eq(subscribersTable.email, rawEmail))
+        .limit(1);
+      if (!subscriber) {
+        return res.status(400).json({
+          error:
+            "This welcome code is for subscribers. Claim your offer from the welcome popup first.",
+        });
+      }
+      if (subscriber.redeemedAt) {
+        return res
+          .status(400)
+          .json({ error: "This welcome code has already been used." });
+      }
+      // Atomically claim the one-time redemption: only the request that flips
+      // the still-null timestamp wins, so concurrent checkouts can't double-use.
+      // Rolled back in the catch block if the checkout link can't be created.
+      const reserved = await db
+        .update(subscribersTable)
+        .set({ discountRedeemedAt: new Date() })
+        .where(
+          and(
+            eq(subscribersTable.id, subscriber.id),
+            isNull(subscribersTable.discountRedeemedAt),
+          ),
+        )
+        .returning({ id: subscribersTable.id });
+      if (reserved.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "This welcome code has already been used." });
+      }
+      discountSubscriberId = subscriber.id;
+    }
+    const applyDiscount = discountSubscriberId !== null;
 
     const locationId = await getLocationId();
     const base = getRedirectBase();
@@ -254,6 +315,20 @@ router.post("/checkout", async (req, res) => {
 
     return res.json({ url });
   } catch (err) {
+    // Release the reserved redemption so a failed checkout doesn't burn the code.
+    if (discountSubscriberId !== null) {
+      try {
+        await db
+          .update(subscribersTable)
+          .set({ discountRedeemedAt: null })
+          .where(eq(subscribersTable.id, discountSubscriberId));
+      } catch (rollbackErr) {
+        req.log.error(
+          { err: rollbackErr },
+          "Failed to roll back welcome discount reservation",
+        );
+      }
+    }
     const status = err instanceof SquareError ? err.status : 500;
     if (err instanceof SquareError) {
       req.log.error({ status: err.status, body: err.body }, "Square checkout failed");

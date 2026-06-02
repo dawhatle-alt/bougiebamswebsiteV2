@@ -1,4 +1,5 @@
 - [Expo Go connection on Replit](expo-go-connection.md) — cloud Expo server won't auto-discover; give user a QR PNG of the `exp://` URL (native camera/iOS manual-entry both fail).
 - [Square integration](square-integration.md) — OAuth connector fails here, use SQUARE_ACCESS_TOKEN secret; never build checkout redirect_url from Host header; Square owns price/stock, local owns images by SKU.
+- [Monorepo TS project references](monorepo-project-references.md) — editing a `lib/*` source (e.g. a Drizzle column) passes at runtime but fails dependents' typecheck until you `tsc -b` that lib's dist.
 - [drizzle-zod / zod version](db-zod-version.md) — drizzle-zod emits zod-v4 types; keep `lib/db` schemas refinement-free, validate in routes (api-server can't resolve `zod/v4`).
 - [Resend test mode](resend-test-mode.md) — Resend only delivers to the account owner until a domain is verified; treat email sends as best-effort, not a bug.

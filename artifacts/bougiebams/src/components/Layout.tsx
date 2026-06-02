@@ -15,6 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState("");
+  const [discountEmail, setDiscountEmail] = useState("");
   const [location] = useLocation();
   const { items, totalItems, subtotal, isOpen, setIsOpen, updateQuantity, removeItem } = useCart();
 
@@ -32,6 +33,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             quantity: item.quantity,
           })),
           discountCode: discountCode.trim() || undefined,
+          email: discountCode.trim() ? discountEmail.trim() || undefined : undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -199,7 +201,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <p className="text-sm text-muted-foreground mb-6">
                       Shipping and taxes calculated at checkout. {subtotal > 150 ? "You qualify for free shipping!" : "Free shipping on orders over $150."}
                     </p>
-                    <div className="flex gap-2 mb-4">
+                    <div className="space-y-2 mb-4">
                       <input
                         type="text"
                         value={discountCode}
@@ -207,9 +209,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         placeholder="Discount code"
                         autoComplete="off"
                         autoCapitalize="characters"
-                        className="flex-1 h-11 px-3 text-sm uppercase tracking-widest bg-background border border-border rounded-sm placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-11 px-3 text-sm uppercase tracking-widest bg-background border border-border rounded-sm placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         data-testid="input-discount-code"
                       />
+                      {discountCode.trim() && (
+                        <input
+                          type="email"
+                          value={discountEmail}
+                          onChange={(e) => setDiscountEmail(e.target.value)}
+                          placeholder="Email used to claim your offer"
+                          autoComplete="email"
+                          className="w-full h-11 px-3 text-sm bg-background border border-border rounded-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                          data-testid="input-discount-email"
+                        />
+                      )}
                     </div>
                     {checkoutError && (
                       <p className="text-sm text-destructive mb-4">{checkoutError}</p>
