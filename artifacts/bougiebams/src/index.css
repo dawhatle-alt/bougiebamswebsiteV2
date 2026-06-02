@@ -260,12 +260,6 @@
   animation-play-state: paused;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gb-spinner {
-    animation: none;
-  }
-}
-
 /* Without mask compositing the ring would degrade into a full conic overlay
    covering tile content, so hide it on unsupported engines. */
 @supports not ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
