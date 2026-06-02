@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import { Button } from "@/components/ui/button";
 import { BorderRotate } from "@/components/ui/animated-gradient-border";
+import { TextEffect } from "@/components/ui/text-effect";
 import { useProducts } from "@/hooks/useProducts";
 import { images } from "@/data/images";
 import { useCart } from "@/context/CartContext";
@@ -57,8 +58,12 @@ export default function Home() {
               <span className="h-px w-8 md:w-12 bg-primary/70"></span>
             </span>
             <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[1.1] text-foreground">
-              Where Style Meets <br />
-              <span className="italic font-light">the Table.</span>
+              <TextEffect as="span" per="word" preset="blur" className="block">
+                Where Style Meets
+              </TextEffect>
+              <TextEffect as="span" per="word" preset="blur" delay={0.5} className="block italic font-light">
+                the Table.
+              </TextEffect>
             </h1>
           </motion.div>
           
