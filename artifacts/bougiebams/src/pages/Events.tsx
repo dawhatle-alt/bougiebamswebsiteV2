@@ -119,9 +119,27 @@ function RegisterSheet({
     e.preventDefault();
     if (!event) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setLoading(false);
-    setSubmitted(true);
+    try {
+      const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const res = await fetch(`${apiBase}/api/email/event-registration`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          eventTitle: event.title,
+          eventDate: event.date,
+          eventLocation: event.location,
+          eventPrice: event.price,
+        }),
+      });
+      if (!res.ok) throw new Error("Server error");
+    } catch {
+      // Still show success UI — email is best-effort
+    } finally {
+      setLoading(false);
+      setSubmitted(true);
+    }
   };
 
   const handleClose = () => {

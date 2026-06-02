@@ -166,6 +166,9 @@ importers:
 
   artifacts/api-server:
     dependencies:
+      '@replit/connectors-sdk':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
@@ -2444,6 +2447,9 @@ packages:
 
   '@react-navigation/routers@7.5.5':
     resolution: {integrity: sha512-9/hhMte12Kgu+pMnLfA4EWJ0OQmIEAMVMX06FPH2yGkEQSQ3JhhCN/GkcRikzQhtEi97VYYQA15umptBUShcOQ==}
+
+  '@replit/connectors-sdk@0.4.1':
+    resolution: {integrity: sha512-iw0uy95+Qul8MPc/bBo8hBfYk1wm6RpBZ9sHyCpcA9A9T4zcUT9deSQxdyMyI0w3sv3+5uGmdfq1TpFTMrjD1g==}
 
   '@replit/vite-plugin-cartographer@0.5.5':
     resolution: {integrity: sha512-iEXsvofgEQb1BSjMflHfuqVbRhWqI7n8u5ESSH+cSoxHgX4Lk8wM7qHk1h7u1BZSwqmPn8ftsRFSN4IVvUzB5w==}
@@ -5164,6 +5170,7 @@ packages:
   recharts@2.15.4:
     resolution: {integrity: sha512-UT/q6fwS3c1dHbXv2uFgYJ9BMFHu3fwnd7AYZaEQhXuYQ4hgsxLvsUXzGdKeZrW5xopzDCvuA2N41WJ88I7zIw==}
     engines: {node: '>=14'}
+    deprecated: 1.x and 2.x branches are no longer active. Bump to Recharts v3 to receive latest features and bugfixes. See https://github.com/recharts/recharts/wiki/3.0-migration-guide
     peerDependencies:
       react: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -8397,6 +8404,8 @@ snapshots:
     dependencies:
       nanoid: 3.3.12
 
+  '@replit/connectors-sdk@0.4.1': {}
+
   '@replit/vite-plugin-cartographer@0.5.5':
     dependencies:
       '@babel/parser': 7.29.3
@@ -10485,7 +10494,7 @@ snapshots:
   metro-source-map@0.83.3:
     dependencies:
       '@babel/traverse': 7.29.0
-      '@babel/traverse--for-generate-function-map': '@babel/traverse@7.29.0'
+      '@babel/traverse--for-generate-function-map': '@babel/traverse@7.29.7'
       '@babel/types': 7.29.0
       flow-enums-runtime: 0.0.6
       invariant: 2.2.4

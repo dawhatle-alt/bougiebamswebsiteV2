@@ -4,23 +4,44 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export default function Contact() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setForm(prev => ({ ...prev, [e.target.id]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/email/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) throw new Error("Server error");
+
       toast({
         title: "Message Sent",
         description: "Thank you for reaching out. We will get back to you shortly.",
       });
-      (e.target as HTMLFormElement).reset();
-    }, 1000);
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch {
+      toast({
+        title: "Something went wrong",
+        description: "Please try again or email us directly at patsy@bougiebams.com.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -38,8 +59,8 @@ export default function Contact() {
           <div className="space-y-10">
             <div>
               <h3 className="font-sans font-semibold tracking-widest uppercase text-xs text-primary mb-4">Email</h3>
-              <a href="mailto:concierge@bougiebams.com" className="font-serif text-xl hover:text-primary transition-colors">
-                concierge@bougiebams.com
+              <a href="mailto:patsy@bougiebams.com" className="font-serif text-xl hover:text-primary transition-colors">
+                patsy@bougiebams.com
               </a>
             </div>
             
@@ -68,45 +89,62 @@ export default function Contact() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="name" className="text-sm font-medium tracking-wide uppercase text-muted-foreground">Name</label>
-                  <Input id="name" required className="h-12 rounded-none border-border bg-transparent focus-visible:ring-primary" />
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                    className="h-12 rounded-none border-border bg-transparent focus-visible:ring-primary"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium tracking-wide uppercase text-muted-foreground">Email</label>
-                  <Input id="email" type="email" required className="h-12 rounded-none border-border bg-transparent focus-visible:ring-primary" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    className="h-12 rounded-none border-border bg-transparent focus-visible:ring-primary"
+                  />
                 </div>
               </div>
               
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-medium tracking-wide uppercase text-muted-foreground">Subject</label>
-                <select 
-                  id="subject" 
-                  className="flex h-12 w-full border border-border bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-none"
+                <select
+                  id="subject"
+                  value={form.subject}
+                  onChange={handleChange}
+                  className="flex h-12 w-full border border-border bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-none"
                   required
                 >
-                  <option value="" disabled selected>Select a topic</option>
-                  <option value="order">Order Inquiry</option>
-                  <option value="product">Product Question</option>
-                  <option value="wholesale">Wholesale</option>
-                  <option value="press">Press & Media</option>
-                  <option value="other">Other</option>
+                  <option value="" disabled>Select a topic</option>
+                  <option value="Order Inquiry">Order Inquiry</option>
+                  <option value="Product Question">Product Question</option>
+                  <option value="Wholesale">Wholesale</option>
+                  <option value="Press & Media">Press & Media</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="message" className="text-sm font-medium tracking-wide uppercase text-muted-foreground">Message</label>
-                <Textarea 
-                  id="message" 
-                  required 
-                  className="min-h-[150px] rounded-none border-border bg-transparent focus-visible:ring-primary resize-y" 
+                <Textarea
+                  id="message"
+                  value={form.message}
+                  onChange={handleChange}
+                  required
+                  className="min-h-[150px] rounded-none border-border bg-transparent focus-visible:ring-primary resize-y"
                 />
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="h-14 px-8 text-lg bg-foreground text-background hover:bg-primary rounded-none w-full sm:w-auto"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Sending..." : "Send Message"}
+                {isSubmitting ? "Sending…" : "Send Message"}
               </Button>
             </form>
           </div>
