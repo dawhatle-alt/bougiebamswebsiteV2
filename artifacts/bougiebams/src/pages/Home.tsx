@@ -51,8 +51,10 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <span className="text-primary font-semibold tracking-[0.2em] uppercase text-sm mb-4 block">
+            <span className="inline-flex items-center justify-center gap-4 mb-5 text-primary font-bold tracking-[0.25em] uppercase text-sm md:text-base [text-shadow:0_1px_8px_hsl(var(--background))]">
+              <span className="h-px w-8 md:w-12 bg-primary/70"></span>
               The Art of the Game
+              <span className="h-px w-8 md:w-12 bg-primary/70"></span>
             </span>
             <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[1.1] text-foreground">
               Where Style Meets <br />
