@@ -90,7 +90,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Desktop Nav (Left) */}
           <nav className="hidden md:flex items-center gap-8 flex-1">
-            {navLinks.slice(0, 3).map((link) => (
+            {navLinks.slice(0, 4).map((link) => (
               <Link
                 key={link.path}
                 href={link.path}
@@ -109,7 +109,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Desktop Nav & Actions (Right) */}
           <div className="flex items-center justify-end gap-6 flex-1">
             <nav className="hidden md:flex items-center gap-8 mr-4">
-              {navLinks.slice(3).map((link) => (
+              {navLinks.slice(4).map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
