@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2, Loader2 } from "lucide-react";
+import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
+import SearchDialog from "@/components/SearchDialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -16,8 +18,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState("");
   const [discountEmail, setDiscountEmail] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [location] = useLocation();
-  const { items, totalItems, subtotal, isOpen, setIsOpen, updateQuantity, removeItem } = useCart();
+  const { items, totalItems, subtotal, isOpen, setIsOpen, updateQuantity, removeItem, addItem } = useCart();
+  const {
+    items: wishItems,
+    count: wishCount,
+    isOpen: wishlistOpen,
+    setIsOpen: setWishlistOpen,
+    remove: removeWish,
+  } = useWishlist();
 
   const handleCheckout = async () => {
     if (items.length === 0 || checkoutLoading) return;
@@ -71,8 +81,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
+      <div className="fixed top-0 inset-x-0 z-50">
+      <div className="bg-primary text-primary-foreground text-center text-[11px] md:text-xs tracking-[0.2em] uppercase py-2 px-4 font-medium leading-tight">
+        Complimentary shipping on all orders over $150
+      </div>
       <header
-        className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+        className={`w-full transition-all duration-500 ${
           isScrolled || location !== "/"
             ? "bg-background/90 backdrop-blur-md border-b border-border/50 py-4 shadow-sm"
             : "bg-transparent py-6"
@@ -119,6 +133,89 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </nav>
+
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2 text-foreground hover:text-primary transition-colors"
+              aria-label="Search"
+              data-testid="button-search"
+            >
+              <Search className="w-6 h-6" />
+            </button>
+
+            <Sheet open={wishlistOpen} onOpenChange={setWishlistOpen}>
+              <SheetTrigger asChild>
+                <button
+                  className="relative p-2 text-foreground hover:text-primary transition-colors"
+                  aria-label="Wishlist"
+                  data-testid="button-wishlist"
+                >
+                  <Heart className="w-6 h-6" />
+                  {wishCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transform translate-x-1/4 -translate-y-1/4">
+                      {wishCount}
+                    </span>
+                  )}
+                </button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-md flex flex-col border-l-0 p-0 font-sans">
+                <SheetHeader className="p-6 border-b border-border">
+                  <SheetTitle className="font-serif text-2xl font-medium text-left">Your Wishlist</SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                  {wishItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                      <Heart className="w-12 h-12 text-muted-foreground opacity-50" />
+                      <p className="text-muted-foreground font-serif text-xl">Your wishlist is empty</p>
+                      <Button onClick={() => setWishlistOpen(false)} asChild className="mt-4">
+                        <Link href="/shop">Explore Collections</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    wishItems.map((product) => (
+                      <div key={product.id} className="flex gap-4" data-testid={`wishlist-item-${product.id}`}>
+                        <Link
+                          href={`/shop/${product.id}`}
+                          onClick={() => setWishlistOpen(false)}
+                          className="w-24 h-24 bg-muted rounded-md overflow-hidden flex-shrink-0"
+                        >
+                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                        </Link>
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <Link href={`/shop/${product.id}`} onClick={() => setWishlistOpen(false)}>
+                              <h4 className="font-serif text-lg leading-tight hover:text-primary transition-colors">
+                                {product.name}
+                              </h4>
+                            </Link>
+                            <p className="text-sm text-muted-foreground mt-1">${product.price}</p>
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            <button
+                              onClick={() => {
+                                setWishlistOpen(false);
+                                addItem(product);
+                                removeWish(product.id);
+                              }}
+                              className="text-sm text-primary hover:underline underline-offset-4"
+                            >
+                              Add to cart
+                            </button>
+                            <button
+                              onClick={() => removeWish(product.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors"
+                              aria-label="Remove from wishlist"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
 
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
@@ -249,6 +346,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+      </div>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
@@ -274,9 +372,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <main className="flex-1">
+      <main className={`flex-1 ${location !== "/" ? "pt-9" : ""}`}>
         {children}
       </main>
+
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       <footer className="bg-secondary text-secondary-foreground pt-20 pb-10 border-t border-secondary-border">
         <div className="container mx-auto px-6">

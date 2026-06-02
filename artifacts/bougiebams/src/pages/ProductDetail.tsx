@@ -3,6 +3,8 @@ import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Heart, Minus, Plus, Star, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +34,8 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const { addItem } = useCart();
+  const { toggle, isSaved } = useWishlist();
+  const { toast } = useToast();
 
   if (loading) {
     return (
@@ -219,8 +223,26 @@ export default function ProductDetail() {
                 >
                   {product.inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
-                <Button variant="outline" className="h-14 w-14 p-0 rounded-none border-border hover:bg-muted flex-shrink-0">
-                  <Heart className="w-5 h-5 text-muted-foreground" />
+                <Button
+                  variant="outline"
+                  className="h-14 w-14 p-0 rounded-none border-border hover:bg-muted flex-shrink-0"
+                  aria-pressed={isSaved(product.id)}
+                  aria-label={isSaved(product.id) ? "Remove from wishlist" : "Save to wishlist"}
+                  data-testid="button-wishlist-toggle"
+                  onClick={() => {
+                    const wasSaved = isSaved(product.id);
+                    toggle(product);
+                    toast({
+                      title: wasSaved ? "Removed from wishlist" : "Saved to wishlist",
+                      description: product.name,
+                    });
+                  }}
+                >
+                  <Heart
+                    className={`w-5 h-5 transition-colors ${
+                      isSaved(product.id) ? "fill-primary text-primary" : "text-muted-foreground"
+                    }`}
+                  />
                 </Button>
               </div>
 

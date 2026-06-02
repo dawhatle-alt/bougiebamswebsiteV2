@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
+import PressBar from "@/components/PressBar";
 import { Button } from "@/components/ui/button";
 import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { TextEffect } from "@/components/ui/text-effect";
@@ -84,6 +85,8 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      <PressBar />
 
       {/* Featured Collections */}
       <section className="py-24 bg-background">

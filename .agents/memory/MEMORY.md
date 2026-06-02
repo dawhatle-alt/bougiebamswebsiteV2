@@ -4,3 +4,4 @@
 - [drizzle-zod / zod version](db-zod-version.md) — drizzle-zod emits zod-v4 types; keep `lib/db` schemas refinement-free, validate in routes (api-server can't resolve `zod/v4`).
 - [Resend test mode](resend-test-mode.md) — Resend only delivers to the account owner until a domain is verified; treat email sends as best-effort, not a bug.
 - [Animated gradient border](animated-gradient-border.md) — animating `@property --gradient-angle` silently fails in this Vite+Tailwind build; rotate with `transform: rotate()` on a spinner layer instead.
+- [wouter query reactivity](wouter-query-reactivity.md) — useLocation pathname omits the query string; read `?category=` etc. via useSearch/useSearchParams or filters won't update on same-path nav.

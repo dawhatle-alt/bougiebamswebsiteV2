@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useLocation, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
@@ -10,16 +10,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 
 export default function Shop() {
   const [location] = useLocation();
-  const searchParams = new URLSearchParams(window.location.search);
-  const categoryParam = searchParams.get("category");
-  
-  const [activeCategory, setActiveCategory] = useState(categoryParam || "All");
+  const search = useSearch();
+  const categoryParam = new URLSearchParams(search).get("category");
+
+  const categories = ["All", "Complete Sets", "Tiles & Accessories", "Gift Sets", "Apparel & Lifestyle"];
+
+  const [activeCategory, setActiveCategory] = useState(
+    categoryParam && categories.includes(categoryParam) ? categoryParam : "All"
+  );
   const [sortBy, setSortBy] = useState("featured");
   const [quickViewProduct, setQuickViewProduct] = useState<string | null>(null);
   const { addItem } = useCart();
   const { products, loading, error } = useProducts();
 
-  const categories = ["All", "Complete Sets", "Tiles & Accessories", "Gift Sets", "Apparel & Lifestyle"];
+  useEffect(() => {
+    if (categoryParam && categories.includes(categoryParam)) {
+      setActiveCategory(categoryParam);
+    }
+  }, [categoryParam]);
 
   const filteredProducts = useMemo(() => {
     let result = products;
