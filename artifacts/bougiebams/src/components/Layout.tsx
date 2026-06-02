@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import logoUrl from "@/assets/bougiebams-logo.png";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -70,9 +71,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Logo (Center) */}
           <Link href="/" className="flex-shrink-0 text-center mx-auto md:mx-0">
-            <span className="font-serif text-3xl md:text-4xl font-semibold tracking-wide text-foreground">
-              BougieBams
-            </span>
+            <img src={logoUrl} alt="BougieBams" className="h-16 md:h-20 w-auto object-contain" />
           </Link>
 
           {/* Desktop Nav & Actions (Right) */}
@@ -192,7 +191,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col md:hidden animate-in fade-in zoom-in duration-300">
           <div className="p-6 flex justify-between items-center border-b border-border">
-            <span className="font-serif text-2xl font-semibold">BougieBams</span>
+            <img src={logoUrl} alt="BougieBams" className="h-12 w-auto object-contain" />
             <button onClick={() => setMobileMenuOpen(false)} className="p-2">
               <X className="w-6 h-6" />
             </button>
@@ -265,9 +264,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div className="md:col-span-2">
               <Link href="/" className="inline-block mb-6">
-                <span className="font-serif text-3xl font-semibold tracking-wide">
-                  BougieBams
-                </span>
+                <img src={logoUrl} alt="BougieBams" className="h-20 w-auto object-contain" />
               </Link>
               <p className="text-secondary-foreground/80 max-w-sm mb-8 font-serif text-lg leading-relaxed">
                 Where luxury meets the Mahjong table. Premium sets and lifestyle accessories for the modern player.
