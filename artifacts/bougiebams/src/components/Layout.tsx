@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2 } from "lucide-react";
+import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2, Lock } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [location] = useLocation();
   const { items, totalItems, subtotal, isOpen, setIsOpen, updateQuantity, removeItem } = useCart();
 
@@ -168,7 +170,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <p className="text-sm text-muted-foreground mb-6">
                       Shipping and taxes calculated at checkout. {subtotal > 150 ? "You qualify for free shipping!" : "Free shipping on orders over $150."}
                     </p>
-                    <Button className="w-full h-12 text-lg">
+                    <Button
+                      className="w-full h-12 text-lg"
+                      onClick={() => {
+                        setIsOpen(false);
+                        setCheckoutOpen(true);
+                      }}
+                      data-testid="button-checkout"
+                    >
                       Proceed to Checkout
                     </Button>
                   </div>
@@ -202,6 +211,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       )}
+
+      {/* Checkout Dialog (placeholder until payment is connected) */}
+      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+        <DialogContent className="max-w-md rounded-none border-border p-0 overflow-hidden">
+          <div className="bg-secondary text-secondary-foreground px-8 pt-10 pb-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
+              <Lock className="w-6 h-6 text-primary" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="font-serif text-3xl font-medium text-center text-secondary-foreground">
+                Secure Checkout Coming Soon
+              </DialogTitle>
+              <DialogDescription className="text-secondary-foreground/70 font-serif text-base leading-relaxed mt-3">
+                We're putting the final touches on our boutique checkout experience. Online ordering will be available here very soon.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-8 py-8 bg-background">
+            <div className="flex justify-between font-serif text-lg mb-1">
+              <span>Your selection</span>
+              <span>${subtotal}</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              {totalItems} {totalItems === 1 ? "item" : "items"} saved in your cart. Your bag will be waiting when checkout opens.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+              In the meantime, reach out to place a personal order or ask about availability — we'd love to help.
+            </p>
+            <Button
+              asChild
+              className="w-full h-12 text-base rounded-none bg-foreground text-background hover:bg-primary"
+              onClick={() => setCheckoutOpen(false)}
+            >
+              <Link href="/contact">Contact Us to Order</Link>
+            </Button>
+            <button
+              onClick={() => setCheckoutOpen(false)}
+              className="w-full mt-4 text-sm tracking-widest uppercase font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Continue Browsing
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <main className="flex-1">
         {children}
