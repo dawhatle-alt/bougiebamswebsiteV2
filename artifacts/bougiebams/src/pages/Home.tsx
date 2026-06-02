@@ -4,11 +4,13 @@ import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import { Button } from "@/components/ui/button";
 import { products } from "@/data/products";
 import { images } from "@/data/images";
+import { useCart } from "@/context/CartContext";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronRight, ArrowRight, Quote } from "lucide-react";
+import { ChevronRight, ArrowRight, Quote, Star, ShoppingBag } from "lucide-react";
 
 export default function Home() {
   const [emblaRef] = useEmblaCarousel({ loop: true });
+  const { addItem } = useCart();
 
   const bestsellers = products.filter(p => p.isBestseller).slice(0, 4);
 
@@ -157,6 +159,70 @@ export default function Home() {
                 <h3 className="font-serif text-2xl">{feature.title}</h3>
                 <p className="text-muted-foreground font-serif text-lg leading-relaxed">{feature.desc}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Best Sellers */}
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+            <div>
+              <span className="text-primary font-semibold tracking-[0.2em] uppercase text-xs mb-3 block">Most Loved</span>
+              <h2 className="font-serif text-4xl md:text-5xl mb-4">Best Sellers</h2>
+              <p className="text-muted-foreground text-lg max-w-xl font-serif">
+                The sets and accessories our community returns to, time and again.
+              </p>
+            </div>
+            <Link href="/shop" className="inline-flex items-center text-primary font-medium tracking-wide uppercase text-sm hover:opacity-80 transition-opacity">
+              Shop All <ChevronRight className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {bestsellers.map((product, i) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                className="group"
+              >
+                <Link href={`/shop/${product.id}`} className="block">
+                  <div className="relative aspect-square bg-muted mb-4 overflow-hidden rounded-sm">
+                    {product.isBestseller && (
+                      <div className="absolute top-4 left-4 z-10 bg-background text-foreground text-xs font-semibold tracking-widest uppercase px-3 py-1 shadow-sm">
+                        Best Seller
+                      </div>
+                    )}
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  </div>
+                  <h3 className="font-serif text-xl mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center text-primary">
+                      {[...Array(5)].map((_, j) => (
+                        <Star key={j} className={`w-3 h-3 ${j < Math.floor(product.rating) ? 'fill-current' : ''}`} />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-medium">${product.price}</span>
+                    <button
+                      onClick={(e) => { e.preventDefault(); addItem(product, 1); }}
+                      className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <ShoppingBag className="w-4 h-4" /> Add
+                    </button>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
           </div>
         </div>

@@ -7,10 +7,29 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, Heart, Minus, Plus, Star } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const VARIANTS: Record<string, { label: string; options: string[] }[]> = {
+  "Complete Sets": [
+    { label: "Finish", options: ["High Gloss", "Matte", "Satin"] },
+    { label: "Case Color", options: ["Ivory", "Midnight Navy", "Blush"] },
+  ],
+  "Tiles & Accessories": [
+    { label: "Color", options: ["Blush", "Navy", "Ivory", "Sage"] },
+  ],
+  "Gift Sets": [
+    { label: "Ribbon Color", options: ["Gold", "Navy", "Blush"] },
+  ],
+  "Apparel & Lifestyle": [
+    { label: "Size", options: ["XS", "S", "M", "L", "XL"] },
+    { label: "Color", options: ["Cream", "Navy", "Blush"] },
+  ],
+};
+
 export default function ProductDetail() {
   const { id } = useParams();
   const product = products.find(p => p.id === id);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const { addItem } = useCart();
 
   if (!product) {
@@ -28,10 +47,20 @@ export default function ProductDetail() {
     .filter(p => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
+  const galleryImages = product.images.length > 1
+    ? product.images
+    : [...product.images, ...relatedProducts.slice(0, 3).map(p => p.images[0])].filter(Boolean);
+
+  const variantOptions = VARIANTS[product.category] ?? [];
+
+  const handleVariantSelect = (label: string, option: string) => {
+    setSelectedVariants(prev => ({ ...prev, [label]: option }));
+  };
+
   return (
     <div className="pt-32 pb-24 min-h-screen bg-background">
       <div className="container mx-auto px-4 md:px-8">
-        
+
         {/* Breadcrumbs */}
         <div className="flex items-center text-sm text-muted-foreground mb-12 font-sans tracking-wide">
           <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -46,12 +75,13 @@ export default function ProductDetail() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 mb-24">
-          {/* Images */}
-          <div className="w-full lg:w-3/5">
-            <motion.div 
+          {/* Image Gallery */}
+          <div className="w-full lg:w-3/5 flex flex-col gap-4">
+            <motion.div
+              key={selectedImage}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.4 }}
               className="aspect-square md:aspect-[4/3] overflow-hidden bg-muted rounded-sm relative"
             >
               {product.isNew && (
@@ -59,12 +89,32 @@ export default function ProductDetail() {
                   New Arrival
                 </div>
               )}
-              <img 
-                src={product.images[0]} 
-                alt={product.name}
+              <img
+                src={galleryImages[selectedImage]}
+                alt={`${product.name} — view ${selectedImage + 1}`}
                 className="w-full h-full object-cover"
               />
             </motion.div>
+
+            {/* Thumbnails */}
+            {galleryImages.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {galleryImages.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedImage(i)}
+                    className={`flex-shrink-0 w-20 h-20 rounded-sm overflow-hidden border-2 transition-all duration-200 ${
+                      selectedImage === i
+                        ? "border-primary opacity-100"
+                        : "border-transparent opacity-60 hover:opacity-90"
+                    }`}
+                    aria-label={`View image ${i + 1}`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Details */}
@@ -75,7 +125,7 @@ export default function ProductDetail() {
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               <h1 className="font-serif text-4xl md:text-5xl mb-4">{product.name}</h1>
-              
+
               <div className="flex items-center gap-4 mb-6">
                 <span className="text-2xl">${product.price}</span>
                 <div className="flex items-center text-primary">
@@ -90,19 +140,46 @@ export default function ProductDetail() {
                 {product.description}
               </p>
 
-              <div className="space-y-8 mb-10">
+              <div className="space-y-6 mb-10">
+                {/* Variant selectors */}
+                {variantOptions.map(({ label, options }) => (
+                  <div key={label}>
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <h4 className="text-sm font-semibold tracking-widest uppercase">{label}</h4>
+                      {selectedVariants[label] && (
+                        <span className="text-sm text-muted-foreground font-serif italic">{selectedVariants[label]}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {options.map(option => (
+                        <button
+                          key={option}
+                          onClick={() => handleVariantSelect(label, option)}
+                          className={`px-4 py-2 text-sm border transition-all duration-200 rounded-sm ${
+                            selectedVariants[label] === option
+                              ? "border-primary bg-primary/5 text-primary font-medium"
+                              : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
                 {/* Quantity */}
                 <div>
                   <h4 className="text-sm font-semibold tracking-widest uppercase mb-3">Quantity</h4>
                   <div className="flex items-center w-32 border border-border">
-                    <button 
+                    <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       className="p-3 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                     <span className="flex-1 text-center font-medium">{quantity}</span>
-                    <button 
+                    <button
                       onClick={() => setQuantity(quantity + 1)}
                       className="p-3 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                     >
@@ -113,7 +190,7 @@ export default function ProductDetail() {
               </div>
 
               <div className="flex gap-4">
-                <Button 
+                <Button
                   className="flex-1 h-14 text-lg bg-foreground text-background hover:bg-primary rounded-none"
                   disabled={!product.inStock}
                   onClick={() => addItem(product, quantity)}
@@ -124,12 +201,12 @@ export default function ProductDetail() {
                   <Heart className="w-5 h-5 text-muted-foreground" />
                 </Button>
               </div>
-              
+
               <div className="mt-8 space-y-4 text-sm text-muted-foreground">
                 <div className="flex justify-between py-3 border-b border-border">
                   <span>Availability</span>
                   <span className={product.inStock ? "text-primary font-medium" : "text-destructive"}>
-                    {product.inStock ? "In Stock - Ready to Ship" : "Sold Out"}
+                    {product.inStock ? "In Stock — Ready to Ship" : "Sold Out"}
                   </span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-border">
@@ -149,20 +226,20 @@ export default function ProductDetail() {
         <div className="max-w-4xl mx-auto mb-24">
           <Tabs defaultValue="details" className="w-full">
             <TabsList className="w-full border-b border-border rounded-none h-auto p-0 bg-transparent justify-start gap-8">
-              <TabsTrigger 
-                value="details" 
+              <TabsTrigger
+                value="details"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 pb-4 text-lg font-serif"
               >
                 Product Details
               </TabsTrigger>
-              <TabsTrigger 
-                value="care" 
+              <TabsTrigger
+                value="care"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 pb-4 text-lg font-serif"
               >
                 Care Instructions
               </TabsTrigger>
-              <TabsTrigger 
-                value="shipping" 
+              <TabsTrigger
+                value="shipping"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 pb-4 text-lg font-serif"
               >
                 Shipping & Returns
@@ -180,9 +257,7 @@ export default function ProductDetail() {
               </ul>
             </TabsContent>
             <TabsContent value="care" className="py-8 font-serif text-lg leading-relaxed text-muted-foreground">
-              <p>
-                To maintain the pristine condition of your BougieBams products:
-              </p>
+              <p>To maintain the pristine condition of your BougieBams products:</p>
               <ul className="list-disc pl-6 space-y-2 mt-6">
                 <li>Wipe clean with a soft, dry microfiber cloth.</li>
                 <li>Avoid exposure to direct sunlight for extended periods.</li>
@@ -209,8 +284,8 @@ export default function ProductDetail() {
               {relatedProducts.map((p) => (
                 <Link key={p.id} href={`/shop/${p.id}`} className="group">
                   <div className="aspect-square bg-muted mb-4 overflow-hidden">
-                    <img 
-                      src={p.images[0]} 
+                    <img
+                      src={p.images[0]}
                       alt={p.name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
