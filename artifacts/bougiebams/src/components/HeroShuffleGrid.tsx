@@ -40,7 +40,7 @@ export function HeroShuffleGrid() {
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden -z-10 bg-muted">
-      <div className="grid grid-cols-3 md:grid-cols-4 grid-rows-4 md:grid-rows-3 gap-1 md:gap-2 h-full w-full p-1 md:p-2 opacity-50">
+      <div className="grid grid-cols-3 md:grid-cols-4 grid-rows-4 md:grid-rows-3 gap-1 md:gap-2 h-full w-full p-1 md:p-2 opacity-75">
         {order.map((imgIndex, i) => (
           <motion.div
             key={i}
@@ -54,13 +54,13 @@ export function HeroShuffleGrid() {
               className="w-full h-full object-cover"
             />
             {/* Subtle gradient overlay to push images back */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-background/40 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-background/20 to-transparent"></div>
           </motion.div>
         ))}
       </div>
-      {/* Heavy vignette overlay to make text readable */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/60 to-background/90"></div>
-      <div className="absolute inset-0 bg-radial-gradient from-transparent to-background/80"></div>
+      {/* Vignette overlay to keep hero text readable */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/30 to-background/70"></div>
+      <div className="absolute inset-0 bg-radial-gradient from-transparent to-background/55"></div>
     </div>
   );
 }
