@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "AHFKNQsamHCjr5XcwUCIC"
@@ -54,3 +53,9 @@ id = "u0FOJABKJdh18tEO3hwJg"
 uri = "file://artifacts/bougiebams-mobile/assets/images/icon.png"
 type = "image"
 title = "bougiebams mobile icon"
+
+[[outputs]]
+id = "1zIyfNv85XWkTrDSVI1Uw"
+uri = "file://.local/expo-qr.png"
+type = "image"
+title = "BougieBams Mobile — Expo Go QR Code"
