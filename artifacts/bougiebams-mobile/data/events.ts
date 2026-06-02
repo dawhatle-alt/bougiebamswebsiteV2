@@ -28,7 +28,7 @@ export const events: MobileEvent[] = [
     spotsLeft: 8,
     totalSpots: 24,
     host: "BougieBams NYC",
-    accentColor: "#1D2840",
+    accentColor: "#1E2A5A",
   },
   {
     id: "evt_2",
@@ -56,7 +56,7 @@ export const events: MobileEvent[] = [
     spotsLeft: 4,
     totalSpots: 32,
     host: "BougieBams Chicago",
-    accentColor: "#D49A20",
+    accentColor: "#D4AF37",
   },
   {
     id: "evt_4",
@@ -70,7 +70,7 @@ export const events: MobileEvent[] = [
     spotsLeft: 14,
     totalSpots: 20,
     host: "Emma Collins",
-    accentColor: "#B96E81",
+    accentColor: "#B57CCB",
   },
   {
     id: "evt_5",

@@ -35,7 +35,7 @@ export const products: Product[] = [
     reviewCount: 28,
     inStock: true,
     isNew: true,
-    accentColor: "#B96E81",
+    accentColor: "#B57CCB",
   },
   {
     id: "prod_3",
@@ -46,7 +46,7 @@ export const products: Product[] = [
     rating: 5.0,
     reviewCount: 15,
     inStock: true,
-    accentColor: "#1D2840",
+    accentColor: "#1E2A5A",
   },
   {
     id: "prod_4",
@@ -69,7 +69,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviewCount: 19,
     inStock: true,
-    accentColor: "#D49A20",
+    accentColor: "#D4AF37",
   },
   {
     id: "prod_6",
@@ -91,7 +91,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviewCount: 21,
     inStock: true,
-    accentColor: "#1D2840",
+    accentColor: "#1E2A5A",
   },
   {
     id: "prod_8",
@@ -102,7 +102,7 @@ export const products: Product[] = [
     rating: 5.0,
     reviewCount: 8,
     inStock: true,
-    accentColor: "#B96E81",
+    accentColor: "#B57CCB",
   },
   {
     id: "prod_9",
