@@ -48,3 +48,9 @@ id = "RzaE_HYyuowmI3nOVpztm"
 uri = "file://attached_assets/images/hero-tile-4.png"
 type = "image"
 title = "Hero grid tile 4"
+
+[[generated]]
+id = "u0FOJABKJdh18tEO3hwJg"
+uri = "file://artifacts/bougiebams-mobile/assets/images/icon.png"
+type = "image"
+title = "bougiebams mobile icon"

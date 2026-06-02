@@ -28,6 +28,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { name: "Shop", path: "/shop" },
     { name: "About", path: "/about" },
     { name: "Learn", path: "/learn" },
+    { name: "Events", path: "/events" },
     { name: "Blog", path: "/blog" },
     { name: "FAQ", path: "/faq" },
     { name: "Contact", path: "/contact" },
@@ -247,6 +248,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
                 <li><Link href="/learn" className="hover:text-primary transition-colors">Learn to Play</Link></li>
                 <li><Link href="/faq" className="hover:text-primary transition-colors">FAQ & Support</Link></li>
+                <li><Link href="/events" className="hover:text-primary transition-colors">Events</Link></li>
                 <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
               </ul>
             </div>

@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "BougieBams",
+    "slug": "bougiebams-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "bougiebams-mobile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1D2840"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bougiebams.mobile"
+    },
+    "android": {
+      "package": "com.bougiebams.mobile"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

@@ -13,6 +13,7 @@ import About from "@/pages/About";
 import Learn from "@/pages/Learn";
 import Blog from "@/pages/Blog";
 import Faq from "@/pages/Faq";
+import Events from "@/pages/Events";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/not-found";
 
@@ -45,6 +46,7 @@ function AnimatedRoutes() {
           <Route path="/learn" component={Learn} />
           <Route path="/blog" component={Blog} />
           <Route path="/faq" component={Faq} />
+          <Route path="/events" component={Events} />
           <Route path="/contact" component={Contact} />
           <Route component={NotFound} />
         </Switch>
