@@ -1,0 +1,1 @@
+- [Expo Go connection on Replit](expo-go-connection.md) — cloud Expo server won't auto-discover; give user a QR PNG of the `exp://` URL (native camera/iOS manual-entry both fail).
