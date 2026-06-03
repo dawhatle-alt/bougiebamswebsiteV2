@@ -19,3 +19,4 @@
 
 export * from "./subscribers";
 export * from "./blogPosts";
+export * from "./productImages";

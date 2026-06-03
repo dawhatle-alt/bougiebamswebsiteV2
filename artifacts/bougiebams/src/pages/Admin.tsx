@@ -9,13 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, FileText, Lock, LogOut, Mail, RefreshCw } from "lucide-react";
+import { Download, FileText, Lock, LogOut, Mail, Package, RefreshCw } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
+import ProductImageManager from "@/components/admin/ProductImageManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const STORAGE_KEY = "bougiebams_admin_token";
 
-type AdminView = "subscribers" | "blog";
+type AdminView = "subscribers" | "blog" | "products";
 
 interface Subscriber {
   id: number;
@@ -211,7 +212,7 @@ export default function Admin() {
               BougieBams Admin
             </h1>
             <p className="text-xs uppercase tracking-widest text-[rgba(245,240,234,0.6)] mt-1">
-              {view === "subscribers" ? "Email Subscribers" : "Blog Manager"}
+              {view === "subscribers" ? "Email Subscribers" : view === "blog" ? "Blog Manager" : "Product Images"}
             </p>
           </div>
           <Button
@@ -230,6 +231,7 @@ export default function Admin() {
           {([
             { key: "subscribers", label: "Subscribers", icon: Mail },
             { key: "blog", label: "Blog", icon: FileText },
+            { key: "products", label: "Products", icon: Package },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -251,6 +253,10 @@ export default function Admin() {
         {view === "blog" ? (
           token ? (
             <BlogManager token={token} onAuthError={handleAuthError} />
+          ) : null
+        ) : view === "products" ? (
+          token ? (
+            <ProductImageManager token={token} onAuthError={handleAuthError} />
           ) : null
         ) : (
         <>

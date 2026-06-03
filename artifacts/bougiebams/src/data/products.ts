@@ -31,6 +31,14 @@ export interface ApiProduct {
   price: number;
   category: string;
   inStock: boolean;
+  imagePath?: string | null; // set when admin has uploaded a custom image
+}
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Build a full URL for a product image stored in object storage.
+export function productImageUrl(imagePath: string): string {
+  return `${API_BASE}/api/storage${imagePath}`;
 }
 
 // Curated brand content that Square does not store, keyed by SKU.
@@ -76,8 +84,10 @@ export const productMeta: Record<string, ProductMeta> = {
 };
 
 // Merge live Square data with curated local metadata into a full Product.
+// Admin-uploaded images (api.imagePath) take priority over the local defaults.
 export function mergeProduct(api: ApiProduct): Product {
   const meta = productMeta[api.sku];
+  const uploadedImage = api.imagePath ? productImageUrl(api.imagePath) : null;
   return {
     id: api.id,
     sku: api.sku,
@@ -86,7 +96,7 @@ export function mergeProduct(api: ApiProduct): Product {
     category: api.category,
     description: api.description,
     inStock: api.inStock,
-    images: meta?.images ?? [DEFAULT_IMAGE],
+    images: uploadedImage ? [uploadedImage] : (meta?.images ?? [DEFAULT_IMAGE]),
     rating: meta?.rating ?? 5,
     reviewCount: meta?.reviewCount ?? 0,
     isNew: meta?.isNew,

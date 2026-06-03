@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, subscribersTable } from "@workspace/db";
+import { db, subscribersTable, productImagesTable } from "@workspace/db";
 import { and, eq, isNull } from "drizzle-orm";
 import { squareFetch, getLocationId, getSquareToken, SquareError } from "../lib/square";
 
@@ -15,6 +15,7 @@ interface NormalizedProduct {
   price: number; // dollars
   category: string;
   inStock: boolean;
+  imagePath: string | null; // admin-uploaded image override, null = use local default
 }
 
 interface CatalogObject {
@@ -126,10 +127,15 @@ router.get("/products", async (req, res) => {
       }
     }
 
+    // Fetch admin-uploaded image overrides from DB (one extra query, always fast).
+    const dbImages = await db.select().from(productImagesTable);
+    const imageMap = new Map(dbImages.map((r) => [r.sku, r.imagePath]));
+
     const products: NormalizedProduct[] = items.map((item) => {
       const data = item.item_data!;
       const variation = data.variations![0];
       const vData = variation.item_variation_data || {};
+      const sku = vData.sku || "";
       const categoryId =
         data.reporting_category?.id || data.categories?.[0]?.id || "";
       const tracks = !!vData.track_inventory;
@@ -139,12 +145,13 @@ router.get("/products", async (req, res) => {
 
       return {
         id: variation.id,
-        sku: vData.sku || "",
+        sku,
         name: data.name || "Untitled",
         description: data.description || "",
         price: (vData.price_money?.amount ?? 0) / 100,
         category: categoryNames.get(categoryId) || "Other",
         inStock,
+        imagePath: imageMap.get(sku) ?? null,
       };
     });
 

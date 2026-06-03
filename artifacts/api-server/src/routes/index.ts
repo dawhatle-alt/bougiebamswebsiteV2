@@ -6,6 +6,7 @@ import adminRouter from "./admin";
 import productsRouter from "./products";
 import blogRouter from "./blog";
 import storageRouter from "./storage";
+import productImagesRouter from "./productImages";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(adminRouter);
 router.use(productsRouter);
 router.use(blogRouter);
 router.use(storageRouter);
+router.use(productImagesRouter);
 
 export default router;

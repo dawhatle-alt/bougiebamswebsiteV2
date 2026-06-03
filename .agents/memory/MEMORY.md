@@ -5,3 +5,5 @@
 - [Resend test mode](resend-test-mode.md) — Resend only delivers to the account owner until a domain is verified; treat email sends as best-effort, not a bug.
 - [Animated gradient border](animated-gradient-border.md) — animating `@property --gradient-angle` silently fails in this Vite+Tailwind build; rotate with `transform: rotate()` on a spinner layer instead.
 - [wouter query reactivity](wouter-query-reactivity.md) — useLocation pathname omits the query string; read `?category=` etc. via useSearch/useSearchParams or filters won't update on same-path nav.
+- [Object storage public namespace](object-storage-public-namespace.md) — world-readable uploads must use getPublicUploadURL() into public namespace; unauthenticated serve route must be scoped to public-objects/* only.
+- [Drizzle text primaryKey + eq/insert quirks](drizzle-text-pk-quirks.md) — text().primaryKey() breaks eq() overloads and insert type inference; use serial id + unique text instead; cast req.params as string.
