@@ -11,6 +11,7 @@ import WelcomeOfferDialog from "@/components/WelcomeOfferDialog";
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import ProductDetail from "@/pages/ProductDetail";
+import BuildYourSet from "@/pages/BuildYourSet";
 import About from "@/pages/About";
 import Learn from "@/pages/Learn";
 import Blog from "@/pages/Blog";
@@ -47,6 +48,7 @@ function AnimatedRoutes() {
           <Route path="/" component={Home} />
           <Route path="/shop" component={Shop} />
           <Route path="/shop/:id" component={ProductDetail} />
+          <Route path="/build" component={BuildYourSet} />
           <Route path="/about" component={About} />
           <Route path="/learn" component={Learn} />
           <Route path="/blog" component={Blog} />

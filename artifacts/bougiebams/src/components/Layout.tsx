@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart } from "lucide-react";
+import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import SearchDialog from "@/components/SearchDialog";
+import { SHOP_CATEGORIES } from "@/data/categories";
+import shopMenuImg from "@assets/images/mahjong-lifestyle.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +21,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [discountCode, setDiscountCode] = useState("");
   const [discountEmail, setDiscountEmail] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [shopMenuOpen, setShopMenuOpen] = useState(false);
+  const [mobileShopOpen, setMobileShopOpen] = useState(false);
+  const shopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openShopMenu = () => {
+    if (shopTimer.current) clearTimeout(shopTimer.current);
+    setShopMenuOpen(true);
+  };
+  const closeShopMenu = () => {
+    shopTimer.current = setTimeout(() => setShopMenuOpen(false), 120);
+  };
   const [location] = useLocation();
   const { items, totalItems, subtotal, isOpen, setIsOpen, updateQuantity, removeItem, addItem } = useCart();
   const {
@@ -67,17 +79,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setShopMenuOpen(false);
   }, [location]);
 
-  const navLinks = [
+  useEffect(() => {
+    if (!shopMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShopMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [shopMenuOpen]);
+
+  const leftLinks = [
     { name: "Shop", path: "/shop" },
+    { name: "Build Your Set", path: "/build" },
     { name: "About", path: "/about" },
     { name: "Learn", path: "/learn" },
+  ];
+  const rightLinks = [
     { name: "Events", path: "/events" },
     { name: "Blog", path: "/blog" },
     { name: "FAQ", path: "/faq" },
     { name: "Contact", path: "/contact" },
   ];
+  const navLinks = [...leftLinks, ...rightLinks];
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -86,7 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         Complimentary shipping on all orders over $150
       </div>
       <header
-        className={`w-full transition-all duration-500 ${
+        className={`relative w-full transition-all duration-500 ${
           isScrolled || location !== "/"
             ? "bg-background/90 backdrop-blur-md border-b border-border/50 py-4 shadow-sm"
             : "bg-transparent py-6"
@@ -104,15 +130,40 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Desktop Nav (Left) */}
           <nav className="hidden md:flex items-center gap-8 flex-1">
-            {navLinks.slice(0, 4).map((link) => (
-              <Link
-                key={link.path}
-                href={link.path}
-                className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
+            {leftLinks.map((link) =>
+              link.name === "Shop" ? (
+                <div
+                  key={link.path}
+                  onMouseEnter={openShopMenu}
+                  onMouseLeave={closeShopMenu}
+                  onFocus={openShopMenu}
+                >
+                  <Link
+                    href={link.path}
+                    aria-haspopup="true"
+                    aria-expanded={shopMenuOpen}
+                    className="flex items-center gap-1 text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors"
+                  >
+                    {link.name}
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-300 ${
+                        shopMenuOpen ? "rotate-180 text-primary" : ""
+                      }`}
+                    />
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  key={link.path}
+                  href={link.path}
+                  onMouseEnter={closeShopMenu}
+                  onFocus={closeShopMenu}
+                  className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors"
+                >
+                  {link.name}
+                </Link>
+              )
+            )}
           </nav>
 
           {/* Logo (Center) */}
@@ -123,10 +174,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Desktop Nav & Actions (Right) */}
           <div className="flex items-center justify-end gap-6 flex-1">
             <nav className="hidden md:flex items-center gap-8 mr-4">
-              {navLinks.slice(4).map((link) => (
+              {rightLinks.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
+                  onMouseEnter={closeShopMenu}
+                  onFocus={closeShopMenu}
                   className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors"
                 >
                   {link.name}
@@ -345,6 +398,62 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Sheet>
           </div>
         </div>
+
+        {/* Shop Mega Menu */}
+        {shopMenuOpen && (
+          <div
+            onMouseEnter={openShopMenu}
+            onMouseLeave={closeShopMenu}
+            className="absolute left-0 top-full w-full bg-background border-t border-border shadow-xl hidden md:block animate-in fade-in slide-in-from-top-2 duration-200"
+          >
+            <div className="container mx-auto px-4 md:px-8 py-10">
+              <div className="grid grid-cols-12 gap-10">
+                <div className="col-span-7 grid grid-cols-2 gap-x-10 gap-y-7 content-start">
+                  <Link href="/shop" onClick={() => setShopMenuOpen(false)} className="group">
+                    <span className="text-xs tracking-[0.2em] uppercase text-primary font-semibold">
+                      Shop All
+                    </span>
+                    <p className="text-sm text-muted-foreground mt-1">Browse the full collection</p>
+                  </Link>
+                  {SHOP_CATEGORIES.map((cat) => (
+                    <Link
+                      key={cat.name}
+                      href={`/shop?category=${encodeURIComponent(cat.name)}`}
+                      onClick={() => setShopMenuOpen(false)}
+                      className="group"
+                    >
+                      <span className="font-serif text-lg group-hover:text-primary transition-colors">
+                        {cat.name}
+                      </span>
+                      <p className="text-sm text-muted-foreground mt-1">{cat.description}</p>
+                    </Link>
+                  ))}
+                </div>
+                <div className="col-span-5">
+                  <Link
+                    href="/build"
+                    onClick={() => setShopMenuOpen(false)}
+                    className="relative block overflow-hidden rounded-md group h-full min-h-[220px]"
+                  >
+                    <img
+                      src={shopMenuImg}
+                      alt="Build your own mahjong set"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 p-6 text-white">
+                      <span className="text-[11px] tracking-[0.2em] uppercase text-white/80">New</span>
+                      <p className="font-serif text-2xl mt-1">Build Your Set</p>
+                      <span className="inline-flex items-center gap-1 text-sm text-white/90 mt-1">
+                        Start customizing <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
       </div>
 
@@ -358,16 +467,49 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           <nav className="flex flex-col gap-6 p-8 overflow-y-auto">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                href={link.path}
-                className="font-serif text-3xl hover:text-primary transition-colors flex items-center justify-between group"
-              >
-                {link.name}
-                <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
-            ))}
+            <button
+              onClick={() => setMobileShopOpen((v) => !v)}
+              aria-expanded={mobileShopOpen}
+              className="font-serif text-3xl hover:text-primary transition-colors flex items-center justify-between text-left"
+            >
+              Shop
+              <ChevronDown
+                className={`w-6 h-6 transition-transform duration-300 ${
+                  mobileShopOpen ? "rotate-180 text-primary" : ""
+                }`}
+              />
+            </button>
+            {mobileShopOpen && (
+              <div className="flex flex-col gap-3 -mt-2 pl-4 border-l border-border animate-in fade-in slide-in-from-top-1 duration-200">
+                <Link
+                  href="/shop"
+                  className="font-sans text-base text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Shop All
+                </Link>
+                {SHOP_CATEGORIES.map((cat) => (
+                  <Link
+                    key={cat.name}
+                    href={`/shop?category=${encodeURIComponent(cat.name)}`}
+                    className="font-sans text-base text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {navLinks
+              .filter((link) => link.path !== "/shop")
+              .map((link) => (
+                <Link
+                  key={link.path}
+                  href={link.path}
+                  className="font-serif text-3xl hover:text-primary transition-colors flex items-center justify-between group"
+                >
+                  {link.name}
+                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+              ))}
           </nav>
         </div>
       )}

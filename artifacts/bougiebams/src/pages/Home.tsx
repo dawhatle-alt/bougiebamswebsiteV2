@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import PressBar from "@/components/PressBar";
+import buildImg from "@assets/images/mahjong-tiles-closeup.png";
 import { Button } from "@/components/ui/button";
 import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { TextEffect } from "@/components/ui/text-effect";
@@ -181,6 +182,41 @@ export default function Home() {
                 <p className="text-muted-foreground font-serif text-lg leading-relaxed">{feature.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Build Your Set Teaser */}
+      <section className="relative overflow-hidden bg-secondary text-secondary-foreground py-24">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+            >
+              <span className="text-primary font-semibold tracking-[0.2em] uppercase text-xs mb-4 block">Made Your Way</span>
+              <h2 className="font-serif text-4xl md:text-5xl mb-6 text-white">Build Your Own Set</h2>
+              <p className="font-serif text-lg text-secondary-foreground/70 mb-8 max-w-md">
+                Hand-pick your tiles, accessories, and finishing touches. We'll bundle them together into a set that's unmistakably yours.
+              </p>
+              <Button size="lg" className="h-14 px-8 text-lg rounded-none bg-primary text-primary-foreground hover:bg-primary/90 group" asChild>
+                <Link href="/build">
+                  Start Building
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.7 }}
+              className="relative aspect-[4/3] overflow-hidden rounded-md"
+            >
+              <img src={buildImg} alt="Build your own mahjong set" className="w-full h-full object-cover" />
+            </motion.div>
           </div>
         </div>
       </section>
