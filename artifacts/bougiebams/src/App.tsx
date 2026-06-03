@@ -15,6 +15,7 @@ import BuildYourSet from "@/pages/BuildYourSet";
 import About from "@/pages/About";
 import Learn from "@/pages/Learn";
 import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 import Faq from "@/pages/Faq";
 import Events from "@/pages/Events";
 import Contact from "@/pages/Contact";
@@ -51,6 +52,7 @@ function AnimatedRoutes() {
           <Route path="/build" component={BuildYourSet} />
           <Route path="/about" component={About} />
           <Route path="/learn" component={Learn} />
+          <Route path="/blog/:slug" component={BlogPost} />
           <Route path="/blog" component={Blog} />
           <Route path="/faq" component={Faq} />
           <Route path="/events" component={Events} />

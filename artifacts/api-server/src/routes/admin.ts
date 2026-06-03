@@ -60,7 +60,7 @@ function bearer(req: { headers: { authorization?: string } }): string {
   return header.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
 }
 
-const requireAdmin: RequestHandler = (req, res, next) => {
+export const requireAdmin: RequestHandler = (req, res, next) => {
   const secret = getSecret();
   if (!secret) {
     req.log.error("ADMIN_PASSWORD is not configured");

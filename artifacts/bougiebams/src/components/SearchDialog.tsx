@@ -3,7 +3,8 @@ import { Link } from "wouter";
 import { Search as SearchIcon, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useProducts } from "@/hooks/useProducts";
-import { blogPosts } from "@/data/blog";
+import { useBlogPosts } from "@/hooks/useBlogPosts";
+import { blogImageUrl } from "@/data/blog";
 import { SHOP_CATEGORIES } from "@/data/categories";
 
 const POPULAR = SHOP_CATEGORIES.map((c) => c.name);
@@ -17,6 +18,7 @@ export default function SearchDialog({
 }) {
   const [query, setQuery] = useState("");
   const { products, loading } = useProducts();
+  const { posts } = useBlogPosts();
   const q = query.trim().toLowerCase();
 
   const productResults = useMemo(() => {
@@ -33,7 +35,7 @@ export default function SearchDialog({
 
   const postResults = useMemo(() => {
     if (!q) return [];
-    return blogPosts
+    return posts
       .filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
@@ -41,7 +43,7 @@ export default function SearchDialog({
           p.category.toLowerCase().includes(q)
       )
       .slice(0, 4);
-  }, [q]);
+  }, [q, posts]);
 
   const hasResults = productResults.length > 0 || postResults.length > 0;
 
@@ -133,12 +135,12 @@ export default function SearchDialog({
                   {postResults.map((p) => (
                     <Link
                       key={p.id}
-                      href="/blog"
+                      href={`/blog/${p.slug}`}
                       onClick={close}
                       className="flex items-center gap-4 px-3 py-2 rounded-md hover:bg-muted transition-colors"
                     >
                       <div className="w-12 h-12 rounded-sm overflow-hidden bg-muted flex-shrink-0">
-                        <img src={p.image} alt="" className="w-full h-full object-cover" />
+                        <img src={blogImageUrl(p.imagePath)} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-serif truncate">{p.title}</p>

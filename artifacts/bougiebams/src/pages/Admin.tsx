@@ -9,10 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Lock, LogOut, Mail, RefreshCw } from "lucide-react";
+import { Download, FileText, Lock, LogOut, Mail, RefreshCw } from "lucide-react";
+import BlogManager from "@/components/admin/BlogManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const STORAGE_KEY = "bougiebams_admin_token";
+
+type AdminView = "subscribers" | "blog";
 
 interface Subscriber {
   id: number;
@@ -48,9 +51,16 @@ export default function Admin() {
   const [loginError, setLoginError] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
 
+  const [view, setView] = useState<AdminView>("subscribers");
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+
+  const handleAuthError = useCallback(() => {
+    sessionStorage.removeItem(STORAGE_KEY);
+    setToken(null);
+    setLoadError("Your session expired. Please sign in again.");
+  }, []);
 
   const loadSubscribers = useCallback(async (authToken: string) => {
     setLoading(true);
@@ -201,7 +211,7 @@ export default function Admin() {
               BougieBams Admin
             </h1>
             <p className="text-xs uppercase tracking-widest text-[rgba(245,240,234,0.6)] mt-1">
-              Email Subscribers
+              {view === "subscribers" ? "Email Subscribers" : "Blog Manager"}
             </p>
           </div>
           <Button
@@ -215,7 +225,35 @@ export default function Admin() {
         </div>
       </header>
 
+      <nav className="bg-[#172248] px-6">
+        <div className="max-w-5xl mx-auto flex items-center gap-1">
+          {([
+            { key: "subscribers", label: "Subscribers", icon: Mail },
+            { key: "blog", label: "Blog", icon: FileText },
+          ] as const).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors ${
+                view === key
+                  ? "border-[#D4AF37] text-[#D4AF37]"
+                  : "border-transparent text-[rgba(245,240,234,0.7)] hover:text-[#FAF7F0]"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
       <main className="max-w-5xl mx-auto px-6 py-8">
+        {view === "blog" ? (
+          token ? (
+            <BlogManager token={token} onAuthError={handleAuthError} />
+          ) : null
+        ) : (
+        <>
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center gap-2 text-[#1E2A5A]">
             <Mail className="w-5 h-5 text-[#D4AF37]" />
@@ -290,6 +328,8 @@ export default function Admin() {
             </Table>
           )}
         </div>
+        </>
+        )}
       </main>
     </div>
   );
