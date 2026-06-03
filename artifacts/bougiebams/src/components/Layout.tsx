@@ -599,7 +599,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Separator className="bg-secondary-foreground/10 mb-8" />
 
           <div className="flex flex-col md:flex-row justify-between items-center text-xs text-secondary-foreground/60 gap-4">
-            <p>&copy; {new Date().getFullYear()} BougieBams. All rights reserved.</p>
+            <p>
+              <Link href="/admin" aria-label="Admin" className="cursor-default">&copy;</Link>{" "}
+              {new Date().getFullYear()} BougieBams. All rights reserved.
+            </p>
             <div className="flex gap-6">
               <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
