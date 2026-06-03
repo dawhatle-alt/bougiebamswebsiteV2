@@ -128,6 +128,24 @@ export class ObjectStorageService {
     });
   }
 
+  // Presigned upload into the PUBLIC object namespace. Used for content that is
+  // meant to be world-readable (e.g. blog cover images). Returns both the
+  // upload URL and the public object path to store/serve later.
+  async getPublicUploadURL(): Promise<{ uploadURL: string; objectPath: string }> {
+    const publicDir = this.getPublicObjectSearchPaths()[0];
+    const objectId = randomUUID();
+    const relativePath = `blog/${objectId}`;
+    const fullPath = `${publicDir}/${relativePath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const uploadURL = await signObjectURL({
+      bucketName,
+      objectName,
+      method: "PUT",
+      ttlSec: 900,
+    });
+    return { uploadURL, objectPath: `/public-objects/${relativePath}` };
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();
