@@ -76,7 +76,7 @@ export default function BuildYourSet() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 md:px-8 -mt-10 relative z-10">
+      <div className="container mx-auto px-4 md:px-8 mt-12 relative z-10">
         {loading ? (
           <div className="flex items-center justify-center py-32 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin" />
