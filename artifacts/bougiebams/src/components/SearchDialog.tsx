@@ -4,8 +4,9 @@ import { Search as SearchIcon, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useProducts } from "@/hooks/useProducts";
 import { blogPosts } from "@/data/blog";
+import { SHOP_CATEGORIES } from "@/data/categories";
 
-const POPULAR = ["Complete Sets", "Gift Sets", "Tiles & Accessories", "Apparel & Lifestyle"];
+const POPULAR = SHOP_CATEGORIES.map((c) => c.name);
 
 export default function SearchDialog({
   open,

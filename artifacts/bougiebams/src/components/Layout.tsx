@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import SearchDialog from "@/components/SearchDialog";
 import { SHOP_CATEGORIES } from "@/data/categories";
+import { useProducts } from "@/hooks/useProducts";
 import shopMenuImg from "@assets/images/mahjong-lifestyle.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -32,6 +33,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     shopTimer.current = setTimeout(() => setShopMenuOpen(false), 120);
   };
   const [location] = useLocation();
+  const { products } = useProducts();
+  const shopGroups = useMemo(
+    () =>
+      SHOP_CATEGORIES.map((cat) => ({
+        ...cat,
+        items: products.filter((p) => p.category === cat.name).slice(0, 6),
+      })),
+    [products],
+  );
   const { items, totalItems, subtotal, isOpen, setIsOpen, updateQuantity, removeItem, addItem } = useCart();
   const {
     items: wishItems,
@@ -408,28 +418,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <div className="container mx-auto px-4 md:px-8 py-10">
               <div className="grid grid-cols-12 gap-10">
-                <div className="col-span-7 grid grid-cols-2 gap-x-10 gap-y-7 content-start">
-                  <Link href="/shop" onClick={() => setShopMenuOpen(false)} className="group">
-                    <span className="text-xs tracking-[0.2em] uppercase text-primary font-semibold">
-                      Shop All
-                    </span>
-                    <p className="text-sm text-muted-foreground mt-1">Browse the full collection</p>
-                  </Link>
-                  {SHOP_CATEGORIES.map((cat) => (
-                    <Link
-                      key={cat.name}
-                      href={`/shop?category=${encodeURIComponent(cat.name)}`}
-                      onClick={() => setShopMenuOpen(false)}
-                      className="group"
-                    >
-                      <span className="font-serif text-lg group-hover:text-primary transition-colors">
+                <div className="col-span-8 grid grid-cols-4 gap-8 content-start">
+                  {shopGroups.map((cat) => (
+                    <div key={cat.name}>
+                      <Link
+                        href={`/shop?category=${encodeURIComponent(cat.name)}`}
+                        onClick={() => setShopMenuOpen(false)}
+                        className="text-xs tracking-[0.2em] uppercase text-primary font-semibold hover:opacity-80 transition-opacity"
+                      >
                         {cat.name}
-                      </span>
-                      <p className="text-sm text-muted-foreground mt-1">{cat.description}</p>
-                    </Link>
+                      </Link>
+                      <ul className="mt-4 space-y-2.5">
+                        <li>
+                          <Link
+                            href={`/shop?category=${encodeURIComponent(cat.name)}`}
+                            onClick={() => setShopMenuOpen(false)}
+                            className="text-sm text-foreground hover:text-primary transition-colors"
+                          >
+                            Shop All
+                          </Link>
+                        </li>
+                        {cat.items.map((p) => (
+                          <li key={p.id}>
+                            <Link
+                              href={`/shop/${p.id}`}
+                              onClick={() => setShopMenuOpen(false)}
+                              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              {p.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
                 </div>
-                <div className="col-span-5">
+                <div className="col-span-4">
                   <Link
                     href="/build"
                     onClick={() => setShopMenuOpen(false)}
@@ -547,9 +571,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <h4 className="font-sans font-semibold tracking-widest uppercase text-sm mb-6 text-primary">Shop</h4>
               <ul className="space-y-4 text-sm">
                 <li><Link href="/shop" className="hover:text-primary transition-colors">All Products</Link></li>
-                <li><Link href="/shop?category=Complete+Sets" className="hover:text-primary transition-colors">Complete Sets</Link></li>
-                <li><Link href="/shop?category=Gift+Sets" className="hover:text-primary transition-colors">Gift Sets</Link></li>
-                <li><Link href="/shop?category=Tiles+%26+Accessories" className="hover:text-primary transition-colors">Accessories</Link></li>
+                {SHOP_CATEGORIES.map((cat) => (
+                  <li key={cat.name}>
+                    <Link
+                      href={`/shop?category=${encodeURIComponent(cat.name)}`}
+                      className="hover:text-primary transition-colors"
+                    >
+                      {cat.name}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 

@@ -5,8 +5,8 @@ export interface ShopCategory {
 
 // Canonical shop categories (must match the categories Square returns).
 export const SHOP_CATEGORIES: ShopCategory[] = [
-  { name: "Complete Sets", description: "Signature mahjong sets, ready to play." },
-  { name: "Tiles & Accessories", description: "Tiles, dice, racks, and the finishing touches." },
-  { name: "Gift Sets", description: "Beautifully curated sets, made to gift." },
-  { name: "Apparel & Lifestyle", description: "Wear the game. Live the lifestyle." },
+  { name: "TILES", description: "Tiles, sets, cards, and the essentials of play." },
+  { name: "MATS & RACKS", description: "Mats, racks, and pushers for the perfect setup." },
+  { name: "STORAGE", description: "Bags and boxes to keep your set pristine." },
+  { name: "ACCESSORIES", description: "Books, folios, napkins, and finishing touches." },
 ];

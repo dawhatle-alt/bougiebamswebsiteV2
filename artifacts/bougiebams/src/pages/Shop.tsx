@@ -7,26 +7,30 @@ import { Button } from "@/components/ui/button";
 import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { SHOP_CATEGORIES } from "@/data/categories";
 
 export default function Shop() {
   const [location] = useLocation();
   const search = useSearch();
   const categoryParam = new URLSearchParams(search).get("category");
 
-  const categories = ["All", "Complete Sets", "Tiles & Accessories", "Gift Sets", "Apparel & Lifestyle"];
-
-  const [activeCategory, setActiveCategory] = useState(
-    categoryParam && categories.includes(categoryParam) ? categoryParam : "All"
-  );
+  const [activeCategory, setActiveCategory] = useState(categoryParam || "All");
   const [sortBy, setSortBy] = useState("featured");
   const [quickViewProduct, setQuickViewProduct] = useState<string | null>(null);
   const { addItem } = useCart();
   const { products, loading, error } = useProducts();
 
+  // Derived from the live catalog so no category is ever orphaned. Curated
+  // categories lead, then any others Square returns.
+  const categories = useMemo(() => {
+    const present = Array.from(new Set(products.map((p) => p.category)));
+    const ordered = SHOP_CATEGORIES.map((c) => c.name).filter((n) => present.includes(n));
+    const extras = present.filter((n) => !ordered.includes(n));
+    return ["All", ...ordered, ...extras];
+  }, [products]);
+
   useEffect(() => {
-    if (categoryParam && categories.includes(categoryParam)) {
-      setActiveCategory(categoryParam);
-    }
+    setActiveCategory(categoryParam ?? "All");
   }, [categoryParam]);
 
   const filteredProducts = useMemo(() => {

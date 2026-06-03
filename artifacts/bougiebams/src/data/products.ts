@@ -57,6 +57,22 @@ export const productMeta: Record<string, ProductMeta> = {
   prod_10: { images: [heroTile3], rating: 4.7, reviewCount: 12 },
   prod_11: { images: [mahjongLifestyle], rating: 4.8, reviewCount: 27 },
   prod_12: { images: [productJade], rating: 4.5, reviewCount: 14 },
+  tiles_debutante: { images: [productJade], rating: 4.9, reviewCount: 18 },
+  tiles_ohmyrummi: { images: [heroTile2], rating: 4.7, reviewCount: 31, isNew: true },
+  tiles_playingcards: { images: [mahjongTilesCloseup], rating: 4.8, reviewCount: 22 },
+  tiles_travelsets: { images: [heroTile3], rating: 4.9, reviewCount: 14 },
+  tiles_intlcard: { images: [heroTile1], rating: 4.6, reviewCount: 9 },
+  mats_minitravel: { images: [mahjongLifestyle], rating: 4.7, reviewCount: 12 },
+  mats_rackpushers: { images: [heroTile4], rating: 4.8, reviewCount: 27 },
+  mats_tablecloths: { images: [productRosegold], rating: 4.9, reviewCount: 16 },
+  mats_aquajong: { images: [mahjongLifestyle], rating: 4.5, reviewCount: 7, isNew: true },
+  storage_zipperedbags: { images: [heroTile1], rating: 4.8, reviewCount: 20 },
+  storage_matstorage: { images: [heroTile2], rating: 4.7, reviewCount: 11 },
+  storage_acrylicboxes: { images: [mahjongTilesCloseup], rating: 4.9, reviewCount: 13 },
+  acc_babies: { images: [heroTile3], rating: 5.0, reviewCount: 8, isNew: true },
+  acc_cardfolios: { images: [heroTile4], rating: 4.6, reviewCount: 10 },
+  acc_book: { images: [mahjongTilesCloseup], rating: 4.9, reviewCount: 24 },
+  acc_napkins: { images: [productRosegold], rating: 4.7, reviewCount: 15 },
 };
 
 // Merge live Square data with curated local metadata into a full Product.
