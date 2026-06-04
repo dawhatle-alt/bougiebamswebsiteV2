@@ -168,7 +168,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={link.path}
                   onMouseEnter={closeShopMenu}
                   onFocus={closeShopMenu}
-                  className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors"
+                  className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors whitespace-nowrap"
                 >
                   {link.name}
                 </Link>
@@ -190,7 +190,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={link.path}
                   onMouseEnter={closeShopMenu}
                   onFocus={closeShopMenu}
-                  className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors"
+                  className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors whitespace-nowrap"
                 >
                   {link.name}
                 </Link>
