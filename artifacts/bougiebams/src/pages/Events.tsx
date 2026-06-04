@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { events, BougieBamsEvent, EventCategory } from "@/data/events";
+import { BougieBamsEvent, EventCategory } from "@/data/events";
+import { useEvents } from "@/hooks/useEvents";
 import { Button } from "@/components/ui/button";
 import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, RefreshCw } from "lucide-react";
 
 const CATEGORIES: EventCategory[] = ["All", "In-Person", "Virtual", "Tournament", "Workshop"];
 
@@ -16,8 +17,8 @@ const CATEGORY_COLORS: Record<Exclude<EventCategory, "All">, string> = {
 };
 
 function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: (e: BougieBamsEvent) => void }) {
-  const spotsPercent = (event.spotsLeft / event.totalSpots) * 100;
-  const isAlmostFull = event.spotsLeft <= 5;
+  const spotsPercent = event.totalSpots > 0 ? (event.spotsLeft / event.totalSpots) * 100 : 100;
+  const isAlmostFull = event.spotsLeft > 0 && event.spotsLeft <= 5;
 
   return (
     <motion.div
@@ -63,14 +64,18 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
             <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
             <span>{event.date}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-primary flex-shrink-0" />
-            <span>{event.time}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="truncate">{event.location}</span>
-          </div>
+          {event.time && (
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+              <span>{event.time}</span>
+            </div>
+          )}
+          {event.location && (
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="truncate">{event.location}</span>
+            </div>
+          )}
         </div>
 
         <p className="font-serif text-muted-foreground leading-relaxed mb-6 flex-1 text-sm md:text-base line-clamp-3">
@@ -78,24 +83,32 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
         </p>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
-              <span className={isAlmostFull ? "text-destructive font-medium" : ""}>
-                {isAlmostFull ? `Only ${event.spotsLeft} spots left!` : `${event.spotsLeft} of ${event.totalSpots} spots available`}
-              </span>
-            </div>
-            <span className="font-medium text-foreground">
+          {event.totalSpots > 0 && (
+            <>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  <span className={isAlmostFull ? "text-destructive font-medium" : ""}>
+                    {isAlmostFull ? `Only ${event.spotsLeft} spots left!` : `${event.spotsLeft} of ${event.totalSpots} spots available`}
+                  </span>
+                </div>
+                <span className="font-medium text-foreground">
+                  {event.price === "Free" ? "Free" : `$${event.price}`}
+                </span>
+              </div>
+              <div className="h-1 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${isAlmostFull ? "bg-destructive" : "bg-primary"}`}
+                  style={{ width: `${100 - spotsPercent}%` }}
+                />
+              </div>
+            </>
+          )}
+          {event.totalSpots === 0 && (
+            <div className="flex justify-end text-xs font-medium text-foreground">
               {event.price === "Free" ? "Free" : `$${event.price}`}
-            </span>
-          </div>
-
-          <div className="h-1 bg-muted rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${isAlmostFull ? "bg-destructive" : "bg-primary"}`}
-              style={{ width: `${100 - spotsPercent}%` }}
-            />
-          </div>
+            </div>
+          )}
 
           <Button
             className="w-full h-11 rounded-none group/btn bg-foreground text-background hover:bg-primary transition-colors"
@@ -204,12 +217,14 @@ function RegisterSheet({
                   <p className="font-serif text-lg">{event.title}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5 text-primary" />
-                    <span>{event.date} · {event.time}</span>
+                    <span>{event.date}{event.time ? ` · ${event.time}` : ""}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-3.5 h-3.5 text-primary" />
-                    <span>{event.location}</span>
-                  </div>
+                  {event.location && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
+                      <span>{event.location}</span>
+                    </div>
+                  )}
                   <p className="text-sm font-medium mt-1">
                     {event.price === "Free" ? "Free admission" : `$${event.price} per person`}
                   </p>
@@ -263,11 +278,13 @@ function RegisterSheet({
 }
 
 export default function Events() {
+  const { events, loading, error } = useEvents();
   const [activeCategory, setActiveCategory] = useState<EventCategory>("All");
   const [selectedEvent, setSelectedEvent] = useState<BougieBamsEvent | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const filtered = activeCategory === "All" ? events : events.filter(e => e.category === activeCategory);
+  const filtered =
+    activeCategory === "All" ? events : events.filter(e => e.category === activeCategory);
 
   const handleRegister = (event: BougieBamsEvent) => {
     setSelectedEvent(event);
@@ -312,20 +329,42 @@ export default function Events() {
           ))}
         </div>
 
-        {/* Events Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filtered.map(event => (
-            <EventCard key={event.id} event={event} onRegister={handleRegister} />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-24">
-            <p className="font-serif text-2xl text-muted-foreground">
-              No {activeCategory} events scheduled right now.
-            </p>
-            <p className="text-muted-foreground mt-2">Check back soon — we're always planning something new.</p>
+        {/* Loading */}
+        {loading && (
+          <div className="flex justify-center py-24">
+            <RefreshCw className="w-6 h-6 text-primary animate-spin" />
           </div>
+        )}
+
+        {/* Error */}
+        {!loading && error && (
+          <div className="text-center py-24">
+            <p className="font-serif text-xl text-muted-foreground">{error}</p>
+          </div>
+        )}
+
+        {/* Events Grid */}
+        {!loading && !error && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filtered.map(event => (
+                <EventCard key={event.id} event={event} onRegister={handleRegister} />
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <div className="text-center py-24">
+                <p className="font-serif text-2xl text-muted-foreground">
+                  {activeCategory === "All"
+                    ? "No events scheduled right now."
+                    : `No ${activeCategory} events scheduled right now.`}
+                </p>
+                <p className="text-muted-foreground mt-2">
+                  Check back soon — we're always planning something new.
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Private Events CTA */}
