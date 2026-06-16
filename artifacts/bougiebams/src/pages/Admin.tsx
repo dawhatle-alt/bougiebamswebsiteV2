@@ -131,6 +131,7 @@ export default function Admin() {
     sessionStorage.removeItem(STORAGE_KEY);
     setToken(null);
     setSubscribers([]);
+    window.location.href = "/";
   }
 
   function handleExport() {
