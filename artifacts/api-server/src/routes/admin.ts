@@ -88,17 +88,27 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
 }
 
 router.post("/admin/auth/login", async (req, res): Promise<void> => {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    res.status(503).json({ error: "Admin is not configured on this server" });
+    return;
+  }
   const parsed = AdminLoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "bougiebams2024";
   if (parsed.data.password !== adminPassword) {
     res.status(401).json({ error: "Invalid password" });
     return;
   }
-  const token = signAdminToken();
+  let token: string;
+  try {
+    token = signAdminToken();
+  } catch {
+    res.status(503).json({ error: "Admin signing key is not configured" });
+    return;
+  }
   res.json({ token });
 });
 
@@ -319,7 +329,7 @@ router.post("/admin/storage/upload-url", requireAdmin, async (req, res): Promise
   });
 });
 
-router.put("/admin/storage/upload/:filename", rawBodyMiddleware, async (req, res): Promise<void> => {
+router.put("/admin/storage/upload/:filename", requireAdmin, rawBodyMiddleware, async (req, res): Promise<void> => {
   const { filename } = req.params;
   if (!filename || !/^[\w-]+\.\w+$/.test(filename)) {
     res.status(400).json({ error: "Invalid filename" });

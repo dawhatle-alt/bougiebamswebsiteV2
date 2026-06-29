@@ -1,19 +1,17 @@
 import crypto from "crypto";
 import { type Request, type Response, type NextFunction } from "express";
+import { logger } from "../lib/logger";
 
 const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-function getAdminSecret(): string {
-  return (
-    process.env.ADMIN_SECRET ??
-    process.env.ADMIN_PASSWORD ??
-    "bougiebams2024"
-  );
+function getAdminSecret(): string | null {
+  return process.env.ADMIN_SECRET ?? process.env.ADMIN_PASSWORD ?? null;
 }
 
 export function signAdminToken(): string {
-  const payload = `bougiebams:${Date.now()}`;
   const secret = getAdminSecret();
+  if (!secret) throw new Error("ADMIN_SECRET or ADMIN_PASSWORD env var is not set");
+  const payload = `bougiebams:${Date.now()}`;
   const hmac = crypto
     .createHmac("sha256", secret)
     .update(payload)
@@ -21,7 +19,18 @@ export function signAdminToken(): string {
   return Buffer.from(`${payload}:${hmac}`).toString("base64");
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+export function requireAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const secret = getAdminSecret();
+  if (!secret) {
+    logger.warn("Admin auth not configured: ADMIN_SECRET/ADMIN_PASSWORD env var missing");
+    res.status(503).json({ error: "Admin is not configured on this server" });
+    return;
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
@@ -45,7 +54,6 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     const payload = decoded.slice(0, lastColon);
     const providedHmac = decoded.slice(lastColon + 1);
 
-    const secret = getAdminSecret();
     const expectedHmac = crypto
       .createHmac("sha256", secret)
       .update(payload)

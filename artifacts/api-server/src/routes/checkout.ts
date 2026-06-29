@@ -6,12 +6,12 @@ const router: IRouter = Router();
 const CheckoutBody = z.object({
   items: z.array(
     z.object({
-      id: z.string(),
+      variationId: z.string(),
       name: z.string(),
-      price: z.number(),
+      price: z.number().positive(),
       quantity: z.number().int().positive(),
     }),
-  ),
+  ).min(1),
   email: z.string().email().optional(),
   discountCode: z.string().optional(),
 });
@@ -19,7 +19,7 @@ const CheckoutBody = z.object({
 router.post("/checkout", async (req, res): Promise<void> => {
   const parsed = CheckoutBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid checkout request" });
+    res.status(400).json({ error: "Invalid checkout request: " + parsed.error.issues[0]?.message });
     return;
   }
 
@@ -27,45 +27,52 @@ router.post("/checkout", async (req, res): Promise<void> => {
   if (!stripeKey) {
     res.status(503).json({
       error:
-        "Checkout is not yet configured. Please contact us directly at hello@bougiebams.com to place an order.",
+        "Online checkout is not yet available. Please contact us at hello@bougiebams.com to place your order.",
     });
     return;
   }
 
   try {
-    const { default: Stripe } = await import("stripe");
+    const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
+
+    const origin =
+      (req.headers["x-forwarded-proto"] ?? "https") +
+      "://" +
+      (req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost");
 
     const lineItems = parsed.data.items.map((item) => ({
       price_data: {
         currency: "usd",
-        product_data: { name: item.name },
+        product_data: {
+          name: item.name,
+          metadata: { variationId: item.variationId },
+        },
         unit_amount: Math.round(item.price * 100),
       },
       quantity: item.quantity,
     }));
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
       mode: "payment",
       line_items: lineItems,
-      customer_email: parsed.data.email,
-      success_url: `${req.headers["x-forwarded-proto"] ?? "https"}://${req.headers["x-forwarded-host"] ?? req.headers.host}/?checkout=success`,
-      cancel_url: `${req.headers["x-forwarded-proto"] ?? "https"}://${req.headers["x-forwarded-host"] ?? req.headers.host}/?checkout=cancelled`,
-      ...(parsed.data.discountCode
-        ? {
-            discounts: [
-              {
-                coupon: parsed.data.discountCode,
-              },
-            ],
-          }
-        : {}),
-    });
+      success_url: `${origin}/?checkout=success`,
+      cancel_url: `${origin}/?checkout=cancelled`,
+    };
 
+    if (parsed.data.email) {
+      sessionParams.customer_email = parsed.data.email;
+    }
+
+    if (parsed.data.discountCode) {
+      sessionParams.discounts = [{ coupon: parsed.data.discountCode }];
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
     res.json({ url: session.url });
   } catch (err) {
     console.error("Stripe checkout error", err);
-    res.status(500).json({ error: "Could not create checkout session" });
+    res.status(500).json({ error: "Could not create checkout session. Please try again." });
   }
 });
 

@@ -10,6 +10,7 @@ import adminRouter from "./admin";
 import storageRouter from "./storage";
 import authRouter from "./auth";
 import checkoutRouter from "./checkout";
+import emailRouter from "./email";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(contactRouter);
 router.use(adminRouter);
 router.use(storageRouter);
 router.use(checkoutRouter);
+router.use(emailRouter);
 
 export default router;

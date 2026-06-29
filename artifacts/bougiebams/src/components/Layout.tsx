@@ -62,6 +62,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           items: items.map((item) => ({
             variationId: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
             quantity: item.quantity,
           })),
           discountCode: discountCode.trim() || undefined,
