@@ -37,10 +37,10 @@ const leftLinks: NavItem[] = [
       { href: "/learn", label: "Learn to Play" },
     ],
   },
+  { id: "events", href: "/events", name: "Events" },
 ];
 
 const rightLinks: NavItem[] = [
-  { id: "events", href: "/events", name: "Events" },
   { id: "favorites", href: "/favorites", name: "Favorites" },
   { id: "blog", href: "/blog", name: "Journal" },
   { id: "contact", href: "/contact", name: "Contact" },
@@ -681,8 +681,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/learn" className="font-sans text-base text-muted-foreground hover:text-primary transition-colors">Learn to Play</Link>
             </div>
             <Link href="/events" className="font-serif text-3xl hover:text-primary transition-colors">Events</Link>
-            <Link href="/favorites" className="font-serif text-3xl hover:text-primary transition-colors">Favorites</Link>
             <Link href="/blog" className="font-serif text-3xl hover:text-primary transition-colors">Journal</Link>
+            <Link href="/favorites" className="font-serif text-3xl hover:text-primary transition-colors">Favorites</Link>
             <Link href="/contact" className="font-serif text-3xl hover:text-primary transition-colors">Contact</Link>
             {isAuthenticated ? (
               <>
