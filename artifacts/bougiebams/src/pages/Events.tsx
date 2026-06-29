@@ -460,7 +460,7 @@ function RegisterSheet({
               </div>
               <Button
                 className="w-full h-12 rounded-none bg-foreground text-background hover:bg-primary"
-                onClick={() => { window.location.href = `${apiBase}/api/auth/login`; }}
+                onClick={() => { window.location.href = `${apiBase}/api/login?returnTo=${encodeURIComponent(window.location.pathname)}`; }}
               >
                 Sign in with Replit
               </Button>

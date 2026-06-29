@@ -42,6 +42,13 @@ router.post("/registrations", async (req, res): Promise<void> => {
     return;
   }
 
+  if (event.priceCents !== null && event.priceCents > 0) {
+    res.status(400).json({
+      error: "This is a paid event. Use POST /registrations/checkout to register.",
+    });
+    return;
+  }
+
   const [reg] = await db
     .insert(registrationsTable)
     .values({
