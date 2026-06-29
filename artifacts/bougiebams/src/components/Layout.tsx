@@ -315,7 +315,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <header
           className="relative w-full bg-background border-b border-border/40 py-4 shadow-sm"
         >
-          <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
+          <div className="container mx-auto px-4 md:px-8 relative flex items-center">
             <button
               className="md:hidden p-2 -ml-2 text-foreground"
               onClick={() => setMobileMenuOpen(true)}
@@ -325,17 +325,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* Left nav */}
-            <nav className="hidden md:flex items-center gap-1 flex-1">
+            <nav className="hidden md:flex items-center gap-1">
               {leftLinks.map(link => renderNavLink(link))}
             </nav>
 
-            {/* Logo */}
-            <Link href="/" className="flex-shrink-0 text-center mx-auto md:mx-0">
+            {/* Logo — absolutely centered in the header regardless of side widths */}
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
               <img src={logoUrl} alt="BougieBams" className="h-16 md:h-20 w-auto object-contain" />
             </Link>
 
             {/* Right nav + icons */}
-            <div className="flex items-center justify-end gap-4 flex-1">
+            <div className="ml-auto flex items-center gap-4">
               <nav className="hidden md:flex items-center gap-1">
                 {rightLinks.map(link => renderNavLink(link))}
               </nav>
