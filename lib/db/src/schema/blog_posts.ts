@@ -11,7 +11,9 @@ export const blogPostsTable = pgTable("blog_posts", {
   category: text("category").notNull().default("Style"),
   author: text("author").notNull().default("BougieBams"),
   imagePath: text("image_path"),
+  coverImage: text("cover_image"),
   published: boolean("published").notNull().default(false),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

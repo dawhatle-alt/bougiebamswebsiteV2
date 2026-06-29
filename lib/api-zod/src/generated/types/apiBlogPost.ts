@@ -16,7 +16,11 @@ export interface ApiBlogPost {
   author: string;
   /** @nullable */
   imagePath?: string | null;
+  /** @nullable */
+  coverImage?: string | null;
   published: boolean;
+  /** @nullable */
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

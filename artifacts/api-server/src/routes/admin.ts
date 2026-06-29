@@ -277,13 +277,10 @@ router.put("/admin/product-images/:sku", requireAdmin, async (req, res): Promise
     res.status(400).json({ error: "imagePath is required" });
     return;
   }
+  await db.delete(productImagesTable).where(eq(productImagesTable.sku, sku));
   const [row] = await db
     .insert(productImagesTable)
-    .values({ sku, imagePath })
-    .onConflictDoUpdate({
-      target: productImagesTable.sku,
-      set: { imagePath, updatedAt: new Date() },
-    })
+    .values({ productId: sku, sku, url: imagePath, imagePath })
     .returning();
   res.json({ sku: row.sku, imagePath: row.imagePath });
 });

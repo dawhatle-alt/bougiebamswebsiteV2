@@ -52,7 +52,9 @@ import type {
   SubscribeInput,
   SubscribeResult,
   SubscriberListResponse,
-  UploadFile200
+  UploadFile200,
+  ValidateCoupon200,
+  ValidateCouponParams
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1717,6 +1719,90 @@ export const useDeleteBlogPost = <TError = ErrorType<void>,
       return useMutation(getDeleteBlogPostMutationOptions(options));
     }
 
+export const getValidateCouponUrl = (params: ValidateCouponParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/coupons/validate?${stringifiedParams}` : `/api/coupons/validate`
+}
+
+/**
+ * @summary Validate a discount coupon code
+ */
+export const validateCoupon = async (params: ValidateCouponParams, options?: RequestInit): Promise<ValidateCoupon200> => {
+
+  return customFetch<ValidateCoupon200>(getValidateCouponUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getValidateCouponQueryKey = (params?: ValidateCouponParams,) => {
+    return [
+    `/api/coupons/validate`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getValidateCouponQueryOptions = <TData = Awaited<ReturnType<typeof validateCoupon>>, TError = ErrorType<void>>(params: ValidateCouponParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof validateCoupon>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getValidateCouponQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof validateCoupon>>> = ({ signal }) => validateCoupon(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof validateCoupon>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ValidateCouponQueryResult = NonNullable<Awaited<ReturnType<typeof validateCoupon>>>
+export type ValidateCouponQueryError = ErrorType<void>
+
+
+/**
+ * @summary Validate a discount coupon code
+ */
+
+export function useValidateCoupon<TData = Awaited<ReturnType<typeof validateCoupon>>, TError = ErrorType<void>>(
+ params: ValidateCouponParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof validateCoupon>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getValidateCouponQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getSubscribeUrl = () => {
 
 
@@ -2016,7 +2102,7 @@ export const getInitiateLoginUrl = () => {
 
 
 
-  return `/api/auth/login`
+  return `/api/login`
 }
 
 /**
@@ -2039,7 +2125,7 @@ export const initiateLogin = async ( options?: RequestInit): Promise<unknown> =>
 
 export const getInitiateLoginQueryKey = () => {
     return [
-    `/api/auth/login`
+    `/api/login`
     ] as const;
     }
 
@@ -2093,7 +2179,7 @@ export const getOidcCallbackUrl = () => {
 
 
 
-  return `/api/auth/callback`
+  return `/api/callback`
 }
 
 /**
@@ -2116,7 +2202,7 @@ export const oidcCallback = async ( options?: RequestInit): Promise<unknown> => 
 
 export const getOidcCallbackQueryKey = () => {
     return [
-    `/api/auth/callback`
+    `/api/callback`
     ] as const;
     }
 
@@ -2170,7 +2256,7 @@ export const getLogoutUrl = () => {
 
 
 
-  return `/api/auth/logout`
+  return `/api/logout`
 }
 
 /**
@@ -2193,7 +2279,7 @@ export const logout = async ( options?: RequestInit): Promise<unknown> => {
 
 export const getLogoutQueryKey = () => {
     return [
-    `/api/auth/logout`
+    `/api/logout`
     ] as const;
     }
 
@@ -2265,7 +2351,7 @@ export const getUploadUrl = async (params?: GetUploadUrlParams, options?: Reques
   return customFetch<GetUploadUrl200>(getGetUploadUrlUrl(params),
   {
     ...options,
-    method: 'GET'
+    method: 'POST'
 
 
   }
@@ -2274,57 +2360,50 @@ export const getUploadUrl = async (params?: GetUploadUrlParams, options?: Reques
 
 
 
+export const getGetUploadUrlMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError,{params?: GetUploadUrlParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError,{params?: GetUploadUrlParams}, TContext> => {
 
-export const getGetUploadUrlQueryKey = (params?: GetUploadUrlParams,) => {
-    return [
-    `/api/admin/storage/upload-url`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetUploadUrlQueryOptions = <TData = Awaited<ReturnType<typeof getUploadUrl>>, TError = ErrorType<void>>(params?: GetUploadUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetUploadUrlQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUploadUrl>>> = ({ signal }) => getUploadUrl(params, { signal, ...requestOptions });
+const mutationKey = ['getUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getUploadUrl>>, {params?: GetUploadUrlParams}> = (props) => {
+          const {params} = props ?? {};
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetUploadUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getUploadUrl>>>
-export type GetUploadUrlQueryError = ErrorType<void>
+          return  getUploadUrl(params,requestOptions)
+        }
 
 
-/**
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof getUploadUrl>>>
+
+    export type GetUploadUrlMutationError = ErrorType<void>
+
+    /**
  * @summary Get a presigned upload URL for a file (admin)
  */
-
-export function useGetUploadUrl<TData = Awaited<ReturnType<typeof getUploadUrl>>, TError = ErrorType<void>>(
- params?: GetUploadUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetUploadUrlQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
+export const useGetUploadUrl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError,{params?: GetUploadUrlParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getUploadUrl>>,
+        TError,
+        {params?: GetUploadUrlParams},
+        TContext
+      > => {
+      return useMutation(getGetUploadUrlMutationOptions(options));
+    }
 
 export const getUploadFileUrl = (filename: string,) => {
 

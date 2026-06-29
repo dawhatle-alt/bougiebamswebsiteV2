@@ -23,4 +23,7 @@ export interface ApiEvent {
   spotsLeft: number;
   host: string;
   published: boolean;
+  featured: boolean;
+  /** @nullable */
+  stripeProductId?: string | null;
 }

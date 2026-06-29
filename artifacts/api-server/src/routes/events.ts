@@ -31,15 +31,20 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
     spotsLeft: row.spotsLeft,
     host: row.host,
     published: row.published,
+    featured: row.featured,
+    stripeProductId: row.stripeProductId ?? null,
   };
 }
 
 router.get("/events", async (req, res): Promise<void> => {
-  const { category, upcoming } = req.query;
+  const { category, upcoming, featured } = req.query;
   const conditions: SQL[] = [eq(eventsTable.published, true)];
 
   if (category && typeof category === "string") {
     conditions.push(eq(eventsTable.category, category));
+  }
+  if (featured === "true") {
+    conditions.push(eq(eventsTable.featured, true));
   }
   if (upcoming === "true") {
     const today = new Date().toISOString().slice(0, 10);

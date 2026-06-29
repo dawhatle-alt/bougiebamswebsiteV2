@@ -33,7 +33,9 @@ export const ListProductsResponse = zod.object({
   "price": zod.number(),
   "category": zod.string(),
   "inStock": zod.boolean(),
-  "imagePath": zod.string().nullish()
+  "imagePath": zod.string().nullish(),
+  "featured": zod.boolean(),
+  "affiliateUrl": zod.string().nullish()
 }))
 })
 
@@ -59,7 +61,9 @@ export const CreateProductResponse = zod.object({
   "price": zod.number(),
   "category": zod.string(),
   "inStock": zod.boolean(),
-  "imagePath": zod.string().nullish()
+  "imagePath": zod.string().nullish(),
+  "featured": zod.boolean(),
+  "affiliateUrl": zod.string().nullish()
 })
 })
 
@@ -76,7 +80,9 @@ export const ListFeaturedProductsResponse = zod.object({
   "price": zod.number(),
   "category": zod.string(),
   "inStock": zod.boolean(),
-  "imagePath": zod.string().nullish()
+  "imagePath": zod.string().nullish(),
+  "featured": zod.boolean(),
+  "affiliateUrl": zod.string().nullish()
 }))
 })
 
@@ -97,7 +103,9 @@ export const GetProductResponse = zod.object({
   "price": zod.number(),
   "category": zod.string(),
   "inStock": zod.boolean(),
-  "imagePath": zod.string().nullish()
+  "imagePath": zod.string().nullish(),
+  "featured": zod.boolean(),
+  "affiliateUrl": zod.string().nullish()
 })
 })
 
@@ -126,7 +134,9 @@ export const UpdateProductResponse = zod.object({
   "price": zod.number(),
   "category": zod.string(),
   "inStock": zod.boolean(),
-  "imagePath": zod.string().nullish()
+  "imagePath": zod.string().nullish(),
+  "featured": zod.boolean(),
+  "affiliateUrl": zod.string().nullish()
 })
 })
 
@@ -146,7 +156,8 @@ export const DeleteProductResponse = zod.void()
  */
 export const ListEventsQueryParams = zod.object({
   "category": zod.coerce.string().optional().describe('Filter by category (In-Person, Virtual, Tournament, Workshop)'),
-  "upcoming": zod.coerce.boolean().optional().describe('When true, return only events on or after today')
+  "upcoming": zod.coerce.boolean().optional().describe('When true, return only events on or after today'),
+  "featured": zod.coerce.boolean().optional().describe('When true, return only featured events')
 })
 
 export const ListEventsResponse = zod.object({
@@ -163,7 +174,9 @@ export const ListEventsResponse = zod.object({
   "totalSpots": zod.number(),
   "spotsLeft": zod.number(),
   "host": zod.string(),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "featured": zod.boolean(),
+  "stripeProductId": zod.string().nullish()
 }))
 })
 
@@ -199,7 +212,9 @@ export const CreateEventResponse = zod.object({
   "totalSpots": zod.number(),
   "spotsLeft": zod.number(),
   "host": zod.string(),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "featured": zod.boolean(),
+  "stripeProductId": zod.string().nullish()
 })
 })
 
@@ -236,7 +251,9 @@ export const GetEventResponse = zod.object({
   "totalSpots": zod.number(),
   "spotsLeft": zod.number(),
   "host": zod.string(),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "featured": zod.boolean(),
+  "stripeProductId": zod.string().nullish()
 })
 })
 
@@ -276,7 +293,9 @@ export const UpdateEventResponse = zod.object({
   "totalSpots": zod.number(),
   "spotsLeft": zod.number(),
   "host": zod.string(),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "featured": zod.boolean(),
+  "stripeProductId": zod.string().nullish()
 })
 })
 
@@ -378,7 +397,9 @@ export const ListBlogPostsResponse = zod.object({
   "category": zod.string(),
   "author": zod.string(),
   "imagePath": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
   "published": zod.boolean(),
+  "publishedAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }))
@@ -408,7 +429,9 @@ export const CreateBlogPostResponse = zod.object({
   "category": zod.string(),
   "author": zod.string(),
   "imagePath": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
   "published": zod.boolean(),
+  "publishedAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -432,7 +455,9 @@ export const GetBlogPostResponse = zod.object({
   "category": zod.string(),
   "author": zod.string(),
   "imagePath": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
   "published": zod.boolean(),
+  "publishedAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -465,7 +490,9 @@ export const UpdateBlogPostResponse = zod.object({
   "category": zod.string(),
   "author": zod.string(),
   "imagePath": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
   "published": zod.boolean(),
+  "publishedAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -483,10 +510,25 @@ export const DeleteBlogPostResponse = zod.void()
 
 
 /**
+ * @summary Validate a discount coupon code
+ */
+export const ValidateCouponQueryParams = zod.object({
+  "code": zod.coerce.string().describe('Coupon code to validate')
+})
+
+export const ValidateCouponResponse = zod.object({
+  "valid": zod.boolean(),
+  "discountPercent": zod.number(),
+  "message": zod.string().optional()
+})
+
+
+/**
  * @summary Subscribe to the mailing list
  */
 export const SubscribeBody = zod.object({
   "email": zod.string().email(),
+  "name": zod.string().optional(),
   "source": zod.string().optional(),
   "discountCode": zod.string().optional()
 })
@@ -504,8 +546,10 @@ export const ListSubscribersResponse = zod.object({
   "subscribers": zod.array(zod.object({
   "id": zod.number(),
   "email": zod.string(),
+  "name": zod.string().nullish(),
   "source": zod.string().nullish(),
   "discountCode": zod.string().nullish(),
+  "subscribedAt": zod.string().nullish(),
   "createdAt": zod.string()
 }))
 })

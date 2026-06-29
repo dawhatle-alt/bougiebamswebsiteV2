@@ -32,12 +32,17 @@ router.get("/products", async (req, res): Promise<void> => {
     category: r.category,
     inStock: r.inStock,
     imagePath: r.imagePath ?? null,
+    featured: r.featured,
+    affiliateUrl: r.affiliateUrl ?? null,
   }));
   res.json(ListProductsResponse.parse({ products }));
 });
 
 router.get("/products/featured", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(productsTable).orderBy(productsTable.createdAt);
+  const { eq: eqFn } = await import("drizzle-orm");
+  const rows = await db.select().from(productsTable)
+    .where(eqFn(productsTable.featured, true))
+    .orderBy(productsTable.createdAt);
   const products = rows.map((r) => ({
     id: r.id,
     sku: r.sku,
@@ -47,6 +52,8 @@ router.get("/products/featured", async (_req, res): Promise<void> => {
     category: r.category,
     inStock: r.inStock,
     imagePath: r.imagePath ?? null,
+    featured: r.featured,
+    affiliateUrl: r.affiliateUrl ?? null,
   }));
   res.json(ListProductsResponse.parse({ products }));
 });

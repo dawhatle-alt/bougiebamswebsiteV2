@@ -16,4 +16,7 @@ export interface ApiProduct {
   inStock: boolean;
   /** @nullable */
   imagePath?: string | null;
+  featured: boolean;
+  /** @nullable */
+  affiliateUrl?: string | null;
 }

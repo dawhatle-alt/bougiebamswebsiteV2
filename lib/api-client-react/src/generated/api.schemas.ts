@@ -19,6 +19,9 @@ export interface ApiProduct {
   inStock: boolean;
   /** @nullable */
   imagePath?: string | null;
+  featured: boolean;
+  /** @nullable */
+  affiliateUrl?: string | null;
 }
 
 export interface ProductInput {
@@ -72,6 +75,9 @@ export interface ApiEvent {
   spotsLeft: number;
   host: string;
   published: boolean;
+  featured: boolean;
+  /** @nullable */
+  stripeProductId?: string | null;
 }
 
 export type EventInputCategory = typeof EventInputCategory[keyof typeof EventInputCategory];
@@ -180,7 +186,11 @@ export interface ApiBlogPost {
   author: string;
   /** @nullable */
   imagePath?: string | null;
+  /** @nullable */
+  coverImage?: string | null;
   published: boolean;
+  /** @nullable */
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -214,6 +224,7 @@ export interface BlogPostResponse {
 
 export interface SubscribeInput {
   email: string;
+  name?: string;
   source?: string;
   discountCode?: string;
 }
@@ -228,9 +239,13 @@ export interface Subscriber {
   id: number;
   email: string;
   /** @nullable */
+  name?: string | null;
+  /** @nullable */
   source?: string | null;
   /** @nullable */
   discountCode?: string | null;
+  /** @nullable */
+  subscribedAt?: string | null;
   createdAt: string;
 }
 
@@ -298,6 +313,10 @@ category?: string;
  * When true, return only events on or after today
  */
 upcoming?: boolean;
+/**
+ * When true, return only featured events
+ */
+featured?: boolean;
 };
 
 export type CreateRegistrationCheckout200 = {
@@ -310,6 +329,19 @@ export type ListMyRegistrations200 = {
 
 export type GetRegistration200 = {
   registration: RegistrationRecord;
+};
+
+export type ValidateCouponParams = {
+/**
+ * Coupon code to validate
+ */
+code: string;
+};
+
+export type ValidateCoupon200 = {
+  valid: boolean;
+  discountPercent: number;
+  message?: string;
 };
 
 export type GetCurrentUser200 = {

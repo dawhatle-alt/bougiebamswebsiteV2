@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SubscribeInput {
-  email: string;
-  name?: string;
-  source?: string;
-  discountCode?: string;
-}
+export type ValidateCoupon200 = {
+  valid: boolean;
+  discountPercent: number;
+  message?: string;
+};

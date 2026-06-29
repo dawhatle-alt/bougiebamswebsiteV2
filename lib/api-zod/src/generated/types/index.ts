@@ -50,3 +50,5 @@ export * from './subscriber';
 export * from './subscribeResult';
 export * from './subscriberListResponse';
 export * from './uploadFile200';
+export * from './validateCoupon200';
+export * from './validateCouponParams';

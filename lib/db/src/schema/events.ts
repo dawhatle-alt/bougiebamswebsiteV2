@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -16,6 +16,8 @@ export const eventsTable = pgTable("events", {
   spotsLeft: integer("spots_left").notNull().default(20),
   host: text("host").notNull().default("BougieBams"),
   published: boolean("published").notNull().default(false),
+  featured: boolean("featured").notNull().default(false),
+  stripeProductId: text("stripe_product_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

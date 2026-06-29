@@ -12,6 +12,7 @@ import authRouter from "./auth";
 import checkoutRouter from "./checkout";
 import emailRouter from "./email";
 import stripeRouter from "./stripe";
+import couponsRouter from "./coupons";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(storageRouter);
 router.use(checkoutRouter);
 router.use(emailRouter);
 router.use(stripeRouter);
+router.use(couponsRouter);
 
 export default router;

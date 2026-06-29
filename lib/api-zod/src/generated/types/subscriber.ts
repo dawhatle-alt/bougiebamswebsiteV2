@@ -10,8 +10,12 @@ export interface Subscriber {
   id: number;
   email: string;
   /** @nullable */
+  name?: string | null;
+  /** @nullable */
   source?: string | null;
   /** @nullable */
   discountCode?: string | null;
+  /** @nullable */
+  subscribedAt?: string | null;
   createdAt: string;
 }

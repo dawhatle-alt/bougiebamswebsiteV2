@@ -25,7 +25,9 @@ function toApiPost(row: typeof blogPostsTable.$inferSelect) {
     category: row.category,
     author: row.author,
     imagePath: row.imagePath ?? null,
+    coverImage: row.coverImage ?? null,
     published: row.published,
+    publishedAt: row.publishedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

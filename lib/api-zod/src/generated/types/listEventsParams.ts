@@ -15,4 +15,8 @@ category?: string;
  * When true, return only events on or after today
  */
 upcoming?: boolean;
+/**
+ * When true, return only featured events
+ */
+featured?: boolean;
 };

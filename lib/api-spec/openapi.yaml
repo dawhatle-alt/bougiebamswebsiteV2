@@ -179,6 +179,11 @@ paths:
           description: When true, return only events on or after today
           schema:
             type: boolean
+        - name: featured
+          in: query
+          description: When true, return only featured events
+          schema:
+            type: boolean
       responses:
         "200":
           description: Events list
@@ -494,6 +499,37 @@ paths:
         "401":
           description: Unauthorized
 
+  # ── Coupons ───────────────────────────────────────────────────────────────
+  /coupons/validate:
+    get:
+      operationId: validateCoupon
+      tags: [subscribers]
+      summary: Validate a discount coupon code
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: Coupon code to validate
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Coupon is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid, discountPercent]
+                properties:
+                  valid:
+                    type: boolean
+                  discountPercent:
+                    type: number
+                  message:
+                    type: string
+        "404":
+          description: Coupon not found or invalid
+
   # ── Subscribers ──────────────────────────────────────────────────────────
   /subscribe:
     post:
@@ -572,7 +608,7 @@ paths:
                       - $ref: "#/components/schemas/ApiUser"
                       - type: "null"
 
-  /auth/login:
+  /login:
     get:
       operationId: initiateLogin
       tags: [auth]
@@ -581,7 +617,7 @@ paths:
         "302":
           description: Redirect to Replit OIDC
 
-  /auth/callback:
+  /callback:
     get:
       operationId: oidcCallback
       tags: [auth]
@@ -590,7 +626,7 @@ paths:
         "302":
           description: Redirect to app after successful login
 
-  /auth/logout:
+  /logout:
     get:
       operationId: logout
       tags: [auth]
@@ -601,7 +637,7 @@ paths:
 
   # ── Storage ───────────────────────────────────────────────────────────────
   /admin/storage/upload-url:
-    get:
+    post:
       operationId: getUploadUrl
       tags: [admin]
       summary: Get a presigned upload URL for a file (admin)
@@ -746,7 +782,7 @@ components:
     # ── Product schemas ──────────────────────────────────────────────────
     ApiProduct:
       type: object
-      required: [id, sku, name, description, price, category, inStock]
+      required: [id, sku, name, description, price, category, inStock, featured]
       properties:
         id:
           type: string
@@ -763,6 +799,10 @@ components:
         inStock:
           type: boolean
         imagePath:
+          type: ["string", "null"]
+        featured:
+          type: boolean
+        affiliateUrl:
           type: ["string", "null"]
 
     ProductInput:
@@ -815,7 +855,7 @@ components:
     # ── Event schemas ────────────────────────────────────────────────────
     ApiEvent:
       type: object
-      required: [id, title, description, date, time, location, category, totalSpots, spotsLeft, host, published]
+      required: [id, title, description, date, time, location, category, totalSpots, spotsLeft, host, published, featured]
       properties:
         id:
           type: integer
@@ -844,6 +884,10 @@ components:
           type: string
         published:
           type: boolean
+        featured:
+          type: boolean
+        stripeProductId:
+          type: ["string", "null"]
 
     EventInput:
       type: object
@@ -992,8 +1036,12 @@ components:
           type: string
         imagePath:
           type: ["string", "null"]
+        coverImage:
+          type: ["string", "null"]
         published:
           type: boolean
+        publishedAt:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -1058,6 +1106,8 @@ components:
         email:
           type: string
           format: email
+        name:
+          type: string
         source:
           type: string
         discountCode:
@@ -1080,9 +1130,13 @@ components:
           type: integer
         email:
           type: string
+        name:
+          type: ["string", "null"]
         source:
           type: ["string", "null"]
         discountCode:
+          type: ["string", "null"]
+        subscribedAt:
           type: ["string", "null"]
         createdAt:
           type: string
