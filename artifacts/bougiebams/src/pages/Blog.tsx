@@ -5,8 +5,7 @@ import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
 import { blogImageUrl, formatBlogDate } from "@/data/blog";
 
-const CATEGORIES = [
-  "All",
+const PREFERRED_CATEGORY_ORDER = [
   "Style",
   "How to Play",
   "Entertaining",
@@ -17,6 +16,15 @@ const CATEGORIES = [
 export default function Blog() {
   const { posts, loading, error } = useBlogPosts();
   const [activeCategory, setActiveCategory] = useState("All");
+
+  const categories = useMemo(() => {
+    const inPosts = new Set(posts.map((p) => p.category));
+    const ordered = PREFERRED_CATEGORY_ORDER.filter((c) => inPosts.has(c));
+    const extra = [...inPosts].filter(
+      (c) => !PREFERRED_CATEGORY_ORDER.includes(c),
+    ).sort();
+    return ["All", ...ordered, ...extra];
+  }, [posts]);
 
   const filteredPosts = useMemo(
     () =>
@@ -42,7 +50,7 @@ export default function Blog() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-16 border-b border-border pb-4">
-          {CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}

@@ -221,7 +221,7 @@ The tiles are just the beginning. The magic is in how you hold the space.`,
 **Our recommendation?** If you're learning with friends who already play, match their version. If you're starting from scratch in a social setting, American Mahjong is typically easier to get into a rhythm with. Once you've got that foundation, Chinese variants open up a whole new dimension.
 
 At BougieBams, we teach both — but we always start with American.`,
-        category: "Education",
+        category: "How to Play",
         author: "BougieBams",
         published: true,
         publishedAt: new Date("2026-06-02T10:00:00Z"),
@@ -244,7 +244,7 @@ At BougieBams, we teach both — but we always start with American.`,
 **5. Ambiance accessories.** A candle, a low playlist, a well-set table. These aren't accessories for the game — they're accessories for the experience, and the experience is what makes people want to play again.
 
 Everything we carry in the BougieBams shop has been tested at our own events. Nothing makes the cut until we've played with it.`,
-        category: "Shopping",
+        category: "Gift Guides",
         author: "BougieBams",
         published: true,
         publishedAt: new Date("2026-06-18T10:00:00Z"),
@@ -263,7 +263,7 @@ At BougieBams, we started hosting events because we believed in this. We've watc
 The game is the container. The community is what grows inside it.
 
 If you've been looking for your people — come to a game night. Bring someone. The tiles will take care of the rest.`,
-        category: "Community",
+        category: "Behind the Brand",
         author: "BougieBams",
         published: true,
         publishedAt: new Date("2026-07-04T10:00:00Z"),
