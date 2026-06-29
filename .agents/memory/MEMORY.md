@@ -1,0 +1,1 @@
+- [BougieBams site fixes](bougiebams-site.md) — key integration patterns, image alias fix, API proxy, context interfaces for bougiebams site

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Bougie Bams Website V2"
+version = "1.0.0"
+id = "artifacts/bougiebams"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18560
+
+[services.development]
+run = "pnpm --filter @workspace/bougiebams run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bougiebams", "run", "build" ]
+publicDir = "artifacts/bougiebams/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18560"
+BASE_PATH = "/"
