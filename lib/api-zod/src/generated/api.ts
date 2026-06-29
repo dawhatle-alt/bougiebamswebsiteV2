@@ -557,6 +557,63 @@ export const LogoutResponse = zod.void()
 
 
 /**
+ * @summary Get a presigned upload URL for a file (admin)
+ */
+export const GetUploadUrlQueryParams = zod.object({
+  "ext": zod.coerce.string().optional().describe('File extension (e.g. jpg, png, webp)')
+})
+
+export const GetUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Upload a file to storage (admin)
+ */
+export const UploadFileParams = zod.object({
+  "filename": zod.coerce.string()
+})
+
+export const UploadFileResponse = zod.object({
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Serve an uploaded file
+ */
+export const GetStorageFileParams = zod.object({
+  "path": zod.coerce.string()
+})
+
+export const GetStorageFileResponse = zod.unknown()
+
+
+/**
+ * @summary Create a Stripe checkout session for product purchase
+ */
+
+
+
+export const CreateCheckoutBody = zod.object({
+  "items": zod.array(zod.object({
+  "variationId": zod.string(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "quantity": zod.number()
+})).min(1),
+  "email": zod.string().email().optional(),
+  "discountCode": zod.string().optional()
+})
+
+export const CreateCheckoutResponse = zod.object({
+  "url": zod.string().nullable()
+})
+
+
+/**
  * @summary Dashboard summary stats (admin)
  */
 export const GetAdminStatsResponse = zod.object({

@@ -91,7 +91,13 @@ router.get("/registrations/:id", requireAuth, async (req, res): Promise<void> =>
     return;
   }
 
-  if (reg.userId !== req.user!.id && !req.isAuthenticated()) {
+  const adminUserIds = process.env.ADMIN_USER_IDS
+    ?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const isAdmin =
+    adminUserIds && adminUserIds.length > 0 && adminUserIds.includes(req.user!.id);
+  if (reg.userId !== req.user!.id && !isAdmin) {
     res.status(403).json({ error: "Not authorized" });
     return;
   }

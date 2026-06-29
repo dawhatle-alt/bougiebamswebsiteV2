@@ -25,7 +25,9 @@ import type {
   BlogPostListResponse,
   BlogPostResponse,
   BlogPostUpdate,
+  CheckoutInput,
   ContactInput,
+  CreateCheckout200,
   CreateRegistrationCheckout200,
   EventInput,
   EventListResponse,
@@ -34,6 +36,8 @@ import type {
   EventUpdate,
   GetCurrentUser200,
   GetRegistration200,
+  GetUploadUrl200,
+  GetUploadUrlParams,
   HealthStatus,
   ListEventsParams,
   ListMyRegistrations200,
@@ -47,7 +51,8 @@ import type {
   RegistrationResult,
   SubscribeInput,
   SubscribeResult,
-  SubscriberListResponse
+  SubscriberListResponse,
+  UploadFile200
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -2236,6 +2241,308 @@ export function useLogout<TData = Awaited<ReturnType<typeof logout>>, TError = E
 
 
 
+
+export const getGetUploadUrlUrl = (params?: GetUploadUrlParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/storage/upload-url?${stringifiedParams}` : `/api/admin/storage/upload-url`
+}
+
+/**
+ * @summary Get a presigned upload URL for a file (admin)
+ */
+export const getUploadUrl = async (params?: GetUploadUrlParams, options?: RequestInit): Promise<GetUploadUrl200> => {
+
+  return customFetch<GetUploadUrl200>(getGetUploadUrlUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUploadUrlQueryKey = (params?: GetUploadUrlParams,) => {
+    return [
+    `/api/admin/storage/upload-url`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetUploadUrlQueryOptions = <TData = Awaited<ReturnType<typeof getUploadUrl>>, TError = ErrorType<void>>(params?: GetUploadUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUploadUrlQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUploadUrl>>> = ({ signal }) => getUploadUrl(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUploadUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getUploadUrl>>>
+export type GetUploadUrlQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a presigned upload URL for a file (admin)
+ */
+
+export function useGetUploadUrl<TData = Awaited<ReturnType<typeof getUploadUrl>>, TError = ErrorType<void>>(
+ params?: GetUploadUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUploadUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUploadUrlQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUploadFileUrl = (filename: string,) => {
+
+
+
+
+  return `/api/admin/storage/upload/${filename}`
+}
+
+/**
+ * @summary Upload a file to storage (admin)
+ */
+export const uploadFile = async (filename: string,
+    uploadFileBody: Blob, options?: RequestInit): Promise<UploadFile200> => {
+
+  return customFetch<UploadFile200>(getUploadFileUrl(filename),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/octet-stream', ...options?.headers },
+    body: uploadFileBody
+  }
+);}
+
+
+
+
+export const getUploadFileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadFile>>, TError,{filename: string;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadFile>>, TError,{filename: string;data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['uploadFile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadFile>>, {filename: string;data: BodyType<Blob>}> = (props) => {
+          const {filename,data} = props ?? {};
+
+          return  uploadFile(filename,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadFileMutationResult = NonNullable<Awaited<ReturnType<typeof uploadFile>>>
+    export type UploadFileMutationBody = BodyType<Blob>
+    export type UploadFileMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a file to storage (admin)
+ */
+export const useUploadFile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadFile>>, TError,{filename: string;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadFile>>,
+        TError,
+        {filename: string;data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getUploadFileMutationOptions(options));
+    }
+
+export const getGetStorageFileUrl = (path: string,) => {
+
+
+
+
+  return `/api/storage/${path}`
+}
+
+/**
+ * @summary Serve an uploaded file
+ */
+export const getStorageFile = async (path: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGetStorageFileUrl(path),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStorageFileQueryKey = (path: string,) => {
+    return [
+    `/api/storage/${path}`
+    ] as const;
+    }
+
+
+export const getGetStorageFileQueryOptions = <TData = Awaited<ReturnType<typeof getStorageFile>>, TError = ErrorType<void>>(path: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStorageFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStorageFileQueryKey(path);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStorageFile>>> = ({ signal }) => getStorageFile(path, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: path !== null && path !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStorageFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStorageFileQueryResult = NonNullable<Awaited<ReturnType<typeof getStorageFile>>>
+export type GetStorageFileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Serve an uploaded file
+ */
+
+export function useGetStorageFile<TData = Awaited<ReturnType<typeof getStorageFile>>, TError = ErrorType<void>>(
+ path: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStorageFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStorageFileQueryOptions(path,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCheckoutUrl = () => {
+
+
+
+
+  return `/api/checkout`
+}
+
+/**
+ * @summary Create a Stripe checkout session for product purchase
+ */
+export const createCheckout = async (checkoutInput: CheckoutInput, options?: RequestInit): Promise<CreateCheckout200> => {
+
+  return customFetch<CreateCheckout200>(getCreateCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(checkoutInput)
+  }
+);}
+
+
+
+
+export const getCreateCheckoutMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCheckout>>, TError,{data: BodyType<CheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCheckout>>, TError,{data: BodyType<CheckoutInput>}, TContext> => {
+
+const mutationKey = ['createCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCheckout>>, {data: BodyType<CheckoutInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createCheckout>>>
+    export type CreateCheckoutMutationBody = BodyType<CheckoutInput>
+    export type CreateCheckoutMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a Stripe checkout session for product purchase
+ */
+export const useCreateCheckout = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCheckout>>, TError,{data: BodyType<CheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCheckout>>,
+        TError,
+        {data: BodyType<CheckoutInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCheckoutMutationOptions(options));
+    }
 
 export const getGetAdminStatsUrl = () => {
 

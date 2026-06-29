@@ -1,38 +1,20 @@
 ---
 name: BougieBams site integration patterns
-description: Key lessons from wiring the bougiebams frontend to the API server and fixing image/context issues
+description: Durable lessons from wiring the bougiebams frontend to the API server
 ---
 
 # BougieBams Site Patterns
 
-## @assets alias fix
-`@assets` in `vite.config.ts` was broken (pointed to `../../attached_assets`). Fixed to `path.resolve(import.meta.dirname, "src", "assets")`. But the image files in `src/assets/images/` were 69-byte stubs — replaced with Unsplash URLs in `src/data/images.ts` (module-level string constants, not imports).
+## Broken images with no 404 in console
+Image imports of stub/placeholder files fail silently (no console error). When images show broken with no network error, check file size first. Use external URLs (Unsplash etc.) or real image files rather than empty stubs.
 
-**Why:** Image imports of stub files cause silent broken-image icons with no console errors.
+## API proxy
+The Vite dev server proxies `/api` to port 8080 (the Express API server). This is already configured — do not change the target port or remove the proxy.
 
-**How to apply:** When images show as broken with no 404 in console, check file size first.
+## API server build cycle
+The api-server dev script runs `build && start` (not watch mode). After any route change, the workflow must be restarted for changes to take effect.
 
-## API proxy config
-API server runs on port 8080. Vite dev server needed a proxy to forward `/api` requests:
-```js
-proxy: { "/api": { target: "http://localhost:8080", changeOrigin: true } }
-```
-Without this, `fetch('/api/products')` hits Vite and gets 404.
+## Checkout flow pattern
+Frontend event registration uses `POST /api/registrations/checkout` with `credentials: "include"`. On 401, show a sign-in prompt. On success with a `url`, redirect via `window.location.href`. Never show success on a non-OK HTTP response.
 
-**Why:** Vite dev server intercepts all requests; without proxy it never reaches Express.
-
-## CartContext / WishlistContext interfaces
-Layout.tsx, Shop.tsx, ProductDetail.tsx expect specific interfaces:
-- CartContext: `{ items, totalItems, subtotal, isOpen, setIsOpen, addItem, removeItem, updateQuantity, clearCart }`
-- WishlistContext: `{ items, count, isOpen, setIsOpen, add, remove, toggle, has, isSaved, clearWishlist }`
-
-**Why:** Stub contexts (addToCart/removeFromCart pattern) cause runtime type errors.
-
-## API server dev script
-`dev` script = `build && start` (NOT watch mode). Changes to route files require rebuilding. The compiled `dist/index.mjs` served from port 8080 doesn't update until workflow restart.
-
-## localProducts fallback
-When API returns empty array (`[]`), `useProducts` falls back to `localProducts` from `products.ts`. Import must be explicit: `import { ..., localProducts } from "@/data/products"`.
-
-## Route naming
-`/build-your-set` nav link required adding a second route alias in App.tsx — the original route was `/build`.
+**Why:** Earlier code always set success state even on fetch failure — code review rejected this as deceptive UX and a sign that the API contract wasn't being followed.

@@ -599,6 +599,115 @@ paths:
         "302":
           description: Redirect to home page
 
+  # ── Storage ───────────────────────────────────────────────────────────────
+  /admin/storage/upload-url:
+    get:
+      operationId: getUploadUrl
+      tags: [admin]
+      summary: Get a presigned upload URL for a file (admin)
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: ext
+          in: query
+          description: File extension (e.g. jpg, png, webp)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Upload URL and object path
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [uploadURL, objectPath]
+                properties:
+                  uploadURL:
+                    type: string
+                  objectPath:
+                    type: string
+        "401":
+          description: Unauthorized
+
+  /admin/storage/upload/{filename}:
+    put:
+      operationId: uploadFile
+      tags: [admin]
+      summary: Upload a file to storage (admin)
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Upload success with object path
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [objectPath]
+                properties:
+                  objectPath:
+                    type: string
+        "401":
+          description: Unauthorized
+
+  /storage/{path}:
+    get:
+      operationId: getStorageFile
+      tags: [admin]
+      summary: Serve an uploaded file
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File contents
+        "404":
+          description: File not found
+
+  # ── Product checkout ────────────────────────────────────────────────────
+  /checkout:
+    post:
+      operationId: createCheckout
+      tags: [products]
+      summary: Create a Stripe checkout session for product purchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "200":
+          description: Stripe checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: ["string", "null"]
+        "400":
+          description: Invalid request
+        "503":
+          description: Checkout not yet configured
+
   # ── Admin stats ──────────────────────────────────────────────────────────
   /admin/stats:
     get:
@@ -1016,6 +1125,35 @@ components:
         profileImage:
           type: ["string", "null"]
           description: Avatar URL
+
+    # ── Checkout schemas ─────────────────────────────────────────────────
+    CheckoutItem:
+      type: object
+      required: [variationId, name, price, quantity]
+      properties:
+        variationId:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: integer
+
+    CheckoutInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckoutItem"
+          minItems: 1
+        email:
+          type: string
+          format: email
+        discountCode:
+          type: string
 
     # ── Admin stats ──────────────────────────────────────────────────────
     AdminStats:

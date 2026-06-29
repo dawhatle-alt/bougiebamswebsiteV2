@@ -1,23 +1,21 @@
 ---
 name: Stripe registration flow
-description: Event registration checkout via Stripe for BougieBams
+description: Event registration checkout via Stripe — auth requirements, raw body pattern, and IDOR prevention
 ---
 
 # Stripe Event Registration Flow
 
-Routes in `artifacts/api-server/src/routes/stripe.ts`, registered at `/api` prefix.
+## Auth requirement
+`POST /api/registrations/checkout` requires session authentication (`requireAuth` middleware). Anonymous registration is not permitted. Frontend must detect 401 and show a sign-in prompt rather than silently succeeding.
 
-**POST /api/registrations/checkout**
-- Body: `{ eventId, name, email, notes? }`
-- Creates pending registration row (status="pending")
-- If priceCents > 0: creates Stripe checkout session, updates registration with paymentSessionId, returns `{ url: session.url }`
-- If free: immediately marks status="confirmed", decrements spotsLeft, returns success URL
+**Why:** Code review rejected anonymous checkout as a security gap; registrations must be tied to an authenticated user identity.
 
-**POST /api/webhooks/stripe**
-- Verifies Stripe signature against `STRIPE_WEBHOOK_SECRET`
-- On `checkout.session.completed`: finds registration by metadata.registrationId, sets status="confirmed", decrements event.spotsLeft using `sql\`GREATEST(0, ...)\``
-- Uses inline `captureRawBody` middleware to buffer request body before JSON parsing
+## Raw body for webhook verification
+`express.json()` in `app.ts` uses a `verify` callback to capture the raw Buffer on every request (`req.rawBody`). The Stripe webhook handler reads `req.rawBody` directly — no separate body-buffering middleware.
 
-**DB**: registrations table has status (default "confirmed"), paymentSessionId, referralCode, userId columns added. waitlist table added separately.
+**Why:** Once `express.json()` parses the body, the stream is consumed. A separate middleware can't re-read it. The `verify` callback fires before parsing and is the correct interception point.
 
-**Why:** Proper payment-gated event registration with atomic spot decrement.
+**How to apply:** Any webhook endpoint needing the raw body should read `req.rawBody`. Do not add a separate body-capture middleware.
+
+## IDOR prevention on registration detail endpoint
+Any route that fetches a registration by ID must check `reg.userId === req.user.id || isAdmin(req)`. Because `requireAuth` already guarantees the user is authenticated, never use `|| !req.isAuthenticated()` as the fallback — it is always false and creates an open IDOR.

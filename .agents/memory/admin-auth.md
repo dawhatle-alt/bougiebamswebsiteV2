@@ -5,12 +5,12 @@ description: BougieBams admin auth uses Replit OIDC session cookies, not Bearer 
 
 # Admin Auth Pattern
 
-`requireAdmin` middleware (artifacts/api-server/src/middleware/auth.ts) checks `req.isAuthenticated()` — set by Passport.js Replit OIDC strategy — NOT a Bearer token.
+Admin routes use `requireAdmin` middleware (session cookie, not Bearer token). The middleware checks `req.isAuthenticated()` — set by the Replit OIDC auth flow — then optionally validates against `ADMIN_USER_IDS` env var (comma-separated Replit user IDs).
 
-Optional `ADMIN_USER_IDS` env var (comma-separated Replit user IDs) restricts access further.
+There is also a lower-privilege `requireAuth` for routes that just need authentication (e.g. registration checkout) without requiring admin status.
 
-**Frontend**: All admin fetch calls use `credentials: "include"` (no Authorization header). Admin page redirects unauthenticated users to `/api/login?returnTo=/admin`.
+**Frontend**: All admin fetch calls use `credentials: "include"`. Admin page shows a "Sign in with Replit" button for unauthenticated users.
 
-**Why:** HMAC Bearer tokens were removed after code review rejected the approach as insecure and non-standard for a Replit-hosted site.
+**Why:** HMAC Bearer tokens were rejected by code review as insecure and non-standard for a Replit-hosted site. Cookie-session OIDC is the correct pattern.
 
-**How to apply:** Any new admin route must use `requireAdmin` middleware. Any new admin fetch in the frontend must include `credentials: "include"`.
+**How to apply:** New admin routes use `requireAuth` + `requireAdmin`. New auth-only routes use `requireAuth`. All frontend admin fetches include `credentials: "include"`.

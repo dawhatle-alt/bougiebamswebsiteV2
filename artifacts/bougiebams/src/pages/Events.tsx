@@ -349,32 +349,52 @@ function RegisterSheet({
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [notes, setNotes] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
     setLoading(true);
+    setError(null);
     try {
       const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
-      await fetch(`${apiBase}/api/email/event-registration`, {
+      const res = await fetch(`${apiBase}/api/registrations/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
+          eventId: parseInt(event.id, 10),
           name,
           email,
-          eventTitle: event.title,
-          eventDate: event.date,
-          eventLocation: event.location,
-          eventPrice: event.price,
+          notes: notes || undefined,
         }),
       });
+
+      if (res.status === 401) {
+        setNeedsAuth(true);
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        setError(data.error ?? "Registration failed. Please try again.");
+        return;
+      }
+
+      const data = await res.json() as { url?: string };
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setSubmitted(true);
+      }
     } catch {
-      // best-effort
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
-      setSubmitted(true);
     }
   };
 
@@ -383,9 +403,14 @@ function RegisterSheet({
     setTimeout(() => {
       setName("");
       setEmail("");
+      setNotes("");
       setSubmitted(false);
+      setError(null);
+      setNeedsAuth(false);
     }, 300);
   };
+
+  const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -405,8 +430,7 @@ function RegisterSheet({
               <div>
                 <p className="font-serif text-xl mb-2">See you there, {name.split(" ")[0]}!</p>
                 <p className="text-muted-foreground font-serif leading-relaxed">
-                  A confirmation has been sent to <strong>{email}</strong>. We can't wait to see you at{" "}
-                  <em>{event?.title}</em>.
+                  You're confirmed for <em>{event?.title}</em>. Check your email for details.
                 </p>
               </div>
               <div className="bg-muted rounded-sm p-4 w-full text-left space-y-1 text-sm">
@@ -421,6 +445,27 @@ function RegisterSheet({
               </div>
               <Button variant="outline" onClick={handleClose} className="rounded-none w-full">
                 Close
+              </Button>
+            </div>
+          ) : needsAuth ? (
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 py-12">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-serif text-xl mb-2">Sign in to Register</p>
+                <p className="text-muted-foreground font-serif leading-relaxed">
+                  You need to be signed in to reserve a spot at BougieBams events.
+                </p>
+              </div>
+              <Button
+                className="w-full h-12 rounded-none bg-foreground text-background hover:bg-primary"
+                onClick={() => { window.location.href = `${apiBase}/api/auth/login`; }}
+              >
+                Sign in with Replit
+              </Button>
+              <Button variant="outline" onClick={handleClose} className="rounded-none w-full">
+                Cancel
               </Button>
             </div>
           ) : (
@@ -441,6 +486,12 @@ function RegisterSheet({
                   <p className="text-sm font-medium mt-1">
                     {event.price === "Free" ? "Free admission" : `$${event.price} per person`}
                   </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-sm text-sm text-destructive">
+                  {error}
                 </div>
               )}
 
@@ -471,6 +522,18 @@ function RegisterSheet({
                     className="w-full h-12 border border-border bg-background px-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors rounded-sm"
                   />
                 </div>
+                <div>
+                  <label className="text-xs font-semibold tracking-widest uppercase text-muted-foreground block mb-2">
+                    Notes <span className="normal-case font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    placeholder="Dietary restrictions, questions, etc."
+                    rows={2}
+                    className="w-full border border-border bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors rounded-sm resize-none text-sm"
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   By registering, you agree to receive event updates from BougieBams. We never share your information.
                 </p>
@@ -479,7 +542,11 @@ function RegisterSheet({
                   disabled={loading}
                   className="w-full h-12 rounded-none bg-foreground text-background hover:bg-primary"
                 >
-                  {loading ? "Reserving…" : event?.price === "Free" ? "Reserve Free Spot" : `Confirm — $${event?.price}`}
+                  {loading
+                    ? "Processing…"
+                    : event?.price === "Free"
+                    ? "Reserve Free Spot"
+                    : `Proceed to Payment — $${event?.price}`}
                 </Button>
               </form>
             </>

@@ -257,6 +257,20 @@ export interface ApiUser {
   profileImage: string | null;
 }
 
+export interface CheckoutItem {
+  variationId: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface CheckoutInput {
+  /** @minItems 1 */
+  items: CheckoutItem[];
+  email?: string;
+  discountCode?: string;
+}
+
 export interface AdminStats {
   totalSubscribers: number;
   totalEvents: number;
@@ -300,5 +314,26 @@ export type GetRegistration200 = {
 
 export type GetCurrentUser200 = {
   user?: ApiUser | null;
+};
+
+export type GetUploadUrlParams = {
+/**
+ * File extension (e.g. jpg, png, webp)
+ */
+ext?: string;
+};
+
+export type GetUploadUrl200 = {
+  uploadURL: string;
+  objectPath: string;
+};
+
+export type UploadFile200 = {
+  objectPath: string;
+};
+
+export type CreateCheckout200 = {
+  /** @nullable */
+  url: string | null;
 };
 
