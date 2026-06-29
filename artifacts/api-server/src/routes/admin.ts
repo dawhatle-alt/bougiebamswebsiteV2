@@ -315,12 +315,20 @@ router.put("/admin/product-images/:sku", requireAdmin, async (req, res): Promise
     .insert(productImagesTable)
     .values({ productId: sku, sku, url: imagePath, imagePath })
     .returning();
+  await db
+    .update(productsTable)
+    .set({ imagePath, updatedAt: new Date() })
+    .where(eq(productsTable.sku, sku));
   res.json({ sku: row.sku, imagePath: row.imagePath });
 });
 
 router.delete("/admin/product-images/:sku", requireAdmin, async (req, res): Promise<void> => {
   const sku = req.params.sku as string;
   await db.delete(productImagesTable).where(eq(productImagesTable.sku, sku));
+  await db
+    .update(productsTable)
+    .set({ imagePath: null, updatedAt: new Date() })
+    .where(eq(productsTable.sku, sku));
   res.sendStatus(204);
 });
 

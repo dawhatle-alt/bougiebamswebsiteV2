@@ -18,12 +18,11 @@ export function useProducts(): UseProductsResult {
   const { data, isLoading, isError, error, refetch } = useListProducts();
 
   const apiItems = data?.products ?? [];
-  const products: Product[] =
-    apiItems.length > 0
-      ? apiItems.map((p) => mergeProduct(p as unknown as ApiProduct))
-      : isLoading
-        ? []
-        : localProducts;
+  const products: Product[] = isLoading
+    ? []
+    : isError
+      ? localProducts
+      : apiItems.map((p) => mergeProduct(p as unknown as ApiProduct));
 
   return {
     products,

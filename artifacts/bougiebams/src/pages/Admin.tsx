@@ -21,7 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
-import ProductImageManager from "@/components/admin/ProductImageManager";
+import ProductManager from "@/components/admin/ProductManager";
 import EventsManager from "@/components/admin/EventsManager";
 import DashboardStats from "@/components/admin/DashboardStats";
 import RegistrationsManager from "@/components/admin/RegistrationsManager";
@@ -265,7 +265,7 @@ export default function Admin() {
         ) : view === "blog" ? (
           <BlogManager onAuthError={handleAuthError} />
         ) : view === "products" ? (
-          <ProductImageManager onAuthError={handleAuthError} />
+          <ProductManager onAuthError={handleAuthError} />
         ) : view === "events" ? (
           <EventsManager onAuthError={handleAuthError} />
         ) : view === "registrations" ? (
