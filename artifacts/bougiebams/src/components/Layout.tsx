@@ -324,19 +324,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Menu className="w-6 h-6" />
             </button>
 
-            {/* Left nav */}
-            <nav className="hidden md:flex items-center gap-1">
+            {/* Left nav: flex-1, right-aligned toward the logo */}
+            <nav className="hidden md:flex flex-1 items-center justify-end gap-1 pr-4">
               {leftLinks.map(link => renderNavLink(link))}
             </nav>
 
-            {/* Logo — absolutely centered in the header regardless of side widths */}
+            {/* Logo — absolutely centered */}
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
               <img src={logoUrl} alt="BougieBams" className="h-16 md:h-20 w-auto object-contain" />
             </Link>
 
-            {/* Right nav + icons */}
-            <div className="ml-auto flex items-center gap-4">
-              <nav className="hidden md:flex items-center gap-1">
+            {/* Right nav + icons: flex-1, nav left-aligned toward logo, icons pinned far right */}
+            <div className="ml-auto md:flex-1 flex items-center md:justify-between gap-4">
+              <nav className="hidden md:flex items-center gap-1 pl-4">
                 {rightLinks.map(link => renderNavLink(link))}
               </nav>
 
