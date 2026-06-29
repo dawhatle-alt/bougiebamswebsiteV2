@@ -49,15 +49,15 @@ export default function Blog() {
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-16 border-b border-border pb-4">
+        <div className="flex flex-wrap justify-center gap-2 mb-12">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`font-sans text-sm tracking-widest uppercase pb-4 -mb-[17px] border-b-2 transition-colors ${
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                 activeCategory === category
-                  ? "border-primary text-foreground font-semibold"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
               }`}
             >
               {category}

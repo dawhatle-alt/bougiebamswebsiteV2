@@ -29,22 +29,20 @@ type NavItem = { id: string; href: string; name: string; subItems?: SubItem[] };
 
 const leftLinks: NavItem[] = [
   { id: "shop", href: "/shop", name: "Shop" },
-  { id: "build", href: "/build", name: "Build Your Set" },
   {
-    id: "about", href: "/about", name: "About",
+    id: "about", href: "/about", name: "Community",
     subItems: [
       { href: "/about", label: "About Bougie Bams" },
       { href: "/founder", label: "Meet the Founder" },
+      { href: "/learn", label: "Learn to Play" },
     ],
   },
-  { id: "learn", href: "/learn", name: "Learn" },
 ];
 
 const rightLinks: NavItem[] = [
   { id: "events", href: "/events", name: "Events" },
   { id: "favorites", href: "/favorites", name: "Favorites" },
-  { id: "blog", href: "/blog", name: "Blog" },
-  { id: "faq", href: "/faq", name: "FAQ" },
+  { id: "blog", href: "/blog", name: "Journal" },
   { id: "contact", href: "/contact", name: "Contact" },
 ];
 
@@ -62,6 +60,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
+  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
 
   const shopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const aboutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -301,9 +300,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <div className="fixed top-0 inset-x-0 z-50">
-        <div className="bg-primary text-primary-foreground text-center text-[11px] md:text-xs tracking-[0.2em] uppercase py-2 px-4 font-medium leading-tight">
-          Complimentary shipping on all orders over $150
-        </div>
+        {!announcementDismissed && (
+          <div className="relative bg-primary text-primary-foreground text-center text-[11px] md:text-xs tracking-[0.2em] uppercase py-1.5 px-10 font-medium leading-tight">
+            Complimentary shipping on all orders over $150
+            <button
+              onClick={() => setAnnouncementDismissed(true)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
+              aria-label="Dismiss announcement"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
         <header
           className="relative w-full bg-background border-b border-border/40 py-4 shadow-sm"
         >
@@ -666,13 +674,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
             )}
-            <Link href="/build" className="font-serif text-3xl hover:text-primary transition-colors">Build Your Set</Link>
-            <Link href="/about" className="font-serif text-3xl hover:text-primary transition-colors">About</Link>
-            <Link href="/founder" className="font-sans text-lg text-muted-foreground hover:text-primary transition-colors pl-4 -mt-4">Meet the Founder</Link>
-            <Link href="/learn" className="font-serif text-3xl hover:text-primary transition-colors">Learn</Link>
+            <Link href="/about" className="font-serif text-3xl hover:text-primary transition-colors">Community</Link>
+            <div className="flex flex-col gap-3 -mt-2 pl-4 border-l border-border">
+              <Link href="/about" className="font-sans text-base text-muted-foreground hover:text-primary transition-colors">About Bougie Bams</Link>
+              <Link href="/founder" className="font-sans text-base text-muted-foreground hover:text-primary transition-colors">Meet the Founder</Link>
+              <Link href="/learn" className="font-sans text-base text-muted-foreground hover:text-primary transition-colors">Learn to Play</Link>
+            </div>
             <Link href="/events" className="font-serif text-3xl hover:text-primary transition-colors">Events</Link>
-            <Link href="/blog" className="font-serif text-3xl hover:text-primary transition-colors">Blog</Link>
-            <Link href="/faq" className="font-serif text-3xl hover:text-primary transition-colors">FAQ</Link>
+            <Link href="/favorites" className="font-serif text-3xl hover:text-primary transition-colors">Favorites</Link>
+            <Link href="/blog" className="font-serif text-3xl hover:text-primary transition-colors">Journal</Link>
             <Link href="/contact" className="font-serif text-3xl hover:text-primary transition-colors">Contact</Link>
             {isAuthenticated ? (
               <>

@@ -330,6 +330,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Events Community Teaser */}
+      <section className="py-28 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1a3a2a 0%, #0f2318 100%)" }}>
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-8 left-12 w-40 h-40 rounded-full border border-white/20" />
+          <div className="absolute bottom-10 right-20 w-64 h-64 rounded-full border border-white/10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border border-white/5" />
+        </div>
+        <div className="container mx-auto px-4 text-center max-w-3xl relative z-10">
+          <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-4 block">Live Events</span>
+          <h2 className="font-serif text-4xl md:text-5xl text-white mb-6">Mahjong Worth Dressing Up For</h2>
+          <p className="font-serif text-lg text-white/70 mb-10 max-w-xl mx-auto leading-relaxed">
+            Patsy curates intimate, beautifully styled gatherings where every table is a work of art — and every seat has a story. Find your next event.
+          </p>
+          <Button size="lg" className="h-14 px-10 rounded-none bg-primary text-primary-foreground hover:bg-primary/90 group" asChild>
+            <Link href="/events">
+              View Upcoming Events
+              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
+        </div>
+      </section>
+
       {/* Newsletter */}
       <section className="bg-secondary text-secondary-foreground py-24 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 bg-primary rounded-full blur-3xl opacity-10"></div>
@@ -337,9 +359,9 @@ export default function Home() {
         
         <div className="container mx-auto px-4 relative z-10 text-center max-w-2xl">
           <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-4 block">The Inner Circle</span>
-          <h2 className="font-serif text-4xl md:text-5xl mb-6 text-white">Join the Club</h2>
+          <h2 className="font-serif text-4xl md:text-5xl mb-6 text-white">Join the Bougie Circle</h2>
           <p className="font-serif text-lg md:text-xl text-secondary-foreground/70 mb-10">
-            Sign up for exclusive access to new collections, limited edition drops, and expert playing strategies.
+            Exclusive access to new collections, upcoming events, limited edition drops, and Patsy's personal picks — straight to your inbox.
           </p>
           
           <form className="flex flex-col sm:flex-row gap-4" onSubmit={(e) => e.preventDefault()}>

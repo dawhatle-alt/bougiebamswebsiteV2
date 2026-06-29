@@ -3,14 +3,19 @@ import { motion } from "framer-motion";
 export default function Founder() {
   return (
     <div className="w-full bg-background">
+      {/* Page header */}
+      <div className="py-16 text-center" style={{ background: "linear-gradient(135deg, #1a3a2a 0%, #0f2318 100%)" }}>
+        <p className="text-xs tracking-[4px] uppercase text-primary mb-3 font-medium">Bougie Bams</p>
+        <h1 className="font-serif text-4xl md:text-5xl text-white font-medium">Meet the Founder</h1>
+      </div>
       <motion.section
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        className="py-20 md:py-32 bg-foreground text-background"
+        className="py-20 md:py-32 bg-background"
       >
         <div className="container mx-auto px-4 max-w-5xl">
-          <p className="text-xs tracking-[4px] uppercase text-primary mb-3 font-medium">Meet the Founder</p>
+          <p className="text-xs tracking-[4px] uppercase text-primary mb-3 font-medium sr-only">Meet the Founder</p>
           <div className="grid md:grid-cols-[1fr_1.6fr] gap-14 items-start">
             <div className="relative flex flex-col gap-3">
               <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl">
@@ -43,10 +48,10 @@ export default function Founder() {
 
             <div className="flex flex-col gap-5 pt-2 md:pt-0">
               <div>
-                <h1 className="font-serif text-4xl md:text-5xl font-medium mb-1">Patsy Miller</h1>
+                <h2 className="font-serif text-4xl md:text-5xl font-medium mb-1 text-foreground">Patsy Miller</h2>
                 <p className="text-primary text-sm tracking-wide">Founder &amp; CEO, Bougie Bams</p>
               </div>
-              <div className="space-y-4 text-background/80 font-light leading-relaxed text-[15px]">
+              <div className="space-y-4 text-muted-foreground font-light leading-relaxed text-[15px]">
                 <p>
                   If you know me, you know I love bringing people together. Whether it's hosting a dinner party, planning an event, or simply gathering friends around a table, I've always been happiest when there's food, laughter, conversation, and maybe just a touch of over-the-top flair. Most people who know me would tell you that "bougie" has always been one of my defining characteristics — and I happily embrace it.
                 </p>
@@ -60,12 +65,12 @@ export default function Founder() {
                   The name is actually pretty simple. "Bougie" is what friends and family have called me for years. And "Bams"? Mahjong players know that's a nod to bamboo tiles — a little wink to the game that brought all of this together.
                 </p>
               </div>
-              <blockquote className="border-l-4 border-primary pl-5 py-1">
-                <p className="italic text-background/90 font-light text-base leading-relaxed">
+              <blockquote className="border-l-4 border-primary pl-5 py-1 bg-primary/5 pr-4 rounded-r-md">
+                <p className="italic text-foreground/80 font-light text-base leading-relaxed">
                   "My hope is that every Bougie Bams gathering becomes more than just a game. I hope it becomes a place where friendships are formed, traditions are created, and people leave feeling a little happier than when they arrived."
                 </p>
               </blockquote>
-              <p className="text-background/60 font-light text-sm italic">
+              <p className="text-muted-foreground font-light text-sm italic">
                 Because life is simply better when there's color, community, and a seat for everyone at the table. I'm so glad you're here.
               </p>
             </div>

@@ -52,25 +52,30 @@ export default function Shop() {
   const selectedProduct = products.find(p => p.id === quickViewProduct);
 
   return (
-    <div className="pt-32 pb-24 min-h-screen bg-background">
+    <div className="pt-28 pb-24 min-h-screen bg-background">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="text-center mb-16">
-          <h1 className="font-serif text-5xl md:text-6xl mb-6">The Collection</h1>
-          <p className="text-muted-foreground font-serif text-xl max-w-2xl mx-auto">
-            Explore our curated selection of premium mahjong sets, accessories, and lifestyle pieces.
-          </p>
+        <div className="mb-8 pt-2 pb-6 border-b border-border">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+            <div>
+              <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-2 block">Premium Mahjong</span>
+              <h1 className="font-serif text-4xl md:text-5xl">The Collection</h1>
+            </div>
+            <p className="text-muted-foreground font-serif text-base max-w-sm md:text-right">
+              Curated sets, accessories, and lifestyle pieces.
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 border-y border-border py-4">
-          <div className="flex flex-wrap justify-center gap-2 md:gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+          <div className="flex flex-wrap gap-2">
             {categories.map(category => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`font-sans text-sm tracking-widest uppercase pb-1 border-b-2 transition-colors ${
-                  activeCategory === category 
-                    ? "border-primary text-foreground font-semibold" 
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                  activeCategory === category
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
                 }`}
               >
                 {category}
