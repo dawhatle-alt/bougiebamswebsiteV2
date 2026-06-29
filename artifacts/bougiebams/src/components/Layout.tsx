@@ -10,7 +10,6 @@ import shopMenuImg from "@assets/images/mahjong-lifestyle.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import logoUrl from "@/assets/bougiebams-logo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const logoUrl = `${import.meta.env.BASE_URL}bougiebams-logo-transparent.png`;
 
 type SubItem = { href: string; label: string };
 type NavItem = { id: string; href: string; name: string; subItems?: SubItem[] };
