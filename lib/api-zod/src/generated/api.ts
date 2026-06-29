@@ -311,7 +311,7 @@ export const DeleteEventResponse = zod.void()
 
 
 /**
- * @summary Register for a free event (no payment required)
+ * @summary Register for a free event (requires authentication)
  */
 export const CreateRegistrationBody = zod.object({
   "eventId": zod.number(),

@@ -297,7 +297,9 @@ paths:
     post:
       operationId: createRegistration
       tags: [registrations]
-      summary: Register for a free event (no payment required)
+      summary: Register for a free event (requires authentication)
+      security:
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -722,6 +724,8 @@ paths:
       operationId: createCheckout
       tags: [products]
       summary: Create a Stripe checkout session for product purchase
+      security:
+        - CookieAuth: []
       requestBody:
         required: true
         content:

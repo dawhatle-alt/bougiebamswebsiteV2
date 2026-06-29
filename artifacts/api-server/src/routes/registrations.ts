@@ -18,7 +18,7 @@ function toRegResponse(reg: typeof registrationsTable.$inferSelect) {
   };
 }
 
-router.post("/registrations", async (req, res): Promise<void> => {
+router.post("/registrations", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateRegistrationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

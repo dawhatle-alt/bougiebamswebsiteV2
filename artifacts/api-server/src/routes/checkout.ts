@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
+import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
 
@@ -16,7 +17,7 @@ const CheckoutBody = z.object({
   discountCode: z.string().optional(),
 });
 
-router.post("/checkout", async (req, res): Promise<void> => {
+router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
   const parsed = CheckoutBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid checkout request: " + parsed.error.issues[0]?.message });

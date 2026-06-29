@@ -1069,7 +1069,7 @@ export const getCreateRegistrationUrl = () => {
 }
 
 /**
- * @summary Register for a free event (no payment required)
+ * @summary Register for a free event (requires authentication)
  */
 export const createRegistration = async (registrationInput: RegistrationInput, options?: RequestInit): Promise<RegistrationResult> => {
 
@@ -1117,7 +1117,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateRegistrationMutationError = ErrorType<void>
 
     /**
- * @summary Register for a free event (no payment required)
+ * @summary Register for a free event (requires authentication)
  */
 export const useCreateRegistration = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRegistration>>, TError,{data: BodyType<RegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
