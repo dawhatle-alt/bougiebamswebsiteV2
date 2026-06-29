@@ -60,18 +60,23 @@ router.get("/events", async (req, res): Promise<void> => {
 });
 
 router.get("/events/stats", requireAdmin, async (_req, res): Promise<void> => {
+  const today = new Date().toISOString().slice(0, 10);
   const [totalRow] = await db.select({ count: count() }).from(eventsTable);
   const [publishedRow] = await db
     .select({ count: count() })
     .from(eventsTable)
     .where(eq(eventsTable.published, true));
+  const [upcomingRow] = await db
+    .select({ count: count() })
+    .from(eventsTable)
+    .where(and(eq(eventsTable.published, true), gte(eventsTable.date, today)));
   const [regRow] = await db.select({ count: count() }).from(registrationsTable);
 
   res.json(
     GetEventStatsResponse.parse({
       total: Number(totalRow?.count ?? 0),
       published: Number(publishedRow?.count ?? 0),
-      upcoming: Number(publishedRow?.count ?? 0),
+      upcoming: Number(upcomingRow?.count ?? 0),
       totalRegistrations: Number(regRow?.count ?? 0),
     }),
   );

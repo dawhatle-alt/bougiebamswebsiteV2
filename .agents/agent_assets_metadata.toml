@@ -1,0 +1,50 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "MLIrqm3sGox6FZLAknoGH"
+uri = "file://artifacts/bougiebams/src/assets/images/mahjong-lifestyle.png"
+type = "image"
+title = "mahjong lifestyle dark marble"
+
+[[generated]]
+id = "A_gj-W-jGF8hIQOUaVQ58"
+uri = "file://artifacts/bougiebams/src/assets/images/mahjong-tiles-closeup.png"
+type = "image"
+title = "mahjong tiles closeup macro"
+
+[[generated]]
+id = "rVQ54qISZI70uuVz7OSPJ"
+uri = "file://artifacts/bougiebams/src/assets/images/hero-tile-1.png"
+type = "image"
+title = "hero tile jade green velvet"
+
+[[generated]]
+id = "vXsbI8VtYHHlJwRVeP8YT"
+uri = "file://artifacts/bougiebams/src/assets/images/hero-tile-2.png"
+type = "image"
+title = "hero tile ivory linen"
+
+[[generated]]
+id = "fMiu5PeL_7ubf8waB-DwX"
+uri = "file://artifacts/bougiebams/src/assets/images/hero-tile-3.png"
+type = "image"
+title = "hero tile stack marble candlelight"
+
+[[generated]]
+id = "4kkhtMl1dW0vRvp1R5Y0L"
+uri = "file://artifacts/bougiebams/src/assets/images/hero-tile-4.png"
+type = "image"
+title = "hero tile bamboo blush silk"
+
+[[generated]]
+id = "X0JJuHHmMsj5_klL_BPdn"
+uri = "file://artifacts/bougiebams/src/assets/images/product-jade.png"
+type = "image"
+title = "jade mahjong set product shot"
+
+[[generated]]
+id = "oB9IO6YoQmIorC3SyJpJK"
+uri = "file://artifacts/bougiebams/src/assets/images/product-rosegold.png"
+type = "image"
+title = "rose gold mahjong set product shot"

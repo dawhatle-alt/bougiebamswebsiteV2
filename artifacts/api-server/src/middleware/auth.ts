@@ -30,7 +30,11 @@ export function requireAdmin(
 
   if (adminUserIds.length === 0 || !adminUserIds.includes(req.user!.id)) {
     logger.warn({ userId: req.user!.id }, "Unauthorized admin access attempt");
-    res.status(403).json({ error: "Not authorized" });
+    res.status(403).json({
+      error: adminUserIds.length === 0
+        ? "Admin access requires the ADMIN_USER_IDS environment variable to be set. See replit.md for setup instructions."
+        : "Not authorized",
+    });
     return;
   }
 
