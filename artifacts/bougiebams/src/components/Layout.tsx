@@ -331,7 +331,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Logo — absolutely centered */}
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
-              <img src={logoUrl} alt="BougieBams" className="h-16 md:h-20 w-auto object-contain" />
+              <img src={logoUrl} alt="BougieBams" className="h-14 md:h-16 w-auto object-contain" />
             </Link>
 
             {/* Right nav + icons: flex-1, nav left-aligned toward logo, icons pinned far right */}
