@@ -10,6 +10,7 @@ import {
   blogPostsTable,
   subscribersTable,
   productImagesTable,
+  registrationsTable,
 } from "@workspace/db";
 import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
@@ -259,6 +260,38 @@ router.delete("/admin/events/:id", requireAdmin, async (req, res): Promise<void>
     return;
   }
   res.sendStatus(204);
+});
+
+router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      id: registrationsTable.id,
+      eventId: registrationsTable.eventId,
+      eventTitle: eventsTable.title,
+      name: registrationsTable.name,
+      email: registrationsTable.email,
+      notes: registrationsTable.notes,
+      status: registrationsTable.status,
+      paymentSessionId: registrationsTable.paymentSessionId,
+      createdAt: registrationsTable.createdAt,
+    })
+    .from(registrationsTable)
+    .leftJoin(eventsTable, eq(registrationsTable.eventId, eventsTable.id))
+    .orderBy(registrationsTable.createdAt);
+
+  res.json({
+    registrations: rows.map((r) => ({
+      id: r.id,
+      eventId: r.eventId,
+      eventTitle: r.eventTitle ?? "Unknown Event",
+      name: r.name,
+      email: r.email,
+      notes: r.notes ?? null,
+      status: r.status,
+      paid: !!r.paymentSessionId,
+      createdAt: r.createdAt.toISOString(),
+    })),
+  });
 });
 
 router.get("/admin/product-images", requireAdmin, async (_req, res): Promise<void> => {

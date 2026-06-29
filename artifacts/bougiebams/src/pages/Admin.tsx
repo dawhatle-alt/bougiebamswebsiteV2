@@ -17,14 +17,18 @@ import {
   Mail,
   Package,
   RefreshCw,
+  LayoutDashboard,
+  Users,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductImageManager from "@/components/admin/ProductImageManager";
 import EventsManager from "@/components/admin/EventsManager";
+import DashboardStats from "@/components/admin/DashboardStats";
+import RegistrationsManager from "@/components/admin/RegistrationsManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-type AdminView = "subscribers" | "blog" | "products" | "events";
+type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations";
 
 interface Subscriber {
   id: number;
@@ -85,7 +89,7 @@ function sourceLabel(source: string | null) {
 export default function Admin() {
   const { user, isLoading, isAuthenticated } = useAuth();
 
-  const [view, setView] = useState<AdminView>("subscribers");
+  const [view, setView] = useState<AdminView>("dashboard");
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -198,13 +202,17 @@ export default function Admin() {
               BougieBams Admin
             </h1>
             <p className="text-xs uppercase tracking-widest text-[rgba(245,240,234,0.6)] mt-1">
-              {view === "subscribers"
-                ? "Email Subscribers"
-                : view === "blog"
-                  ? "Blog Manager"
-                  : view === "products"
-                    ? "Product Images"
-                    : "Events"}
+              {view === "dashboard"
+                ? "Overview"
+                : view === "subscribers"
+                  ? "Email Subscribers"
+                  : view === "blog"
+                    ? "Blog Manager"
+                    : view === "products"
+                      ? "Product Images"
+                      : view === "registrations"
+                        ? "Event Registrations"
+                        : "Events"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -228,7 +236,9 @@ export default function Admin() {
       <nav className="bg-[#172248] px-6">
         <div className="max-w-5xl mx-auto flex items-center gap-1">
           {([
+            { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
             { key: "subscribers", label: "Subscribers", icon: Mail },
+            { key: "registrations", label: "Registrations", icon: Users },
             { key: "blog", label: "Blog", icon: FileText },
             { key: "products", label: "Products", icon: Package },
             { key: "events", label: "Events", icon: CalendarDays },
@@ -250,12 +260,16 @@ export default function Admin() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        {view === "blog" ? (
+        {view === "dashboard" ? (
+          <DashboardStats onAuthError={handleAuthError} />
+        ) : view === "blog" ? (
           <BlogManager onAuthError={handleAuthError} />
         ) : view === "products" ? (
           <ProductImageManager onAuthError={handleAuthError} />
         ) : view === "events" ? (
           <EventsManager onAuthError={handleAuthError} />
+        ) : view === "registrations" ? (
+          <RegistrationsManager onAuthError={handleAuthError} />
         ) : (
           <>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
