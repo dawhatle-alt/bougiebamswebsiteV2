@@ -1,1 +1,3 @@
 - [BougieBams site fixes](bougiebams-site.md) — key integration patterns, image alias fix, API proxy, context interfaces for bougiebams site
+- [Admin auth pattern](admin-auth.md) — admin uses Replit OIDC session (credentials:"include"), NOT Bearer tokens; requireAdmin checks req.isAuthenticated()
+- [Stripe registration flow](stripe-registration.md) — /api/registrations/checkout creates pending reg + Stripe session; webhook confirms on checkout.session.completed

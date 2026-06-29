@@ -75,11 +75,10 @@ function eventToForm(e: ApiEvent): FormState {
 }
 
 interface Props {
-  token: string;
   onAuthError: () => void;
 }
 
-export default function EventsManager({ token, onAuthError }: Props) {
+export default function EventsManager({ onAuthError }: Props) {
   const [events, setEvents] = useState<ApiEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -95,7 +94,7 @@ export default function EventsManager({ token, onAuthError }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const authHeaders = { Authorization: `Bearer ${token}` };
+  const authHeaders: Record<string, string> = {};
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -103,8 +102,9 @@ export default function EventsManager({ token, onAuthError }: Props) {
     try {
       const res = await fetch(`${API_BASE}/api/admin/events`, {
         headers: authHeaders,
+        credentials: "include",
       });
-      if (res.status === 401) { onAuthError(); return; }
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
       if (!res.ok) throw new Error("Load failed");
       const data = await res.json() as { events: ApiEvent[] };
       setEvents(data.events ?? []);
@@ -113,7 +113,7 @@ export default function EventsManager({ token, onAuthError }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [onAuthError]);
 
   useEffect(() => { void loadEvents(); }, [loadEvents]);
 
@@ -126,7 +126,7 @@ export default function EventsManager({ token, onAuthError }: Props) {
     setUploadError("");
     try {
       const presignRes = await fetch(`${API_BASE}/api/admin/storage/upload-url`, {
-        method: "POST", headers: authHeaders,
+        method: "POST", headers: authHeaders, credentials: "include",
       });
       if (presignRes.status === 401) { onAuthError(); return; }
       if (!presignRes.ok) throw new Error("Could not get upload URL.");
@@ -137,6 +137,7 @@ export default function EventsManager({ token, onAuthError }: Props) {
         method: "PUT",
         headers: { "Content-Type": file.type || "image/jpeg" },
         body: file,
+        credentials: "include",
       });
       if (!putRes.ok) throw new Error("Upload failed. Please try again.");
       field("imagePath", objectPath);
@@ -178,6 +179,7 @@ export default function EventsManager({ token, onAuthError }: Props) {
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
         headers: { ...authHeaders, "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(body),
       });
       if (res.status === 401) { onAuthError(); return; }
@@ -202,7 +204,7 @@ export default function EventsManager({ token, onAuthError }: Props) {
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/events/${id}`, {
-        method: "DELETE", headers: authHeaders,
+        method: "DELETE", headers: authHeaders, credentials: "include",
       });
       if (res.status === 401) { onAuthError(); return; }
       if (res.ok) setEvents((prev) => prev.filter((e) => e.id !== id));

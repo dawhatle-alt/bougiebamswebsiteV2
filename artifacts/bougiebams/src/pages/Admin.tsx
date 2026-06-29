@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -9,13 +8,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarDays, Download, FileText, Lock, LogOut, Mail, Package, RefreshCw } from "lucide-react";
+import {
+  CalendarDays,
+  Download,
+  FileText,
+  Loader2,
+  LogOut,
+  Mail,
+  Package,
+  RefreshCw,
+} from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductImageManager from "@/components/admin/ProductImageManager";
 import EventsManager from "@/components/admin/EventsManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const STORAGE_KEY = "bougiebams_admin_token";
 
 type AdminView = "subscribers" | "blog" | "products" | "events";
 
@@ -25,6 +32,36 @@ interface Subscriber {
   source: string | null;
   discountCode: string | null;
   createdAt: string;
+}
+
+interface AuthUser {
+  id: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}
+
+function useAuth() {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/auth/me`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { user: AuthUser | null } | null) => {
+        if (!cancelled) {
+          setUser(d?.user ?? null);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  return { user, isLoading, isAuthenticated: !!user };
 }
 
 function formatDate(value: string) {
@@ -46,12 +83,7 @@ function sourceLabel(source: string | null) {
 }
 
 export default function Admin() {
-  const [token, setToken] = useState<string | null>(() =>
-    typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null,
-  );
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
-  const [loggingIn, setLoggingIn] = useState(false);
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   const [view, setView] = useState<AdminView>("subscribers");
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
@@ -59,27 +91,21 @@ export default function Admin() {
   const [loadError, setLoadError] = useState("");
 
   const handleAuthError = useCallback(() => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    setToken(null);
-    setLoadError("Your session expired. Please sign in again.");
+    window.location.href = `${API_BASE}/api/login?returnTo=/admin`;
   }, []);
 
-  const loadSubscribers = useCallback(async (authToken: string) => {
+  const loadSubscribers = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
       const res = await fetch(`${API_BASE}/api/admin/subscribers`, {
-        headers: { Authorization: `Bearer ${authToken}` },
+        credentials: "include",
       });
-      if (res.status === 401) {
-        sessionStorage.removeItem(STORAGE_KEY);
-        setToken(null);
-        setLoadError("Your session expired. Please sign in again.");
+      if (res.status === 401 || res.status === 403) {
+        handleAuthError();
         return;
       }
-      if (!res.ok) {
-        throw new Error("Request failed");
-      }
+      if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
       setSubscribers(data.subscribers ?? []);
     } catch {
@@ -87,52 +113,16 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [handleAuthError]);
 
   useEffect(() => {
-    if (token) {
-      void loadSubscribers(token);
+    if (isAuthenticated) {
+      void loadSubscribers();
     }
-  }, [token, loadSubscribers]);
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!password.trim()) return;
-    setLoggingIn(true);
-    setLoginError("");
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const issued = data.token as string;
-        sessionStorage.setItem(STORAGE_KEY, issued);
-        setToken(issued);
-        setPassword("");
-      } else if (res.status === 401) {
-        setLoginError("Incorrect password.");
-      } else if (res.status === 429) {
-        setLoginError(
-          "Too many attempts. Please wait a few minutes and try again.",
-        );
-      } else {
-        setLoginError("Admin access is not available right now.");
-      }
-    } catch {
-      setLoginError("Something went wrong. Please try again.");
-    } finally {
-      setLoggingIn(false);
-    }
-  }
+  }, [isAuthenticated, loadSubscribers]);
 
   function handleLogout() {
-    sessionStorage.removeItem(STORAGE_KEY);
-    setToken(null);
-    setSubscribers([]);
-    window.location.href = "/";
+    window.location.href = `${API_BASE}/api/logout`;
   }
 
   function handleExport() {
@@ -159,46 +149,39 @@ export default function Admin() {
     URL.revokeObjectURL(url);
   }
 
-  if (!token) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1E2A5A]">
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#1E2A5A] px-4">
-        <form
-          onSubmit={handleLogin}
-          className="w-full max-w-sm bg-[#FAF7F0] rounded-md border border-[#E2DBCD] p-8 shadow-xl"
-        >
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#1E2A5A] mb-4">
-              <Lock className="w-5 h-5 text-[#D4AF37]" />
-            </div>
-            <h1
-              className="text-2xl text-[#1E2A5A]"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
-              BougieBams Admin
-            </h1>
-            <p className="text-sm text-[#5A6178] mt-1">
-              Enter your password to continue
-            </p>
+        <div className="w-full max-w-sm bg-[#FAF7F0] rounded-md border border-[#E2DBCD] p-8 shadow-xl text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#1E2A5A] mb-4">
+            <Mail className="w-5 h-5 text-[#D4AF37]" />
           </div>
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Admin password"
-            autoFocus
-            className="mb-3"
-          />
-          {loginError && (
-            <p className="text-sm text-red-600 mb-3">{loginError}</p>
-          )}
-          <Button
-            type="submit"
-            disabled={loggingIn}
-            className="w-full bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
+          <h1
+            className="text-2xl text-[#1E2A5A] mb-2"
+            style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
-            {loggingIn ? "Signing in…" : "Sign in"}
+            BougieBams Admin
+          </h1>
+          <p className="text-sm text-[#5A6178] mb-6">
+            Sign in with your Replit account to access the admin panel.
+          </p>
+          <Button
+            className="w-full bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
+            onClick={() => {
+              window.location.href = `${API_BASE}/api/login?returnTo=/admin`;
+            }}
+          >
+            Sign in with Replit
           </Button>
-        </form>
+        </div>
       </div>
     );
   }
@@ -215,17 +198,30 @@ export default function Admin() {
               BougieBams Admin
             </h1>
             <p className="text-xs uppercase tracking-widest text-[rgba(245,240,234,0.6)] mt-1">
-              {view === "subscribers" ? "Email Subscribers" : view === "blog" ? "Blog Manager" : view === "products" ? "Product Images" : "Events"}
+              {view === "subscribers"
+                ? "Email Subscribers"
+                : view === "blog"
+                  ? "Blog Manager"
+                  : view === "products"
+                    ? "Product Images"
+                    : "Events"}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="text-[#FAF7F0] hover:bg-white/10 hover:text-white"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign out
-          </Button>
+          <div className="flex items-center gap-3">
+            {user?.firstName && (
+              <span className="text-xs text-[rgba(245,240,234,0.6)]">
+                {user.firstName}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="text-[#FAF7F0] hover:bg-white/10 hover:text-white"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign out
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -255,94 +251,88 @@ export default function Admin() {
 
       <main className="max-w-5xl mx-auto px-6 py-8">
         {view === "blog" ? (
-          token ? (
-            <BlogManager token={token} onAuthError={handleAuthError} />
-          ) : null
+          <BlogManager onAuthError={handleAuthError} />
         ) : view === "products" ? (
-          token ? (
-            <ProductImageManager token={token} onAuthError={handleAuthError} />
-          ) : null
+          <ProductImageManager onAuthError={handleAuthError} />
         ) : view === "events" ? (
-          token ? (
-            <EventsManager token={token} onAuthError={handleAuthError} />
-          ) : null
+          <EventsManager onAuthError={handleAuthError} />
         ) : (
-        <>
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <div className="flex items-center gap-2 text-[#1E2A5A]">
-            <Mail className="w-5 h-5 text-[#D4AF37]" />
-            <span className="text-lg font-medium">
-              {subscribers.length}{" "}
-              {subscribers.length === 1 ? "subscriber" : "subscribers"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => token && loadSubscribers(token)}
-              disabled={loading}
-            >
-              <RefreshCw
-                className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
-            <Button
-              onClick={handleExport}
-              disabled={subscribers.length === 0}
-              className="bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
-        </div>
-
-        {loadError && (
-          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {loadError}
-          </div>
-        )}
-
-        <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
-          {loading && subscribers.length === 0 ? (
-            <div className="py-16 text-center text-[#5A6178]">Loading…</div>
-          ) : subscribers.length === 0 ? (
-            <div className="py-16 text-center text-[#5A6178]">
-              No subscribers yet. They'll appear here as people sign up.
+          <>
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+              <div className="flex items-center gap-2 text-[#1E2A5A]">
+                <Mail className="w-5 h-5 text-[#D4AF37]" />
+                <span className="text-lg font-medium">
+                  {subscribers.length}{" "}
+                  {subscribers.length === 1 ? "subscriber" : "subscribers"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={loadSubscribers}
+                  disabled={loading}
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                  />
+                  Refresh
+                </Button>
+                <Button
+                  onClick={handleExport}
+                  disabled={subscribers.length === 0}
+                  className="bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Discount Code</TableHead>
-                  <TableHead className="text-right">Date Joined</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscribers.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium text-[#1E2A5A]">
-                      {s.email}
-                    </TableCell>
-                    <TableCell className="text-[#5A6178]">
-                      {sourceLabel(s.source)}
-                    </TableCell>
-                    <TableCell className="text-[#5A6178]">
-                      {s.discountCode ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-right text-[#5A6178]">
-                      {formatDate(s.createdAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-        </>
+
+            {loadError && (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {loadError}
+              </div>
+            )}
+
+            <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
+              {loading && subscribers.length === 0 ? (
+                <div className="py-16 text-center text-[#5A6178]">Loading…</div>
+              ) : subscribers.length === 0 ? (
+                <div className="py-16 text-center text-[#5A6178]">
+                  No subscribers yet. They'll appear here as people sign up.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Discount Code</TableHead>
+                      <TableHead className="text-right">Date Joined</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {subscribers.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium text-[#1E2A5A]">
+                          {s.email}
+                        </TableCell>
+                        <TableCell className="text-[#5A6178]">
+                          {sourceLabel(s.source)}
+                        </TableCell>
+                        <TableCell className="text-[#5A6178]">
+                          {s.discountCode ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-[#5A6178]">
+                          {formatDate(s.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </>
         )}
       </main>
     </div>

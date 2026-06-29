@@ -11,6 +11,7 @@ import storageRouter from "./storage";
 import authRouter from "./auth";
 import checkoutRouter from "./checkout";
 import emailRouter from "./email";
+import stripeRouter from "./stripe";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(adminRouter);
 router.use(storageRouter);
 router.use(checkoutRouter);
 router.use(emailRouter);
+router.use(stripeRouter);
 
 export default router;

@@ -11,8 +11,8 @@ import {
   subscribersTable,
   productImagesTable,
 } from "@workspace/db";
-import { AdminLoginBody, GetAdminStatsResponse } from "@workspace/api-zod";
-import { requireAdmin, signAdminToken } from "../middleware/auth";
+import { GetAdminStatsResponse } from "@workspace/api-zod";
+import { requireAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -87,30 +87,6 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
   };
 }
 
-router.post("/admin/auth/login", async (req, res): Promise<void> => {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword) {
-    res.status(503).json({ error: "Admin is not configured on this server" });
-    return;
-  }
-  const parsed = AdminLoginBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  if (parsed.data.password !== adminPassword) {
-    res.status(401).json({ error: "Invalid password" });
-    return;
-  }
-  let token: string;
-  try {
-    token = signAdminToken();
-  } catch {
-    res.status(503).json({ error: "Admin signing key is not configured" });
-    return;
-  }
-  res.json({ token });
-});
 
 router.get("/admin/stats", requireAdmin, async (_req, res): Promise<void> => {
   const [subRow] = await db.select({ count: count() }).from(subscribersTable);

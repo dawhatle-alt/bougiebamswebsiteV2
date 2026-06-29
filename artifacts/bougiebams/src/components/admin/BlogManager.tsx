@@ -45,11 +45,10 @@ const emptyForm: FormState = {
 };
 
 interface BlogManagerProps {
-  token: string;
   onAuthError: () => void;
 }
 
-export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
+export default function BlogManager({ onAuthError }: BlogManagerProps) {
   const [posts, setPosts] = useState<ApiBlogPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -60,13 +59,9 @@ export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const authHeaders = useCallback(
-    (json = false): Record<string, string> => ({
-      Authorization: `Bearer ${token}`,
-      ...(json ? { "Content-Type": "application/json" } : {}),
-    }),
-    [token],
-  );
+  function authHeaders(json = false): Record<string, string> {
+    return json ? { "Content-Type": "application/json" } : {};
+  }
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -74,6 +69,7 @@ export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
     try {
       const res = await fetch(`${API_BASE}/api/admin/blog`, {
         headers: authHeaders(),
+        credentials: "include",
       });
       if (res.status === 401) {
         onAuthError();
@@ -87,7 +83,7 @@ export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, onAuthError]);
+  }, [onAuthError]);
 
   useEffect(() => {
     void loadPosts();
@@ -125,6 +121,7 @@ export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
       const res = await fetch(`${API_BASE}/api/admin/storage/upload-url`, {
         method: "POST",
         headers: authHeaders(),
+        credentials: "include",
       });
       if (res.status === 401) {
         onAuthError();
@@ -136,6 +133,7 @@ export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
         method: "PUT",
         body: file,
         headers: { "Content-Type": file.type || "application/octet-stream" },
+        credentials: "include",
       });
       if (!put.ok) throw new Error("PUT failed");
       setForm((prev) => (prev ? { ...prev, imagePath: objectPath } : prev));
@@ -163,6 +161,7 @@ export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
         headers: authHeaders(true),
+        credentials: "include",
         body: JSON.stringify({
           title: form.title,
           excerpt: form.excerpt,
@@ -204,6 +203,7 @@ export default function BlogManager({ token, onAuthError }: BlogManagerProps) {
       const res = await fetch(`${API_BASE}/api/admin/blog/${post.id}`, {
         method: "DELETE",
         headers: authHeaders(),
+        credentials: "include",
       });
       if (res.status === 401) {
         onAuthError();

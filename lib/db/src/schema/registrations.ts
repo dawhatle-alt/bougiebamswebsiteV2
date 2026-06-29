@@ -8,6 +8,10 @@ export const registrationsTable = pgTable("registrations", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   notes: text("notes"),
+  status: text("status").notNull().default("confirmed"),
+  paymentSessionId: text("payment_session_id"),
+  referralCode: text("referral_code"),
+  userId: text("user_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

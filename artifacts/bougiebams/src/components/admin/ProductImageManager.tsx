@@ -14,11 +14,10 @@ interface ApiProduct {
 }
 
 interface Props {
-  token: string;
   onAuthError: () => void;
 }
 
-export default function ProductImageManager({ token, onAuthError }: Props) {
+export default function ProductImageManager({ onAuthError }: Props) {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -29,7 +28,7 @@ export default function ProductImageManager({ token, onAuthError }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingSkuRef = useRef<string | null>(null);
 
-  const authHeaders = { Authorization: `Bearer ${token}` };
+  const authHeaders: Record<string, string> = {};
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,9 +36,9 @@ export default function ProductImageManager({ token, onAuthError }: Props) {
     try {
       const [prodRes, imgRes] = await Promise.all([
         fetch(`${API_BASE}/api/products`),
-        fetch(`${API_BASE}/api/admin/product-images`, { headers: authHeaders }),
+        fetch(`${API_BASE}/api/admin/product-images`, { headers: authHeaders, credentials: "include" }),
       ]);
-      if (imgRes.status === 401) { onAuthError(); return; }
+      if (imgRes.status === 401 || imgRes.status === 403) { onAuthError(); return; }
       if (!prodRes.ok || !imgRes.ok) throw new Error("Load failed");
       const [prodData, imgData] = await Promise.all([
         prodRes.json() as Promise<{ products: ApiProduct[] }>,
@@ -52,7 +51,7 @@ export default function ProductImageManager({ token, onAuthError }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [onAuthError]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -71,6 +70,7 @@ export default function ProductImageManager({ token, onAuthError }: Props) {
       const presignRes = await fetch(`${API_BASE}/api/admin/storage/upload-url`, {
         method: "POST",
         headers: authHeaders,
+        credentials: "include",
       });
       if (presignRes.status === 401) { onAuthError(); return; }
       if (!presignRes.ok) throw new Error("Could not get upload URL.");
@@ -83,6 +83,7 @@ export default function ProductImageManager({ token, onAuthError }: Props) {
         method: "PUT",
         headers: { "Content-Type": file.type || "image/jpeg" },
         body: file,
+        credentials: "include",
       });
       if (!putRes.ok) throw new Error("Upload failed — please try again.");
 
@@ -91,6 +92,7 @@ export default function ProductImageManager({ token, onAuthError }: Props) {
         {
           method: "PUT",
           headers: { ...authHeaders, "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ imagePath: objectPath }),
         },
       );
@@ -111,7 +113,7 @@ export default function ProductImageManager({ token, onAuthError }: Props) {
     try {
       const res = await fetch(
         `${API_BASE}/api/admin/product-images/${encodeURIComponent(sku)}`,
-        { method: "DELETE", headers: authHeaders },
+        { method: "DELETE", headers: authHeaders, credentials: "include" },
       );
       if (res.status === 401) { onAuthError(); return; }
       setImageOverrides((prev) => {
