@@ -13,6 +13,7 @@ import checkoutRouter from "./checkout";
 import emailRouter from "./email";
 import stripeRouter from "./stripe";
 import couponsRouter from "./coupons";
+import favoritesRouter from "./favorites";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(checkoutRouter);
 router.use(emailRouter);
 router.use(stripeRouter);
 router.use(couponsRouter);
+router.use(favoritesRouter);
 
 export default router;

@@ -42,6 +42,7 @@ const leftLinks: NavItem[] = [
 
 const rightLinks: NavItem[] = [
   { id: "events", href: "/events", name: "Events" },
+  { id: "favorites", href: "/favorites", name: "Favorites" },
   { id: "blog", href: "/blog", name: "Blog" },
   { id: "faq", href: "/faq", name: "FAQ" },
   { id: "contact", href: "/contact", name: "Contact" },

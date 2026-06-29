@@ -6,3 +6,4 @@ export * from "./registrations";
 export * from "./product_images";
 export * from "./auth";
 export * from "./waitlist";
+export * from "./favorites";
