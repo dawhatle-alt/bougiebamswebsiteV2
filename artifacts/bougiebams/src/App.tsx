@@ -13,11 +13,14 @@ import Shop from "@/pages/Shop";
 import ProductDetail from "@/pages/ProductDetail";
 import BuildYourSet from "@/pages/BuildYourSet";
 import About from "@/pages/About";
+import Founder from "@/pages/Founder";
 import Learn from "@/pages/Learn";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import Faq from "@/pages/Faq";
 import Events from "@/pages/Events";
+import EventDetail from "@/pages/EventDetail";
+import MyEvents from "@/pages/MyEvents";
 import Contact from "@/pages/Contact";
 import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
@@ -51,11 +54,14 @@ function AnimatedRoutes() {
           <Route path="/build" component={BuildYourSet} />
           <Route path="/build-your-set" component={BuildYourSet} />
           <Route path="/about" component={About} />
+          <Route path="/founder" component={Founder} />
           <Route path="/learn" component={Learn} />
           <Route path="/blog/:slug" component={BlogPost} />
           <Route path="/blog" component={Blog} />
           <Route path="/faq" component={Faq} />
+          <Route path="/events/:id" component={EventDetail} />
           <Route path="/events" component={Events} />
+          <Route path="/my-events" component={MyEvents} />
           <Route path="/contact" component={Contact} />
           <Route component={NotFound} />
         </Switch>

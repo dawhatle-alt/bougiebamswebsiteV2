@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, X, Instagram, Facebook, Twitter, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown } from "lucide-react";
+import { ShoppingBag, Menu, X, Instagram, Facebook, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown, CalendarDays, LogIn, LogOut } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import SearchDialog from "@/components/SearchDialog";
@@ -11,8 +11,43 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import logoUrl from "@/assets/bougiebams-logo.png";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@workspace/replit-auth-web";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+type SubItem = { href: string; label: string };
+type NavItem = { id: string; href: string; name: string; subItems?: SubItem[] };
+
+const leftLinks: NavItem[] = [
+  { id: "shop", href: "/shop", name: "Shop" },
+  { id: "build", href: "/build", name: "Build Your Set" },
+  {
+    id: "about", href: "/about", name: "About",
+    subItems: [
+      { href: "/about", label: "About Bougie Bams" },
+      { href: "/founder", label: "Meet the Founder" },
+    ],
+  },
+  { id: "learn", href: "/learn", name: "Learn" },
+];
+
+const rightLinks: NavItem[] = [
+  { id: "events", href: "/events", name: "Events" },
+  { id: "blog", href: "/blog", name: "Blog" },
+  { id: "faq", href: "/faq", name: "FAQ" },
+  { id: "contact", href: "/contact", name: "Contact" },
+];
+
+const allLinks = [...leftLinks, ...rightLinks];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -24,7 +59,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
+
   const shopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const aboutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const openShopMenu = () => {
     if (shopTimer.current) clearTimeout(shopTimer.current);
     setShopMenuOpen(true);
@@ -32,8 +72,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const closeShopMenu = () => {
     shopTimer.current = setTimeout(() => setShopMenuOpen(false), 120);
   };
+
+  const openAboutMenu = () => {
+    if (aboutTimer.current) clearTimeout(aboutTimer.current);
+    setAboutMenuOpen(true);
+  };
+  const closeAboutMenu = () => {
+    aboutTimer.current = setTimeout(() => setAboutMenuOpen(false), 150);
+  };
+
   const [location] = useLocation();
   const { products } = useProducts();
+  const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth();
+
   const shopGroups = useMemo(
     () =>
       SHOP_CATEGORIES.map((cat) => ({
@@ -50,6 +101,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setIsOpen: setWishlistOpen,
     remove: removeWish,
   } = useWishlist();
+
+  const initials = user
+    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "U"
+    : "";
 
   const handleCheckout = async () => {
     if (items.length === 0 || checkoutLoading) return;
@@ -90,6 +145,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMobileMenuOpen(false);
     setShopMenuOpen(false);
+    setAboutMenuOpen(false);
   }, [location]);
 
   useEffect(() => {
@@ -99,19 +155,147 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [shopMenuOpen]);
 
-  const leftLinks = [
-    { name: "Shop", path: "/shop" },
-    { name: "Build Your Set", path: "/build" },
-    { name: "About", path: "/about" },
-    { name: "Learn", path: "/learn" },
-  ];
-  const rightLinks = [
-    { name: "Events", path: "/events" },
-    { name: "Blog", path: "/blog" },
-    { name: "FAQ", path: "/faq" },
-    { name: "Contact", path: "/contact" },
-  ];
-  const navLinks = [...leftLinks, ...rightLinks];
+  function renderNavLink(link: NavItem) {
+    const isHovered = hoveredId === link.id;
+    const isActive = location === link.href || (link.subItems?.some(s => s.href === location) ?? false);
+
+    if (link.id === "shop") {
+      return (
+        <div
+          key={link.id}
+          className="relative"
+          onMouseEnter={() => { setHoveredId(link.id); openShopMenu(); }}
+          onMouseLeave={() => { setHoveredId(null); closeShopMenu(); }}
+          onFocus={openShopMenu}
+        >
+          <Link
+            href={link.href}
+            aria-haspopup="true"
+            aria-expanded={shopMenuOpen}
+            className={`relative z-10 flex items-center gap-1 px-3 py-2 rounded-xl text-sm tracking-widest uppercase font-medium transition-colors duration-200 ${
+              isHovered ? "text-[#FAF8F5]" : isActive ? "text-primary" : "text-foreground hover:text-primary"
+            }`}
+          >
+            {link.name}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${shopMenuOpen ? "rotate-180" : ""}`} />
+          </Link>
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div
+                layoutId="nav-highlight"
+                className="absolute inset-0 rounded-xl -z-0"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1.05 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                style={{
+                  background: "linear-gradient(135deg, #181D37 0%, #252c55 100%)",
+                  boxShadow: "0 8px 30px rgba(201,162,39,0.25), 0 4px 12px rgba(24,29,55,0.5), 0 0 0 1px rgba(201,162,39,0.2)",
+                }}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    }
+
+    if (link.id === "about") {
+      return (
+        <div
+          key={link.id}
+          className="relative"
+          onMouseEnter={() => { setHoveredId(link.id); openAboutMenu(); }}
+          onMouseLeave={() => { setHoveredId(null); closeAboutMenu(); }}
+        >
+          <Link
+            href={link.href}
+            className={`relative z-10 flex items-center gap-1 px-3 py-2 rounded-xl text-sm tracking-widest uppercase font-medium transition-colors duration-200 ${
+              isHovered ? "text-[#FAF8F5]" : isActive ? "text-primary" : "text-foreground hover:text-primary"
+            }`}
+          >
+            {link.name}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${aboutMenuOpen ? "rotate-180" : ""}`} />
+          </Link>
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div
+                layoutId="nav-highlight"
+                className="absolute inset-0 rounded-xl -z-0"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1.05 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                style={{
+                  background: "linear-gradient(135deg, #181D37 0%, #252c55 100%)",
+                  boxShadow: "0 8px 30px rgba(201,162,39,0.25), 0 4px 12px rgba(24,29,55,0.5), 0 0 0 1px rgba(201,162,39,0.2)",
+                }}
+              />
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {aboutMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="absolute top-full left-0 mt-1 w-52 rounded-xl overflow-hidden shadow-xl border border-border/30 bg-background z-50"
+                onMouseEnter={openAboutMenu}
+                onMouseLeave={closeAboutMenu}
+              >
+                {link.subItems!.map(sub => (
+                  <Link
+                    key={sub.href}
+                    href={sub.href}
+                    className={`block px-4 py-3 text-sm font-medium transition-colors hover:bg-muted ${
+                      location === sub.href ? "text-primary" : "text-foreground"
+                    }`}
+                  >
+                    {sub.label}
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={link.id}
+        className="relative"
+        onMouseEnter={() => setHoveredId(link.id)}
+        onMouseLeave={() => setHoveredId(null)}
+      >
+        <Link
+          href={link.href}
+          onMouseEnter={link.id !== "about" ? closeShopMenu : undefined}
+          className={`relative z-10 flex items-center px-3 py-2 rounded-xl text-sm tracking-widest uppercase font-medium transition-colors duration-200 whitespace-nowrap ${
+            isHovered ? "text-[#FAF8F5]" : isActive ? "text-primary" : "text-foreground hover:text-primary"
+          }`}
+        >
+          {link.name}
+        </Link>
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              layoutId="nav-highlight"
+              className="absolute inset-0 rounded-xl -z-0"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1.05 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              style={{
+                background: "linear-gradient(135deg, #181D37 0%, #252c55 100%)",
+                boxShadow: "0 8px 30px rgba(201,162,39,0.25), 0 4px 12px rgba(24,29,55,0.5), 0 0 0 1px rgba(201,162,39,0.2)",
+              }}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -135,244 +319,255 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Menu className="w-6 h-6" />
             </button>
 
-            <nav className="hidden md:flex items-center gap-8 flex-1">
-              {leftLinks.map((link) =>
-                link.name === "Shop" ? (
-                  <div
-                    key={link.path}
-                    onMouseEnter={openShopMenu}
-                    onMouseLeave={closeShopMenu}
-                    onFocus={openShopMenu}
-                  >
-                    <Link
-                      href={link.path}
-                      aria-haspopup="true"
-                      aria-expanded={shopMenuOpen}
-                      className="flex items-center gap-1 text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors"
-                    >
-                      {link.name}
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform duration-300 ${shopMenuOpen ? "rotate-180 text-primary" : ""}`}
-                      />
-                    </Link>
-                  </div>
-                ) : (
-                  <Link
-                    key={link.path}
-                    href={link.path}
-                    onMouseEnter={closeShopMenu}
-                    className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors whitespace-nowrap"
-                  >
-                    {link.name}
-                  </Link>
-                )
-              )}
+            {/* Left nav */}
+            <nav className="hidden md:flex items-center gap-1 flex-1">
+              {leftLinks.map(link => renderNavLink(link))}
             </nav>
 
+            {/* Logo */}
             <Link href="/" className="flex-shrink-0 text-center mx-auto md:mx-0">
               <img src={logoUrl} alt="BougieBams" className="h-16 md:h-20 w-auto object-contain" />
             </Link>
 
-            <div className="flex items-center justify-end gap-6 flex-1">
-              <nav className="hidden md:flex items-center gap-8 mr-4">
-                {rightLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    href={link.path}
-                    onMouseEnter={closeShopMenu}
-                    className="text-sm tracking-widest uppercase font-medium hover:text-primary transition-colors whitespace-nowrap"
-                  >
-                    {link.name}
-                  </Link>
-                ))}
+            {/* Right nav + icons */}
+            <div className="flex items-center justify-end gap-4 flex-1">
+              <nav className="hidden md:flex items-center gap-1">
+                {rightLinks.map(link => renderNavLink(link))}
               </nav>
 
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="p-2 text-foreground hover:text-primary transition-colors"
-                aria-label="Search"
-                data-testid="button-search"
-              >
-                <Search className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="p-2 text-foreground hover:text-primary transition-colors"
+                  aria-label="Search"
+                  data-testid="button-search"
+                >
+                  <Search className="w-6 h-6" />
+                </button>
 
-              <Sheet open={wishlistOpen} onOpenChange={setWishlistOpen}>
-                <SheetTrigger asChild>
-                  <button
-                    className="relative p-2 text-foreground hover:text-primary transition-colors"
-                    aria-label="Wishlist"
-                    data-testid="button-wishlist"
-                  >
-                    <Heart className="w-6 h-6" />
-                    {wishCount > 0 && (
-                      <span className="absolute top-0 right-0 bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transform translate-x-1/4 -translate-y-1/4">
-                        {wishCount}
-                      </span>
-                    )}
-                  </button>
-                </SheetTrigger>
-                <SheetContent className="w-full sm:max-w-md flex flex-col border-l-0 p-0 font-sans">
-                  <SheetHeader className="p-6 border-b border-border">
-                    <SheetTitle className="font-serif text-2xl font-medium text-left">Your Wishlist</SheetTitle>
-                  </SheetHeader>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {wishItems.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                        <Heart className="w-12 h-12 text-muted-foreground opacity-50" />
-                        <p className="text-muted-foreground font-serif text-xl">Your wishlist is empty</p>
-                        <Button onClick={() => setWishlistOpen(false)} asChild className="mt-4">
-                          <Link href="/shop">Explore Collections</Link>
-                        </Button>
+                {/* Auth avatar */}
+                {!authLoading && isAuthenticated && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        <Avatar className="h-8 w-8">
+                          {user?.profileImageUrl && <AvatarImage src={user.profileImageUrl} alt={user.firstName ?? "User"} />}
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <div className="px-3 py-2 text-sm font-medium truncate">
+                        {user?.firstName} {user?.lastName}
                       </div>
-                    ) : (
-                      wishItems.map((product) => (
-                        <div key={product.id} className="flex gap-4" data-testid={`wishlist-item-${product.id}`}>
-                          <Link
-                            href={`/shop/${product.id}`}
-                            onClick={() => setWishlistOpen(false)}
-                            className="w-24 h-24 bg-muted rounded-md overflow-hidden flex-shrink-0"
-                          >
-                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                          </Link>
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div>
-                              <Link href={`/shop/${product.id}`} onClick={() => setWishlistOpen(false)}>
-                                <h4 className="font-serif text-lg leading-tight hover:text-primary transition-colors">{product.name}</h4>
-                              </Link>
-                              <p className="text-sm text-muted-foreground mt-1">${product.price}</p>
-                            </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <button
-                                onClick={() => { setWishlistOpen(false); addItem(product); removeWish(product.id); }}
-                                className="text-sm text-primary hover:underline underline-offset-4"
-                              >
-                                Add to cart
-                              </button>
-                              <button
-                                onClick={() => removeWish(product.id)}
-                                className="text-muted-foreground hover:text-destructive transition-colors"
-                                aria-label="Remove from wishlist"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/my-events" className="flex items-center gap-2 cursor-pointer">
+                          <CalendarDays className="h-4 w-4" />
+                          My Events
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
+                        <LogOut className="h-4 w-4" />
+                        Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {!authLoading && !isAuthenticated && (
+                  <button
+                    onClick={login}
+                    className="hidden md:flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors"
+                    aria-label="Sign in"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    <span className="text-xs tracking-widest uppercase">Sign In</span>
+                  </button>
+                )}
+
+                <Sheet open={wishlistOpen} onOpenChange={setWishlistOpen}>
+                  <SheetTrigger asChild>
+                    <button
+                      className="relative p-2 text-foreground hover:text-primary transition-colors"
+                      aria-label="Wishlist"
+                      data-testid="button-wishlist"
+                    >
+                      <Heart className="w-6 h-6" />
+                      {wishCount > 0 && (
+                        <span className="absolute top-0 right-0 bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transform translate-x-1/4 -translate-y-1/4">
+                          {wishCount}
+                        </span>
+                      )}
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent className="w-full sm:max-w-md flex flex-col border-l-0 p-0 font-sans">
+                    <SheetHeader className="p-6 border-b border-border">
+                      <SheetTitle className="font-serif text-2xl font-medium text-left">Your Wishlist</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                      {wishItems.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                          <Heart className="w-12 h-12 text-muted-foreground opacity-50" />
+                          <p className="text-muted-foreground font-serif text-xl">Your wishlist is empty</p>
+                          <Button onClick={() => setWishlistOpen(false)} asChild className="mt-4">
+                            <Link href="/shop">Explore Collections</Link>
+                          </Button>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                <SheetTrigger asChild>
-                  <button
-                    className="relative p-2 -mr-2 text-foreground hover:text-primary transition-colors"
-                    data-testid="button-cart"
-                  >
-                    <ShoppingBag className="w-6 h-6" />
-                    {totalItems > 0 && (
-                      <span className="absolute top-0 right-0 bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transform translate-x-1/4 -translate-y-1/4">
-                        {totalItems}
-                      </span>
-                    )}
-                  </button>
-                </SheetTrigger>
-                <SheetContent className="w-full sm:max-w-md flex flex-col border-l-0 p-0 font-sans">
-                  <SheetHeader className="p-6 border-b border-border">
-                    <SheetTitle className="font-serif text-2xl font-medium text-left">Your Cart</SheetTitle>
-                  </SheetHeader>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {items.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                        <ShoppingBag className="w-12 h-12 text-muted-foreground opacity-50" />
-                        <p className="text-muted-foreground font-serif text-xl">Your cart is empty</p>
-                        <Button onClick={() => setIsOpen(false)} asChild className="mt-4">
-                          <Link href="/shop">Explore Collections</Link>
-                        </Button>
-                      </div>
-                    ) : (
-                      items.map((item) => (
-                        <div key={item.product.id} className="flex gap-4" data-testid={`cart-item-${item.product.id}`}>
-                          <div className="w-24 h-24 bg-muted rounded-md overflow-hidden flex-shrink-0">
-                            <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div>
-                              <h4 className="font-serif text-lg leading-tight">{item.product.name}</h4>
-                              <p className="text-sm text-muted-foreground mt-1">${item.product.price}</p>
-                            </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <div className="flex items-center border border-border rounded-sm">
-                                <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-muted transition-colors">
-                                  <Minus className="w-4 h-4" />
+                      ) : (
+                        wishItems.map((product) => (
+                          <div key={product.id} className="flex gap-4" data-testid={`wishlist-item-${product.id}`}>
+                            <Link
+                              href={`/shop/${product.id}`}
+                              onClick={() => setWishlistOpen(false)}
+                              className="w-24 h-24 bg-muted rounded-md overflow-hidden flex-shrink-0"
+                            >
+                              <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                            </Link>
+                            <div className="flex-1 flex flex-col justify-between">
+                              <div>
+                                <Link href={`/shop/${product.id}`} onClick={() => setWishlistOpen(false)}>
+                                  <h4 className="font-serif text-lg leading-tight hover:text-primary transition-colors">{product.name}</h4>
+                                </Link>
+                                <p className="text-sm text-muted-foreground mt-1">${product.price}</p>
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                <button
+                                  onClick={() => { setWishlistOpen(false); addItem(product); removeWish(product.id); }}
+                                  className="text-sm text-primary hover:underline underline-offset-4"
+                                >
+                                  Add to cart
                                 </button>
-                                <span className="w-8 text-center text-sm">{item.quantity}</span>
-                                <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-muted transition-colors">
-                                  <Plus className="w-4 h-4" />
+                                <button
+                                  onClick={() => removeWish(product.id)}
+                                  className="text-muted-foreground hover:text-destructive transition-colors"
+                                  aria-label="Remove from wishlist"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
-                              <button onClick={() => removeItem(item.product.id)} className="text-muted-foreground hover:text-destructive transition-colors text-sm underline underline-offset-4">
-                                Remove
-                              </button>
                             </div>
                           </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {items.length > 0 && (
-                    <div className="p-6 bg-muted/30 border-t border-border mt-auto">
-                      <div className="flex justify-between font-serif text-lg mb-2">
-                        <span>Subtotal</span>
-                        <span>${subtotal}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-6">
-                        {subtotal > 150 ? "You qualify for free shipping!" : "Free shipping on orders over $150."}
-                      </p>
-                      <div className="space-y-2 mb-4">
-                        <input
-                          type="text"
-                          value={discountCode}
-                          onChange={(e) => setDiscountCode(e.target.value)}
-                          placeholder="Discount code"
-                          autoComplete="off"
-                          autoCapitalize="characters"
-                          className="w-full h-11 px-3 text-sm uppercase tracking-widest bg-background border border-border rounded-sm placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                          data-testid="input-discount-code"
-                        />
-                        {discountCode.trim() && (
-                          <input
-                            type="email"
-                            value={discountEmail}
-                            onChange={(e) => setDiscountEmail(e.target.value)}
-                            placeholder="Email used to claim your offer"
-                            autoComplete="email"
-                            className="w-full h-11 px-3 text-sm bg-background border border-border rounded-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                            data-testid="input-discount-email"
-                          />
-                        )}
-                      </div>
-                      {checkoutError && <p className="text-sm text-destructive mb-4">{checkoutError}</p>}
-                      <Button
-                        className="w-full h-12 text-lg"
-                        onClick={handleCheckout}
-                        disabled={checkoutLoading}
-                        data-testid="button-checkout"
-                      >
-                        {checkoutLoading ? (
-                          <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Redirecting to secure checkout…</>
-                        ) : (
-                          "Proceed to Checkout"
-                        )}
-                      </Button>
+                        ))
+                      )}
                     </div>
-                  )}
-                </SheetContent>
-              </Sheet>
+                  </SheetContent>
+                </Sheet>
+
+                <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                  <SheetTrigger asChild>
+                    <button
+                      className="relative p-2 -mr-2 text-foreground hover:text-primary transition-colors"
+                      data-testid="button-cart"
+                    >
+                      <ShoppingBag className="w-6 h-6" />
+                      {totalItems > 0 && (
+                        <span className="absolute top-0 right-0 bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transform translate-x-1/4 -translate-y-1/4">
+                          {totalItems}
+                        </span>
+                      )}
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent className="w-full sm:max-w-md flex flex-col border-l-0 p-0 font-sans">
+                    <SheetHeader className="p-6 border-b border-border">
+                      <SheetTitle className="font-serif text-2xl font-medium text-left">Your Cart</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                      {items.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                          <ShoppingBag className="w-12 h-12 text-muted-foreground opacity-50" />
+                          <p className="text-muted-foreground font-serif text-xl">Your cart is empty</p>
+                          <Button onClick={() => setIsOpen(false)} asChild className="mt-4">
+                            <Link href="/shop">Explore Collections</Link>
+                          </Button>
+                        </div>
+                      ) : (
+                        items.map((item) => (
+                          <div key={item.product.id} className="flex gap-4" data-testid={`cart-item-${item.product.id}`}>
+                            <div className="w-24 h-24 bg-muted rounded-md overflow-hidden flex-shrink-0">
+                              <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 flex flex-col justify-between">
+                              <div>
+                                <h4 className="font-serif text-lg leading-tight">{item.product.name}</h4>
+                                <p className="text-sm text-muted-foreground mt-1">${item.product.price}</p>
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                <div className="flex items-center border border-border rounded-sm">
+                                  <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-muted transition-colors">
+                                    <Minus className="w-4 h-4" />
+                                  </button>
+                                  <span className="w-8 text-center text-sm">{item.quantity}</span>
+                                  <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-muted transition-colors">
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <button onClick={() => removeItem(item.product.id)} className="text-muted-foreground hover:text-destructive transition-colors text-sm underline underline-offset-4">
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {items.length > 0 && (
+                      <div className="p-6 bg-muted/30 border-t border-border mt-auto">
+                        <div className="flex justify-between font-serif text-lg mb-2">
+                          <span>Subtotal</span>
+                          <span>${subtotal}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-6">
+                          {subtotal > 150 ? "You qualify for free shipping!" : "Free shipping on orders over $150."}
+                        </p>
+                        <div className="space-y-2 mb-4">
+                          <input
+                            type="text"
+                            value={discountCode}
+                            onChange={(e) => setDiscountCode(e.target.value)}
+                            placeholder="Discount code"
+                            autoComplete="off"
+                            autoCapitalize="characters"
+                            className="w-full h-11 px-3 text-sm uppercase tracking-widest bg-background border border-border rounded-sm placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            data-testid="input-discount-code"
+                          />
+                          {discountCode.trim() && (
+                            <input
+                              type="email"
+                              value={discountEmail}
+                              onChange={(e) => setDiscountEmail(e.target.value)}
+                              placeholder="Email used to claim your offer"
+                              autoComplete="email"
+                              className="w-full h-11 px-3 text-sm bg-background border border-border rounded-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                              data-testid="input-discount-email"
+                            />
+                          )}
+                        </div>
+                        {checkoutError && <p className="text-sm text-destructive mb-4">{checkoutError}</p>}
+                        <Button
+                          className="w-full h-12 text-lg"
+                          onClick={handleCheckout}
+                          disabled={checkoutLoading}
+                          data-testid="button-checkout"
+                        >
+                          {checkoutLoading ? (
+                            <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Redirecting to secure checkout…</>
+                          ) : (
+                            "Proceed to Checkout"
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </div>
 
+          {/* Shop megamenu */}
           {shopMenuOpen && (
             <div
               onMouseEnter={openShopMenu}
@@ -440,6 +635,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </header>
       </div>
 
+      {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col md:hidden animate-in fade-in zoom-in duration-300">
           <div className="p-6 flex justify-between items-center border-b border-border">
@@ -473,85 +669,87 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
             )}
-            {navLinks
-              .filter((link) => link.path !== "/shop")
-              .map((link) => (
-                <Link
-                  key={link.path}
-                  href={link.path}
-                  className="font-serif text-3xl hover:text-primary transition-colors flex items-center justify-between group"
-                >
-                  {link.name}
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Link href="/build" className="font-serif text-3xl hover:text-primary transition-colors">Build Your Set</Link>
+            <Link href="/about" className="font-serif text-3xl hover:text-primary transition-colors">About</Link>
+            <Link href="/founder" className="font-sans text-lg text-muted-foreground hover:text-primary transition-colors pl-4 -mt-4">Meet the Founder</Link>
+            <Link href="/learn" className="font-serif text-3xl hover:text-primary transition-colors">Learn</Link>
+            <Link href="/events" className="font-serif text-3xl hover:text-primary transition-colors">Events</Link>
+            <Link href="/blog" className="font-serif text-3xl hover:text-primary transition-colors">Blog</Link>
+            <Link href="/faq" className="font-serif text-3xl hover:text-primary transition-colors">FAQ</Link>
+            <Link href="/contact" className="font-serif text-3xl hover:text-primary transition-colors">Contact</Link>
+            {isAuthenticated ? (
+              <>
+                <Link href="/my-events" className="font-serif text-3xl hover:text-primary transition-colors flex items-center gap-3">
+                  <CalendarDays className="w-7 h-7" />
+                  My Events
                 </Link>
-              ))}
+                <button
+                  onClick={logout}
+                  className="font-serif text-2xl text-destructive hover:opacity-80 transition-opacity text-left flex items-center gap-3"
+                >
+                  <LogOut className="w-6 h-6" />
+                  Log out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={login}
+                className="font-serif text-2xl hover:text-primary transition-colors text-left flex items-center gap-3"
+              >
+                <LogIn className="w-6 h-6" />
+                Sign In
+              </button>
+            )}
           </nav>
         </div>
       )}
 
-      <main className={`flex-1 ${location !== "/" ? "pt-9" : ""}`}>
+      <main className="pt-[calc(theme(spacing.2)+theme(spacing.8)+theme(spacing.8))] md:pt-[calc(theme(spacing.2)+theme(spacing.8)+theme(spacing.12))]">
         {children}
       </main>
 
-      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-
-      <footer className="bg-secondary text-secondary-foreground pt-20 pb-10 border-t border-secondary-border">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-            <div className="md:col-span-2">
-              <Link href="/" className="inline-block mb-6">
-                <img src={logoUrl} alt="BougieBams" className="h-20 w-auto object-contain" />
-              </Link>
-              <p className="text-secondary-foreground/80 max-w-sm mb-8 font-serif text-lg leading-relaxed">
-                Where luxury meets the Mahjong table. Premium sets and lifestyle accessories for the modern player.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="p-2 bg-background/5 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
-                  <Instagram className="w-5 h-5" />
-                </a>
-                <a href="#" className="p-2 bg-background/5 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
-                  <Facebook className="w-5 h-5" />
-                </a>
-                <a href="#" className="p-2 bg-background/5 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
-                  <Twitter className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-sans font-semibold tracking-widest uppercase text-sm mb-6 text-primary">Shop</h4>
-              <ul className="space-y-4 text-sm">
-                <li><Link href="/shop" className="hover:text-primary transition-colors">All Products</Link></li>
-                {SHOP_CATEGORIES.map((cat) => (
-                  <li key={cat.name}>
-                    <Link href={`/shop?category=${encodeURIComponent(cat.name)}`} className="hover:text-primary transition-colors">
-                      {cat.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-sans font-semibold tracking-widest uppercase text-sm mb-6 text-primary">Company</h4>
-              <ul className="space-y-4 text-sm">
-                <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
-                <li><Link href="/learn" className="hover:text-primary transition-colors">Learn to Play</Link></li>
-                <li><Link href="/faq" className="hover:text-primary transition-colors">FAQ & Support</Link></li>
-                <li><Link href="/events" className="hover:text-primary transition-colors">Events</Link></li>
-                <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
-              </ul>
-            </div>
-          </div>
-          <Separator className="bg-secondary-foreground/10 mb-8" />
-          <div className="flex flex-col md:flex-row justify-between items-center text-xs text-secondary-foreground/60 gap-4">
-            <p>
-              <Link href="/admin" aria-label="Admin" className="cursor-default">&copy;</Link>{" "}
-              {new Date().getFullYear()} BougieBams. All rights reserved.
+      <footer className="bg-foreground text-background py-16 mt-auto">
+        <div className="container mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-10">
+          <div className="md:col-span-2">
+            <img src={`${import.meta.env.BASE_URL}bougiebams-logo-transparent.png`} alt="BougieBams" className="h-24 w-auto mb-6" />
+            <p className="text-muted text-sm leading-relaxed max-w-sm mb-6">
+              A luxury, intimate mahjong community for everyone. Curated gatherings, rich connections, and elevated experiences.
             </p>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
+            <div className="flex items-center gap-3 flex-wrap">
+              <a href="https://instagram.com/bougiebams" target="_blank" rel="noopener noreferrer" aria-label="Follow on Instagram"
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/40 text-sm text-primary hover:bg-primary hover:text-foreground transition-colors">
+                <Instagram className="w-4 h-4" />
+                @bougiebams
+              </a>
+              <a href="https://facebook.com/bougiebams" target="_blank" rel="noopener noreferrer" aria-label="Follow on Facebook"
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/40 text-sm text-primary hover:bg-primary hover:text-foreground transition-colors">
+                <Facebook className="w-4 h-4" />
+                @bougiebams
+              </a>
             </div>
           </div>
+          <div>
+            <h4 className="font-serif text-lg mb-4 text-primary">Explore</h4>
+            <ul className="space-y-3 text-sm text-muted">
+              <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
+              <li><Link href="/shop" className="hover:text-primary transition-colors">Shop</Link></li>
+              <li><Link href="/events" className="hover:text-primary transition-colors">Events</Link></li>
+              <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link href="/founder" className="hover:text-primary transition-colors">Meet the Founder</Link></li>
+              <li><Link href="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
+              <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-serif text-lg mb-4 text-primary">Connect</h4>
+            <ul className="space-y-3 text-sm text-muted">
+              <li><a href="https://instagram.com/bougiebams" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Instagram · @bougiebams</a></li>
+              <li><a href="https://facebook.com/bougiebams" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Facebook · @bougiebams</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 md:px-8 mt-12 pt-8 border-t border-muted/20 text-sm text-muted/60 text-center">
+          &copy; {new Date().getFullYear()} Bougie Bams. All rights reserved.
         </div>
       </footer>
     </div>
