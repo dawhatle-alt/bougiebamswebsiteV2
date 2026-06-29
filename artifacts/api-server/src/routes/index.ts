@@ -8,9 +8,12 @@ import registrationsRouter from "./registrations";
 import contactRouter from "./contact";
 import adminRouter from "./admin";
 import storageRouter from "./storage";
+import authRouter from "./auth";
+import checkoutRouter from "./checkout";
 
 const router: IRouter = Router();
 
+router.use(authRouter);
 router.use(healthRouter);
 router.use(productsRouter);
 router.use(eventsRouter);
@@ -20,5 +23,6 @@ router.use(registrationsRouter);
 router.use(contactRouter);
 router.use(adminRouter);
 router.use(storageRouter);
+router.use(checkoutRouter);
 
 export default router;

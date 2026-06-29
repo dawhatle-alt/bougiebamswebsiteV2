@@ -101,9 +101,10 @@ export default function Admin() {
     setLoggingIn(true);
     setLoginError("");
     try {
-      const res = await fetch(`${API_BASE}/api/admin/verify`, {
+      const res = await fetch(`${API_BASE}/api/admin/auth/login`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${password}` },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
       });
       if (res.ok) {
         const data = await res.json();
