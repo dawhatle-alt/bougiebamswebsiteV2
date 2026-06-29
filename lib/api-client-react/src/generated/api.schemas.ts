@@ -146,6 +146,15 @@ export interface RegistrationInput {
   notes?: string;
 }
 
+export type RegistrationRecordStatus = typeof RegistrationRecordStatus[keyof typeof RegistrationRecordStatus];
+
+
+export const RegistrationRecordStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+} as const;
+
 export interface RegistrationRecord {
   id: number;
   eventId: number;
@@ -153,6 +162,7 @@ export interface RegistrationRecord {
   email: string;
   /** @nullable */
   notes?: string | null;
+  status: RegistrationRecordStatus;
   createdAt: string;
 }
 
@@ -235,12 +245,16 @@ export interface ContactInput {
   message: string;
 }
 
-export interface AdminLoginInput {
-  password: string;
-}
-
-export interface AdminAuthToken {
-  token: string;
+export interface ApiUser {
+  /** Replit user ID */
+  id: string;
+  /** Display name */
+  name: string;
+  /**
+     * Avatar URL
+     * @nullable
+     */
+  profileImage: string | null;
 }
 
 export interface AdminStats {
@@ -253,4 +267,38 @@ export interface AdminStats {
 export interface MessageResponse {
   message: string;
 }
+
+export type ListProductsParams = {
+/**
+ * Filter by product category
+ */
+category?: string;
+};
+
+export type ListEventsParams = {
+/**
+ * Filter by category (In-Person, Virtual, Tournament, Workshop)
+ */
+category?: string;
+/**
+ * When true, return only events on or after today
+ */
+upcoming?: boolean;
+};
+
+export type CreateRegistrationCheckout200 = {
+  url: string;
+};
+
+export type ListMyRegistrations200 = {
+  registrations: RegistrationRecord[];
+};
+
+export type GetRegistration200 = {
+  registration: RegistrationRecord;
+};
+
+export type GetCurrentUser200 = {
+  user?: ApiUser | null;
+};
 

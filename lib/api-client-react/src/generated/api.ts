@@ -20,20 +20,24 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AdminAuthToken,
-  AdminLoginInput,
   AdminStats,
   BlogPostInput,
   BlogPostListResponse,
   BlogPostResponse,
   BlogPostUpdate,
   ContactInput,
+  CreateRegistrationCheckout200,
   EventInput,
   EventListResponse,
   EventResponse,
   EventStats,
   EventUpdate,
+  GetCurrentUser200,
+  GetRegistration200,
   HealthStatus,
+  ListEventsParams,
+  ListMyRegistrations200,
+  ListProductsParams,
   MessageResponse,
   ProductInput,
   ProductListResponse,
@@ -151,20 +155,27 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
-export const getListProductsUrl = () => {
+export const getListProductsUrl = (params?: ListProductsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/products`
+  return stringifiedParams.length > 0 ? `/api/products?${stringifiedParams}` : `/api/products`
 }
 
 /**
  * @summary List all products
  */
-export const listProducts = async ( options?: RequestInit): Promise<ProductListResponse> => {
+export const listProducts = async (params?: ListProductsParams, options?: RequestInit): Promise<ProductListResponse> => {
 
-  return customFetch<ProductListResponse>(getListProductsUrl(),
+  return customFetch<ProductListResponse>(getListProductsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -177,23 +188,23 @@ export const listProducts = async ( options?: RequestInit): Promise<ProductListR
 
 
 
-export const getListProductsQueryKey = () => {
+export const getListProductsQueryKey = (params?: ListProductsParams,) => {
     return [
-    `/api/products`
+    `/api/products`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListProductsQueryOptions = <TData = Awaited<ReturnType<typeof listProducts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListProductsQueryOptions = <TData = Awaited<ReturnType<typeof listProducts>>, TError = ErrorType<unknown>>(params?: ListProductsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListProductsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListProductsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProducts>>> = ({ signal }) => listProducts({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProducts>>> = ({ signal }) => listProducts(params, { signal, ...requestOptions });
 
 
 
@@ -211,11 +222,11 @@ export type ListProductsQueryError = ErrorType<unknown>
  */
 
 export function useListProducts<TData = Awaited<ReturnType<typeof listProducts>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListProductsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListProductsQueryOptions(options)
+  const queryOptions = getListProductsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -593,20 +604,27 @@ export const useDeleteProduct = <TError = ErrorType<void>,
       return useMutation(getDeleteProductMutationOptions(options));
     }
 
-export const getListEventsUrl = () => {
+export const getListEventsUrl = (params?: ListEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/events`
+  return stringifiedParams.length > 0 ? `/api/events?${stringifiedParams}` : `/api/events`
 }
 
 /**
  * @summary List published events
  */
-export const listEvents = async ( options?: RequestInit): Promise<EventListResponse> => {
+export const listEvents = async (params?: ListEventsParams, options?: RequestInit): Promise<EventListResponse> => {
 
-  return customFetch<EventListResponse>(getListEventsUrl(),
+  return customFetch<EventListResponse>(getListEventsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -619,23 +637,23 @@ export const listEvents = async ( options?: RequestInit): Promise<EventListRespo
 
 
 
-export const getListEventsQueryKey = () => {
+export const getListEventsQueryKey = (params?: ListEventsParams,) => {
     return [
-    `/api/events`
+    `/api/events`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListEventsQueryOptions = <TData = Awaited<ReturnType<typeof listEvents>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListEventsQueryOptions = <TData = Awaited<ReturnType<typeof listEvents>>, TError = ErrorType<unknown>>(params?: ListEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListEventsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListEventsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEvents>>> = ({ signal }) => listEvents({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEvents>>> = ({ signal }) => listEvents(params, { signal, ...requestOptions });
 
 
 
@@ -653,11 +671,11 @@ export type ListEventsQueryError = ErrorType<unknown>
  */
 
 export function useListEvents<TData = Awaited<ReturnType<typeof listEvents>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListEventsQueryOptions(options)
+  const queryOptions = getListEventsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1044,7 +1062,7 @@ export const getCreateRegistrationUrl = () => {
 }
 
 /**
- * @summary Register for an event
+ * @summary Register for a free event (no payment required)
  */
 export const createRegistration = async (registrationInput: RegistrationInput, options?: RequestInit): Promise<RegistrationResult> => {
 
@@ -1092,7 +1110,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateRegistrationMutationError = ErrorType<void>
 
     /**
- * @summary Register for an event
+ * @summary Register for a free event (no payment required)
  */
 export const useCreateRegistration = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRegistration>>, TError,{data: BodyType<RegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1104,6 +1122,230 @@ export const useCreateRegistration = <TError = ErrorType<void>,
       > => {
       return useMutation(getCreateRegistrationMutationOptions(options));
     }
+
+export const getCreateRegistrationCheckoutUrl = () => {
+
+
+
+
+  return `/api/registrations/checkout`
+}
+
+/**
+ * @summary Start a Stripe checkout session for paid event registration
+ */
+export const createRegistrationCheckout = async (registrationInput: RegistrationInput, options?: RequestInit): Promise<CreateRegistrationCheckout200> => {
+
+  return customFetch<CreateRegistrationCheckout200>(getCreateRegistrationCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(registrationInput)
+  }
+);}
+
+
+
+
+export const getCreateRegistrationCheckoutMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRegistrationCheckout>>, TError,{data: BodyType<RegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRegistrationCheckout>>, TError,{data: BodyType<RegistrationInput>}, TContext> => {
+
+const mutationKey = ['createRegistrationCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRegistrationCheckout>>, {data: BodyType<RegistrationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRegistrationCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRegistrationCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createRegistrationCheckout>>>
+    export type CreateRegistrationCheckoutMutationBody = BodyType<RegistrationInput>
+    export type CreateRegistrationCheckoutMutationError = ErrorType<void>
+
+    /**
+ * @summary Start a Stripe checkout session for paid event registration
+ */
+export const useCreateRegistrationCheckout = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRegistrationCheckout>>, TError,{data: BodyType<RegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRegistrationCheckout>>,
+        TError,
+        {data: BodyType<RegistrationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateRegistrationCheckoutMutationOptions(options));
+    }
+
+export const getListMyRegistrationsUrl = () => {
+
+
+
+
+  return `/api/registrations/mine`
+}
+
+/**
+ * @summary List registrations for the currently authenticated user
+ */
+export const listMyRegistrations = async ( options?: RequestInit): Promise<ListMyRegistrations200> => {
+
+  return customFetch<ListMyRegistrations200>(getListMyRegistrationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyRegistrationsQueryKey = () => {
+    return [
+    `/api/registrations/mine`
+    ] as const;
+    }
+
+
+export const getListMyRegistrationsQueryOptions = <TData = Awaited<ReturnType<typeof listMyRegistrations>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyRegistrations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyRegistrationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyRegistrations>>> = ({ signal }) => listMyRegistrations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyRegistrations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyRegistrationsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyRegistrations>>>
+export type ListMyRegistrationsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List registrations for the currently authenticated user
+ */
+
+export function useListMyRegistrations<TData = Awaited<ReturnType<typeof listMyRegistrations>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyRegistrations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyRegistrationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetRegistrationUrl = (id: number,) => {
+
+
+
+
+  return `/api/registrations/${id}`
+}
+
+/**
+ * @summary Get a single registration by ID
+ */
+export const getRegistration = async (id: number, options?: RequestInit): Promise<GetRegistration200> => {
+
+  return customFetch<GetRegistration200>(getGetRegistrationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRegistrationQueryKey = (id: number,) => {
+    return [
+    `/api/registrations/${id}`
+    ] as const;
+    }
+
+
+export const getGetRegistrationQueryOptions = <TData = Awaited<ReturnType<typeof getRegistration>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRegistrationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRegistration>>> = ({ signal }) => getRegistration(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRegistration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRegistrationQueryResult = NonNullable<Awaited<ReturnType<typeof getRegistration>>>
+export type GetRegistrationQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a single registration by ID
+ */
+
+export function useGetRegistration<TData = Awaited<ReturnType<typeof getRegistration>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRegistrationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListBlogPostsUrl = () => {
 
@@ -1687,75 +1929,313 @@ export const useSendContactEmail = <TError = ErrorType<unknown>,
       return useMutation(getSendContactEmailMutationOptions(options));
     }
 
-export const getAdminLoginUrl = () => {
+export const getGetCurrentUserUrl = () => {
 
 
 
 
-  return `/api/admin/auth/login`
+  return `/api/auth/me`
 }
 
 /**
- * @summary Admin login
+ * @summary Get current authenticated user (null if not logged in)
  */
-export const adminLogin = async (adminLoginInput: AdminLoginInput, options?: RequestInit): Promise<AdminAuthToken> => {
+export const getCurrentUser = async ( options?: RequestInit): Promise<GetCurrentUser200> => {
 
-  return customFetch<AdminAuthToken>(getAdminLoginUrl(),
+  return customFetch<GetCurrentUser200>(getGetCurrentUserUrl(),
   {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminLoginInput)
+    method: 'GET'
+
+
   }
 );}
 
 
 
 
-export const getAdminLoginMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginInput>}, TContext> => {
 
-const mutationKey = ['adminLogin'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminLogin>>, {data: BodyType<AdminLoginInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  adminLogin(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AdminLoginMutationResult = NonNullable<Awaited<ReturnType<typeof adminLogin>>>
-    export type AdminLoginMutationBody = BodyType<AdminLoginInput>
-    export type AdminLoginMutationError = ErrorType<void>
-
-    /**
- * @summary Admin login
- */
-export const useAdminLogin = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof adminLogin>>,
-        TError,
-        {data: BodyType<AdminLoginInput>},
-        TContext
-      > => {
-      return useMutation(getAdminLoginMutationOptions(options));
+export const getGetCurrentUserQueryKey = () => {
+    return [
+    `/api/auth/me`
+    ] as const;
     }
+
+
+export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({ signal }) => getCurrentUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>
+export type GetCurrentUserQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current authenticated user (null if not logged in)
+ */
+
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getInitiateLoginUrl = () => {
+
+
+
+
+  return `/api/auth/login`
+}
+
+/**
+ * @summary Redirect to Replit OIDC login page
+ */
+export const initiateLogin = async ( options?: RequestInit): Promise<unknown> => {
+
+  return customFetch<unknown>(getInitiateLoginUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getInitiateLoginQueryKey = () => {
+    return [
+    `/api/auth/login`
+    ] as const;
+    }
+
+
+export const getInitiateLoginQueryOptions = <TData = Awaited<ReturnType<typeof initiateLogin>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof initiateLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getInitiateLoginQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof initiateLogin>>> = ({ signal }) => initiateLogin({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof initiateLogin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type InitiateLoginQueryResult = NonNullable<Awaited<ReturnType<typeof initiateLogin>>>
+export type InitiateLoginQueryError = ErrorType<void>
+
+
+/**
+ * @summary Redirect to Replit OIDC login page
+ */
+
+export function useInitiateLogin<TData = Awaited<ReturnType<typeof initiateLogin>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof initiateLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getInitiateLoginQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getOidcCallbackUrl = () => {
+
+
+
+
+  return `/api/auth/callback`
+}
+
+/**
+ * @summary OIDC callback from Replit
+ */
+export const oidcCallback = async ( options?: RequestInit): Promise<unknown> => {
+
+  return customFetch<unknown>(getOidcCallbackUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOidcCallbackQueryKey = () => {
+    return [
+    `/api/auth/callback`
+    ] as const;
+    }
+
+
+export const getOidcCallbackQueryOptions = <TData = Awaited<ReturnType<typeof oidcCallback>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof oidcCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOidcCallbackQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof oidcCallback>>> = ({ signal }) => oidcCallback({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof oidcCallback>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type OidcCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof oidcCallback>>>
+export type OidcCallbackQueryError = ErrorType<void>
+
+
+/**
+ * @summary OIDC callback from Replit
+ */
+
+export function useOidcCallback<TData = Awaited<ReturnType<typeof oidcCallback>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof oidcCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getOidcCallbackQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getLogoutUrl = () => {
+
+
+
+
+  return `/api/auth/logout`
+}
+
+/**
+ * @summary Log out the current user
+ */
+export const logout = async ( options?: RequestInit): Promise<unknown> => {
+
+  return customFetch<unknown>(getLogoutUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogoutQueryKey = () => {
+    return [
+    `/api/auth/logout`
+    ] as const;
+    }
+
+
+export const getLogoutQueryOptions = <TData = Awaited<ReturnType<typeof logout>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logout>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLogoutQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof logout>>> = ({ signal }) => logout({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof logout>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type LogoutQueryResult = NonNullable<Awaited<ReturnType<typeof logout>>>
+export type LogoutQueryError = ErrorType<void>
+
+
+/**
+ * @summary Log out the current user
+ */
+
+export function useLogout<TData = Awaited<ReturnType<typeof logout>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logout>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getLogoutQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetAdminStatsUrl = () => {
 

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count } from "drizzle-orm";
+import { eq, count, gte, and, type SQL } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import {
   ListEventsResponse,
@@ -34,12 +34,23 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
   };
 }
 
-router.get("/events", async (_req, res): Promise<void> => {
+router.get("/events", async (req, res): Promise<void> => {
+  const { category, upcoming } = req.query;
+  const conditions: SQL[] = [eq(eventsTable.published, true)];
+
+  if (category && typeof category === "string") {
+    conditions.push(eq(eventsTable.category, category));
+  }
+  if (upcoming === "true") {
+    const today = new Date().toISOString().slice(0, 10);
+    conditions.push(gte(eventsTable.date, today));
+  }
+
   const rows = await db
     .select()
     .from(eventsTable)
-    .where(eq(eventsTable.published, true))
-    .orderBy(eventsTable.createdAt);
+    .where(and(...conditions))
+    .orderBy(eventsTable.date);
   res.json(ListEventsResponse.parse({ events: rows.map(toApiEvent) }));
 });
 

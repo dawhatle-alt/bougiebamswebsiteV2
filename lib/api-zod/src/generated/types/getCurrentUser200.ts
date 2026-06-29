@@ -5,7 +5,8 @@
  * BougieBams API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ApiUser } from './apiUser';
 
-export interface AdminLoginInput {
-  password: string;
-}
+export type GetCurrentUser200 = {
+  user?: ApiUser | null;
+};

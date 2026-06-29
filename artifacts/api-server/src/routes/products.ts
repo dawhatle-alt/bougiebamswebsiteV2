@@ -15,8 +15,14 @@ import { requireAdmin } from "../middleware/auth";
 
 const router: IRouter = Router();
 
-router.get("/products", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(productsTable).orderBy(productsTable.createdAt);
+router.get("/products", async (req, res): Promise<void> => {
+  const { category } = req.query;
+  const baseQuery = db.select().from(productsTable);
+  const rows = await (
+    category && typeof category === "string"
+      ? baseQuery.where(eq(productsTable.category, category))
+      : baseQuery
+  ).orderBy(productsTable.createdAt);
   const products = rows.map((r) => ({
     id: r.id,
     sku: r.sku,

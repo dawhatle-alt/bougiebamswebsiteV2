@@ -5,7 +5,8 @@
  * BougieBams API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RegistrationRecord } from './registrationRecord';
 
-export interface AdminAuthToken {
-  token: string;
-}
+export type GetRegistration200 = {
+  registration: RegistrationRecord;
+};

@@ -47,6 +47,12 @@ paths:
       operationId: listProducts
       tags: [products]
       summary: List all products
+      parameters:
+        - name: category
+          in: query
+          description: Filter by product category
+          schema:
+            type: string
       responses:
         "200":
           description: Product list
@@ -59,7 +65,7 @@ paths:
       tags: [products]
       summary: Create a product (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -114,7 +120,7 @@ paths:
       tags: [products]
       summary: Update a product (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: id
           in: path
@@ -143,7 +149,7 @@ paths:
       tags: [products]
       summary: Delete a product (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: id
           in: path
@@ -162,6 +168,17 @@ paths:
       operationId: listEvents
       tags: [events]
       summary: List published events
+      parameters:
+        - name: category
+          in: query
+          description: Filter by category (In-Person, Virtual, Tournament, Workshop)
+          schema:
+            type: string
+        - name: upcoming
+          in: query
+          description: When true, return only events on or after today
+          schema:
+            type: boolean
       responses:
         "200":
           description: Events list
@@ -174,7 +191,7 @@ paths:
       tags: [events]
       summary: Create an event (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -197,7 +214,7 @@ paths:
       tags: [events]
       summary: Event stats summary (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       responses:
         "200":
           description: Event stats
@@ -231,7 +248,7 @@ paths:
       tags: [events]
       summary: Update an event (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: id
           in: path
@@ -258,7 +275,7 @@ paths:
       tags: [events]
       summary: Delete an event (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: id
           in: path
@@ -275,7 +292,7 @@ paths:
     post:
       operationId: createRegistration
       tags: [registrations]
-      summary: Register for an event
+      summary: Register for a free event (no payment required)
       requestBody:
         required: true
         content:
@@ -291,6 +308,91 @@ paths:
                 $ref: "#/components/schemas/RegistrationResult"
         "400":
           description: Bad request (sold out, invalid)
+
+  /registrations/checkout:
+    post:
+      operationId: createRegistrationCheckout
+      tags: [registrations]
+      summary: Start a Stripe checkout session for paid event registration
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationInput"
+      responses:
+        "200":
+          description: Checkout URL or confirmation URL for free events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+        "401":
+          description: Authentication required
+        "404":
+          description: Event not found
+        "409":
+          description: Event is sold out
+
+  /registrations/mine:
+    get:
+      operationId: listMyRegistrations
+      tags: [registrations]
+      summary: List registrations for the currently authenticated user
+      security:
+        - CookieAuth: []
+      responses:
+        "200":
+          description: User registrations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [registrations]
+                properties:
+                  registrations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RegistrationRecord"
+        "401":
+          description: Authentication required
+
+  /registrations/{id}:
+    get:
+      operationId: getRegistration
+      tags: [registrations]
+      summary: Get a single registration by ID
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Registration details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [registration]
+                properties:
+                  registration:
+                    $ref: "#/components/schemas/RegistrationRecord"
+        "401":
+          description: Authentication required
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
 
   # ── Blog ─────────────────────────────────────────────────────────────────
   /blog:
@@ -310,7 +412,7 @@ paths:
       tags: [blog]
       summary: Create a blog post (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -352,7 +454,7 @@ paths:
       tags: [blog]
       summary: Update a blog post (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: slug
           in: path
@@ -379,7 +481,7 @@ paths:
       tags: [blog]
       summary: Delete a blog post (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: slug
           in: path
@@ -420,7 +522,7 @@ paths:
       tags: [subscribers]
       summary: List all subscribers (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       responses:
         "200":
           description: Subscribers list
@@ -452,26 +554,50 @@ paths:
                 $ref: "#/components/schemas/MessageResponse"
 
   # ── Auth ─────────────────────────────────────────────────────────────────
-  /admin/auth/login:
-    post:
-      operationId: adminLogin
+  /auth/me:
+    get:
+      operationId: getCurrentUser
       tags: [auth]
-      summary: Admin login
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AdminLoginInput"
+      summary: Get current authenticated user (null if not logged in)
       responses:
         "200":
-          description: Login success with token
+          description: Current user or null
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminAuthToken"
-        "401":
-          description: Invalid password
+                type: object
+                properties:
+                  user:
+                    oneOf:
+                      - $ref: "#/components/schemas/ApiUser"
+                      - type: "null"
+
+  /auth/login:
+    get:
+      operationId: initiateLogin
+      tags: [auth]
+      summary: Redirect to Replit OIDC login page
+      responses:
+        "302":
+          description: Redirect to Replit OIDC
+
+  /auth/callback:
+    get:
+      operationId: oidcCallback
+      tags: [auth]
+      summary: OIDC callback from Replit
+      responses:
+        "302":
+          description: Redirect to app after successful login
+
+  /auth/logout:
+    get:
+      operationId: logout
+      tags: [auth]
+      summary: Log out the current user
+      responses:
+        "302":
+          description: Redirect to home page
 
   # ── Admin stats ──────────────────────────────────────────────────────────
   /admin/stats:
@@ -480,7 +606,7 @@ paths:
       tags: [admin]
       summary: Dashboard summary stats (admin)
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       responses:
         "200":
           description: Admin dashboard stats
@@ -493,9 +619,11 @@ paths:
 
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: sid
+      description: Session cookie set by the Replit OIDC login flow
 
   schemas:
     HealthStatus:
@@ -709,7 +837,7 @@ components:
 
     RegistrationRecord:
       type: object
-      required: [id, eventId, name, email, createdAt]
+      required: [id, eventId, name, email, status, createdAt]
       properties:
         id:
           type: integer
@@ -721,6 +849,9 @@ components:
           type: string
         notes:
           type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled]
         createdAt:
           type: string
 
@@ -872,19 +1003,19 @@ components:
           type: string
 
     # ── Auth schemas ─────────────────────────────────────────────────────
-    AdminLoginInput:
+    ApiUser:
       type: object
-      required: [password]
+      required: [id, name, profileImage]
       properties:
-        password:
+        id:
           type: string
-
-    AdminAuthToken:
-      type: object
-      required: [token]
-      properties:
-        token:
+          description: Replit user ID
+        name:
           type: string
+          description: Display name
+        profileImage:
+          type: ["string", "null"]
+          description: Avatar URL
 
     # ── Admin stats ──────────────────────────────────────────────────────
     AdminStats:

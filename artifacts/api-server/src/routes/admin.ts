@@ -144,7 +144,7 @@ router.post("/admin/blog", requireAdmin, async (req, res): Promise<void> => {
 });
 
 router.put("/admin/blog/:id", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
     return;
@@ -171,7 +171,7 @@ router.put("/admin/blog/:id", requireAdmin, async (req, res): Promise<void> => {
 });
 
 router.delete("/admin/blog/:id", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
     return;
@@ -216,7 +216,7 @@ router.post("/admin/events", requireAdmin, async (req, res): Promise<void> => {
 });
 
 router.put("/admin/events/:id", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
     return;
@@ -248,7 +248,7 @@ router.put("/admin/events/:id", requireAdmin, async (req, res): Promise<void> =>
 });
 
 router.delete("/admin/events/:id", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
     return;
@@ -271,7 +271,7 @@ router.get("/admin/product-images", requireAdmin, async (_req, res): Promise<voi
 });
 
 router.put("/admin/product-images/:sku", requireAdmin, async (req, res): Promise<void> => {
-  const { sku } = req.params;
+  const sku = req.params.sku as string;
   const { imagePath } = req.body as { imagePath?: string };
   if (!imagePath) {
     res.status(400).json({ error: "imagePath is required" });
@@ -289,7 +289,7 @@ router.put("/admin/product-images/:sku", requireAdmin, async (req, res): Promise
 });
 
 router.delete("/admin/product-images/:sku", requireAdmin, async (req, res): Promise<void> => {
-  const { sku } = req.params;
+  const sku = req.params.sku as string;
   await db.delete(productImagesTable).where(eq(productImagesTable.sku, sku));
   res.sendStatus(204);
 });
@@ -306,7 +306,7 @@ router.post("/admin/storage/upload-url", requireAdmin, async (req, res): Promise
 });
 
 router.put("/admin/storage/upload/:filename", requireAdmin, rawBodyMiddleware, async (req, res): Promise<void> => {
-  const { filename } = req.params;
+  const filename = req.params.filename as string;
   if (!filename || !/^[\w-]+\.\w+$/.test(filename)) {
     res.status(400).json({ error: "Invalid filename" });
     return;

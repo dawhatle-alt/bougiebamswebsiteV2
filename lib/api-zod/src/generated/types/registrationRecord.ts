@@ -5,6 +5,7 @@
  * BougieBams API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RegistrationRecordStatus } from './registrationRecordStatus';
 
 export interface RegistrationRecord {
   id: number;
@@ -13,5 +14,6 @@ export interface RegistrationRecord {
   email: string;
   /** @nullable */
   notes?: string | null;
+  status: RegistrationRecordStatus;
   createdAt: string;
 }

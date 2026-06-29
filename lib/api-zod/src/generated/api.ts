@@ -20,6 +20,10 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary List all products
  */
+export const ListProductsQueryParams = zod.object({
+  "category": zod.coerce.string().optional().describe('Filter by product category')
+})
+
 export const ListProductsResponse = zod.object({
   "products": zod.array(zod.object({
   "id": zod.string(),
@@ -140,6 +144,11 @@ export const DeleteProductResponse = zod.void()
 /**
  * @summary List published events
  */
+export const ListEventsQueryParams = zod.object({
+  "category": zod.coerce.string().optional().describe('Filter by category (In-Person, Virtual, Tournament, Workshop)'),
+  "upcoming": zod.coerce.boolean().optional().describe('When true, return only events on or after today')
+})
+
 export const ListEventsResponse = zod.object({
   "events": zod.array(zod.object({
   "id": zod.number(),
@@ -283,7 +292,7 @@ export const DeleteEventResponse = zod.void()
 
 
 /**
- * @summary Register for an event
+ * @summary Register for a free event (no payment required)
  */
 export const CreateRegistrationBody = zod.object({
   "eventId": zod.number(),
@@ -299,6 +308,58 @@ export const CreateRegistrationResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "notes": zod.string().nullish(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled']),
+  "createdAt": zod.string()
+})
+})
+
+
+/**
+ * @summary Start a Stripe checkout session for paid event registration
+ */
+export const CreateRegistrationCheckoutBody = zod.object({
+  "eventId": zod.number(),
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "notes": zod.string().optional()
+})
+
+export const CreateRegistrationCheckoutResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
+ * @summary List registrations for the currently authenticated user
+ */
+export const ListMyRegistrationsResponse = zod.object({
+  "registrations": zod.array(zod.object({
+  "id": zod.number(),
+  "eventId": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "notes": zod.string().nullish(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled']),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Get a single registration by ID
+ */
+export const GetRegistrationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetRegistrationResponse = zod.object({
+  "registration": zod.object({
+  "id": zod.number(),
+  "eventId": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "notes": zod.string().nullish(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled']),
   "createdAt": zod.string()
 })
 })
@@ -466,15 +527,33 @@ export const SendContactEmailResponse = zod.object({
 
 
 /**
- * @summary Admin login
+ * @summary Get current authenticated user (null if not logged in)
  */
-export const AdminLoginBody = zod.object({
-  "password": zod.string()
+export const GetCurrentUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string().describe('Replit user ID'),
+  "name": zod.string().describe('Display name'),
+  "profileImage": zod.string().nullable().describe('Avatar URL')
+}),zod.null()]).optional()
 })
 
-export const AdminLoginResponse = zod.object({
-  "token": zod.string()
-})
+
+/**
+ * @summary Redirect to Replit OIDC login page
+ */
+export const InitiateLoginResponse = zod.void()
+
+
+/**
+ * @summary OIDC callback from Replit
+ */
+export const OidcCallbackResponse = zod.void()
+
+
+/**
+ * @summary Log out the current user
+ */
+export const LogoutResponse = zod.void()
 
 
 /**

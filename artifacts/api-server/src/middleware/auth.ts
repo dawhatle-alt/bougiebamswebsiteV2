@@ -1,6 +1,18 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { logger } from "../lib/logger";
 
+export function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+}
+
 export function requireAdmin(
   req: Request,
   res: Response,
