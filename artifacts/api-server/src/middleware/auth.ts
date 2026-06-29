@@ -23,17 +23,15 @@ export function requireAdmin(
     return;
   }
 
-  const adminUserIds = process.env.ADMIN_USER_IDS
-    ?.split(",")
+  const adminUserIds = (process.env.ADMIN_USER_IDS ?? "")
+    .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
 
-  if (adminUserIds && adminUserIds.length > 0) {
-    if (!adminUserIds.includes(req.user!.id)) {
-      logger.warn({ userId: req.user!.id }, "Unauthorized admin access attempt");
-      res.status(403).json({ error: "Not authorized" });
-      return;
-    }
+  if (adminUserIds.length === 0 || !adminUserIds.includes(req.user!.id)) {
+    logger.warn({ userId: req.user!.id }, "Unauthorized admin access attempt");
+    res.status(403).json({ error: "Not authorized" });
+    return;
   }
 
   next();
