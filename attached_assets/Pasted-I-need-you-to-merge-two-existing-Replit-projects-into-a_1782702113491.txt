@@ -1,0 +1,77 @@
+I need you to merge two existing Replit projects into a new unified project.
+
+Source projects:
+1. Bougie-Bams-Site
+   URL: https://replit.com/@dawhatle/Bougie-Bams-Site
+
+2. Event-Community-Hub
+   URL: https://replit.com/@dawhatle/Event-Community-Hub
+
+Goal:
+Create a new project that uses Event-Community-Hub as the functional foundation, but brings over all features, pages, branding, content, styling, UI components, and visual design from Bougie-Bams-Site.
+
+Primary requirement:
+The final site should keep the look, feel, branding, colors, fonts, layout style, and customer-facing experience of Bougie-Bams-Site.
+
+Use Event-Community-Hub as the base application structure only where it provides useful event, community, membership, registration, or backend functionality.
+
+What to preserve from Bougie-Bams-Site:
+- Overall visual design and brand identity
+- Homepage layout and copy
+- Navigation structure
+- Colors, fonts, buttons, cards, spacing, and imagery
+- Product or Mahjong-related sections
+- Any affiliate/product links
+- Any existing marketing pages
+- Any existing components that define the BougieBams customer experience
+
+What to preserve or integrate from Event-Community-Hub:
+- Event management features
+- Community hub features
+- Event listing pages
+- Event detail pages
+- RSVP, registration, ticketing, or signup flows if present
+- Member/community functionality if present
+- Admin or content management functionality if present
+- Any database schema, routes, API endpoints, or backend logic needed to support events/community features
+
+Implementation instructions:
+1. Inspect both projects before making changes.
+2. Identify the tech stack, routing system, package dependencies, database usage, environment variables, and folder structure in both projects.
+3. Use Event-Community-Hub as the starting point if it has more complete application logic.
+4. Replace or restyle its front-end using Bougie-Bams-Site design system and branding.
+5. Move reusable components, assets, images, CSS, theme files, and layout patterns from Bougie-Bams-Site into the new merged project.
+6. Do not remove working Event-Community-Hub functionality unless it conflicts with the BougieBams brand experience.
+7. Resolve dependency conflicts carefully.
+8. Preserve environment variable names where possible and document any required changes.
+9. Make sure all routes load without errors.
+10. Make sure the app runs successfully in Replit.
+
+Final site structure should include:
+- Branded BougieBams homepage
+- Events page
+- Event detail page
+- Community or membership page if available
+- About page
+- Contact or signup page
+- Product / affiliate / Mahjong feature sections from Bougie-Bams-Site
+- Admin or management features from Event-Community-Hub if available
+
+Design direction:
+This should feel like a polished BougieBams Mahjong lifestyle, events, and community website. It should not look like a generic event template. Prioritize upscale, fun, social, colorful, and boutique Mahjong branding.
+
+Before coding:
+Provide a short merge plan that includes:
+- Which project will be used as the base
+- Which files/components will be migrated
+- Which features will be preserved
+- Any likely conflicts or risks
+
+After coding:
+Provide:
+- Summary of changes made
+- Files changed
+- Any setup steps required
+- Any environment variables needed
+- Any known issues or TODOs
+- How to run and test the merged project
