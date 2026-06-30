@@ -87,6 +87,7 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
     spotsLeft: row.spotsLeft,
     host: row.host,
     published: row.published,
+    reminderHoursBefore: row.reminderHoursBefore ?? null,
   };
 }
 
@@ -213,6 +214,7 @@ router.post("/admin/events", requireAdmin, async (req, res): Promise<void> => {
       spotsLeft: Number(b.spotsLeft) || 0,
       host: (b.host as string) ?? "BougieBams",
       published: b.published === true,
+      reminderHoursBefore: b.reminderHoursBefore != null ? Number(b.reminderHoursBefore) : null,
     })
     .returning();
   res.status(201).json({ event: toApiEvent(row) });
@@ -238,6 +240,7 @@ router.put("/admin/events/:id", requireAdmin, async (req, res): Promise<void> =>
   if (b.spotsLeft !== undefined) updateData.spotsLeft = Number(b.spotsLeft);
   if (b.host !== undefined) updateData.host = b.host;
   if (b.published !== undefined) updateData.published = b.published;
+  if ("reminderHoursBefore" in b) updateData.reminderHoursBefore = b.reminderHoursBefore != null ? Number(b.reminderHoursBefore) : null;
   const [row] = await db
     .update(eventsTable)
     .set(updateData)

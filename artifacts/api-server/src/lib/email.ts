@@ -87,3 +87,52 @@ export async function sendRegistrationConfirmationEmail(opts: {
     logger.info({ to: registrantEmail, event: eventTitle }, "Registration confirmation email sent");
   }
 }
+
+export async function sendReminderEmail(opts: {
+  registrantName: string;
+  registrantEmail: string;
+  eventTitle: string;
+  eventDate: string;
+  eventTime: string;
+  eventLocation: string;
+  eventHost: string;
+  hoursUntilEvent: number;
+}): Promise<void> {
+  const client = getClient();
+  if (!client) return;
+
+  const { registrantName, registrantEmail, eventTitle, eventDate, eventTime, eventLocation, eventHost, hoursUntilEvent } = opts;
+
+  const timeLabel =
+    hoursUntilEvent >= 168 ? `${Math.round(hoursUntilEvent / 168)} week` :
+    hoursUntilEvent >= 48 ? `${Math.round(hoursUntilEvent / 24)} days` :
+    hoursUntilEvent >= 24 ? "1 day" :
+    hoursUntilEvent >= 2 ? `${hoursUntilEvent} hours` : "1 hour";
+
+  const { error } = await client.emails.send({
+    from: FROM_EMAIL,
+    to: [registrantEmail],
+    replyTo: CONTACT_EMAIL,
+    subject: `Reminder: ${eventTitle} is ${timeLabel} away!`,
+    html: `
+      <h2>See you soon! 🀄</h2>
+      <p>Hi ${registrantName},</p>
+      <p>Just a reminder — <strong>${eventTitle}</strong> is coming up in <strong>${timeLabel}</strong>.</p>
+      <table style="border-collapse:collapse;margin:16px 0">
+        <tr><td style="padding:4px 12px 4px 0;color:#666">Date</td><td style="padding:4px 0"><strong>${eventDate}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#666">Time</td><td style="padding:4px 0"><strong>${eventTime}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#666">Location</td><td style="padding:4px 0"><strong>${eventLocation}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#666">Host</td><td style="padding:4px 0"><strong>${eventHost}</strong></td></tr>
+      </table>
+      <p>If you have any questions, reply to this email or reach us at <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
+      <p>Can't wait to see you!<br/>— The BougieBams Team</p>
+    `,
+    text: `Hi ${registrantName},\n\nJust a reminder — ${eventTitle} is coming up in ${timeLabel}.\n\nDate: ${eventDate}\nTime: ${eventTime}\nLocation: ${eventLocation}\nHost: ${eventHost}\n\nQuestions? Email us at ${CONTACT_EMAIL}.\n\nCan't wait to see you!\n— The BougieBams Team`,
+  });
+
+  if (error) {
+    logger.error({ error, to: registrantEmail }, "Failed to send reminder email");
+  } else {
+    logger.info({ to: registrantEmail, event: eventTitle }, "Reminder email sent");
+  }
+}

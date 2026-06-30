@@ -36,7 +36,20 @@ interface FormState {
   spotsLeft: string;
   published: boolean;
   imagePath: string | null;
+  reminderHoursBefore: number | null;
 }
+
+const REMINDER_OPTIONS: { label: string; value: number | null }[] = [
+  { label: "No reminder", value: null },
+  { label: "1 hour before", value: 1 },
+  { label: "2 hours before", value: 2 },
+  { label: "6 hours before", value: 6 },
+  { label: "12 hours before", value: 12 },
+  { label: "24 hours before (1 day)", value: 24 },
+  { label: "48 hours before (2 days)", value: 48 },
+  { label: "72 hours before (3 days)", value: 72 },
+  { label: "168 hours before (1 week)", value: 168 },
+];
 
 const emptyForm: FormState = {
   id: null,
@@ -53,6 +66,7 @@ const emptyForm: FormState = {
   spotsLeft: "0",
   published: true,
   imagePath: null,
+  reminderHoursBefore: null,
 };
 
 function eventToForm(e: ApiEvent): FormState {
@@ -71,6 +85,7 @@ function eventToForm(e: ApiEvent): FormState {
     spotsLeft: String(e.spotsLeft),
     published: e.published,
     imagePath: e.imagePath ?? null,
+    reminderHoursBefore: e.reminderHoursBefore ?? null,
   };
 }
 
@@ -170,6 +185,7 @@ export default function EventsManager({ onAuthError }: Props) {
       spotsLeft: parseInt(form.spotsLeft) || 0,
       published: form.published,
       imagePath: form.imagePath,
+      reminderHoursBefore: form.reminderHoursBefore,
     };
     const isEdit = form.id !== null;
     const url = isEdit
@@ -356,6 +372,22 @@ export default function EventsManager({ onAuthError }: Props) {
               <ImagePlus className="w-4 h-4 mr-2" />
               {uploading ? "Uploading…" : imageUrl ? "Replace image" : "Upload image"}
             </Button>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Reminder Email</label>
+            <select
+              value={form.reminderHoursBefore ?? ""}
+              onChange={(e) => field("reminderHoursBefore", e.target.value === "" ? null : Number(e.target.value))}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {REMINDER_OPTIONS.map((o) => (
+                <option key={o.value ?? "none"} value={o.value ?? ""}>{o.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-[#5A6178] mt-1">
+              Automatically email all confirmed registrants at the chosen time before the event.
+            </p>
           </div>
 
           <div className="flex items-center gap-3 py-2">

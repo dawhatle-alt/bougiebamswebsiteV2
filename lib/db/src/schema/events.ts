@@ -18,6 +18,8 @@ export const eventsTable = pgTable("events", {
   published: boolean("published").notNull().default(false),
   featured: boolean("featured").notNull().default(false),
   stripeProductId: text("stripe_product_id"),
+  reminderHoursBefore: integer("reminder_hours_before"),
+  reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

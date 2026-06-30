@@ -33,6 +33,7 @@ export interface ApiEvent {
   spotsLeft: number;
   host: string;
   published: boolean;
+  reminderHoursBefore: number | null;
 }
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
