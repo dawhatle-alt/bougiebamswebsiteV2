@@ -13,6 +13,16 @@ const productAcrylicBox = `${base}/images/product-acrylic-box.jpg`;
 const productNapkins = `${base}/images/product-napkins.jpg`;
 const productCardBook = `${base}/images/product-card-book.jpg`;
 
+const productJadeTilesSet = `${base}/images/product-jade-tiles-set.jpg`;
+const productTravelCaseSet = `${base}/images/product-travel-case-set.jpg`;
+const productVelvetPlaymat = `${base}/images/product-velvet-playmat.jpg`;
+const productPoolFloatMat = `${base}/images/product-pool-float-mat.jpg`;
+const productMatTravelSet = `${base}/images/product-mat-travel-set.jpg`;
+const productPinkMetallicBag = `${base}/images/product-pink-metallic-bag.jpg`;
+const productGoldMahjongBag = `${base}/images/product-gold-mahjong-bag.jpg`;
+const productTileKeychain = `${base}/images/product-tile-keychain.jpg`;
+const productRackStorageRoll = `${base}/images/product-rack-storage-roll.jpg`;
+
 export const images = {
   heroTile1,
   heroTile2,
@@ -26,4 +36,13 @@ export const images = {
   productAcrylicBox,
   productNapkins,
   productCardBook,
+  productJadeTilesSet,
+  productTravelCaseSet,
+  productVelvetPlaymat,
+  productPoolFloatMat,
+  productMatTravelSet,
+  productPinkMetallicBag,
+  productGoldMahjongBag,
+  productTileKeychain,
+  productRackStorageRoll,
 };
