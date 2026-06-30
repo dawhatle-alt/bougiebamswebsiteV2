@@ -5,18 +5,9 @@ import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
+import { getSquareClient, getSquareLocationId } from "../lib/square";
 
 const router: IRouter = Router();
-
-function getSquareClient() {
-  const { SquareClient, SquareEnvironment } = require("square");
-  const token = process.env.SQUARE_ACCESS_TOKEN;
-  if (!token) return null;
-  const env = process.env.SQUARE_ENVIRONMENT === "sandbox"
-    ? SquareEnvironment.Sandbox
-    : SquareEnvironment.Production;
-  return new SquareClient({ token, environment: env });
-}
 
 function getOrigin(req: Request): string {
   return (
@@ -86,7 +77,7 @@ router.post(
 
       if (priceInCents > 0) {
         const idempotencyKey = `reg-${registration.id}-${Date.now()}`;
-        const locationId = process.env.SQUARE_LOCATION_ID ?? "";
+        const locationId = getSquareLocationId();
 
         const response = await client.checkout.paymentLinks.create({
           idempotencyKey,

@@ -2,18 +2,9 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
+import { getSquareClient, getSquareLocationId } from "../lib/square";
 
 const router: IRouter = Router();
-
-function getSquareClient() {
-  const { SquareClient, SquareEnvironment } = require("square");
-  const token = process.env.SQUARE_ACCESS_TOKEN;
-  if (!token) return null;
-  const env = process.env.SQUARE_ENVIRONMENT === "production"
-    ? SquareEnvironment.Production
-    : SquareEnvironment.Sandbox;
-  return new SquareClient({ token, environment: env });
-}
 
 const CheckoutBody = z.object({
   items: z.array(
@@ -64,7 +55,7 @@ router.post("/checkout", requireAuth, async (req: Request, res: Response): Promi
     const response = await client.checkout.paymentLinks.create({
       idempotencyKey,
       order: {
-        locationId: process.env.SQUARE_LOCATION_ID ?? "",
+        locationId: getSquareLocationId(),
         lineItems,
       },
       checkoutOptions: {
