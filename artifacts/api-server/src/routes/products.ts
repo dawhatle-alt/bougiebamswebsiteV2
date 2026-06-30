@@ -170,6 +170,8 @@ router.patch("/products/:id", requireAdmin, async (req, res): Promise<void> => {
         category: row.category,
         inStock: row.inStock,
         imagePath: row.imagePath ?? null,
+        featured: row.featured,
+        affiliateUrl: row.affiliateUrl ?? null,
       },
     }),
   );
