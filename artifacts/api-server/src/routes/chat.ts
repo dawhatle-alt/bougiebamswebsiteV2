@@ -3,7 +3,7 @@ import { z } from "zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { productsTable, eventsTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -44,7 +44,7 @@ async function buildSystemPrompt(): Promise<string> {
         spotsLeft: eventsTable.spotsLeft,
       })
       .from(eventsTable)
-      .where(and(eq(eventsTable.published, true), eq(eventsTable.featured, false))),
+      .where(eq(eventsTable.published, true)),
   ]);
 
   const productList =
