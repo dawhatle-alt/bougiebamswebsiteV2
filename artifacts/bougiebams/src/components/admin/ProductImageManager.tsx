@@ -67,7 +67,8 @@ export default function ProductImageManager({ onAuthError }: Props) {
     setUploadError(null);
     setSuccessSku(null);
     try {
-      const presignRes = await fetch(`${API_BASE}/api/admin/storage/upload-url`, {
+      const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const presignRes = await fetch(`${API_BASE}/api/admin/storage/upload-url?ext=${encodeURIComponent(ext)}`, {
         method: "POST",
         headers: authHeaders,
         credentials: "include",
