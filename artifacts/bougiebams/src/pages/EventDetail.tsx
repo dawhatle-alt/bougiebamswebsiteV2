@@ -100,7 +100,7 @@ export default function EventDetail() {
       }
       const data = await res.json() as { url?: string };
       if (data.url) {
-        window.location.href = data.url;
+        window.open(data.url, "_blank", "noopener,noreferrer");
       } else {
         setLocation("/my-events");
       }
