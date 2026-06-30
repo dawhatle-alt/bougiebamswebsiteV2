@@ -11,6 +11,7 @@ import {
   subscribersTable,
   productImagesTable,
   registrationsTable,
+  heroImagesTable,
 } from "@workspace/db";
 import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
@@ -259,6 +260,42 @@ router.delete("/admin/events/:id", requireAdmin, async (req, res): Promise<void>
     res.status(404).json({ error: "Event not found" });
     return;
   }
+  res.sendStatus(204);
+});
+
+router.get("/hero-images", async (_req, res): Promise<void> => {
+  const rows = await db.select().from(heroImagesTable).orderBy(heroImagesTable.position);
+  res.json({ images: rows.map((r) => ({ id: r.id, objectPath: r.objectPath, position: r.position })) });
+});
+
+router.get("/admin/hero-images", requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db.select().from(heroImagesTable).orderBy(heroImagesTable.position);
+  res.json({ images: rows.map((r) => ({ id: r.id, objectPath: r.objectPath, position: r.position })) });
+});
+
+router.post("/admin/hero-images", requireAdmin, async (req, res): Promise<void> => {
+  const { objectPath, position } = req.body as { objectPath?: string; position?: number };
+  if (!objectPath) { res.status(400).json({ error: "objectPath is required" }); return; }
+  const [row] = await db
+    .insert(heroImagesTable)
+    .values({ objectPath, position: position ?? 0 })
+    .returning();
+  res.status(201).json({ image: { id: row.id, objectPath: row.objectPath, position: row.position } });
+});
+
+router.put("/admin/hero-images/reorder", requireAdmin, async (req, res): Promise<void> => {
+  const { order } = req.body as { order?: { id: number; position: number }[] };
+  if (!Array.isArray(order)) { res.status(400).json({ error: "order array required" }); return; }
+  for (const { id, position } of order) {
+    await db.update(heroImagesTable).set({ position }).where(eq(heroImagesTable.id, id));
+  }
+  res.json({ ok: true });
+});
+
+router.delete("/admin/hero-images/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(heroImagesTable).where(eq(heroImagesTable.id, id));
   res.sendStatus(204);
 });
 

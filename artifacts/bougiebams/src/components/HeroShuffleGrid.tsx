@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { images } from "@/data/images";
 
-const IMAGES = [
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const FALLBACK_IMAGES = [
   images.heroTile1,
   images.heroTile2,
   images.heroTile3,
@@ -18,7 +20,22 @@ const IMAGES = [
 ];
 
 export function HeroShuffleGrid() {
+  const [imageUrls, setImageUrls] = useState<string[]>(FALLBACK_IMAGES);
   const [order, setOrder] = useState<number[]>(Array.from({ length: 12 }, (_, i) => i));
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/hero-images`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { images: { id: number; objectPath: string }[] } | null) => {
+        if (data?.images && data.images.length >= 6) {
+          const urls = data.images.map((img) => `${API_BASE}/api/storage${img.objectPath}`);
+          const repeated = Array.from({ length: 12 }, (_, i) => urls[i % urls.length]);
+          setImageUrls(repeated);
+          setOrder(Array.from({ length: 12 }, (_, i) => i));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -46,9 +63,9 @@ export function HeroShuffleGrid() {
             transition={{ type: "spring", stiffness: 40, damping: 12 }}
             className="w-full h-full rounded-sm md:rounded-md overflow-hidden bg-background relative"
           >
-            <img 
-              src={IMAGES[imgIndex]} 
-              alt="" 
+            <img
+              src={imageUrls[imgIndex]}
+              alt=""
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-background/20 to-transparent"></div>

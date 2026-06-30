@@ -19,16 +19,18 @@ import {
   RefreshCw,
   LayoutDashboard,
   Users,
+  Image,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductManager from "@/components/admin/ProductManager";
 import EventsManager from "@/components/admin/EventsManager";
 import DashboardStats from "@/components/admin/DashboardStats";
 import RegistrationsManager from "@/components/admin/RegistrationsManager";
+import HeroImagesManager from "@/components/admin/HeroImagesManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations";
+type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero";
 
 interface Subscriber {
   id: number;
@@ -209,10 +211,12 @@ export default function Admin() {
                   : view === "blog"
                     ? "Blog Manager"
                     : view === "products"
-                      ? "Product Images"
+                      ? "Products"
                       : view === "registrations"
                         ? "Event Registrations"
-                        : "Events"}
+                        : view === "hero"
+                          ? "Homepage Images"
+                          : "Events"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -242,6 +246,7 @@ export default function Admin() {
             { key: "blog", label: "Blog", icon: FileText },
             { key: "products", label: "Products", icon: Package },
             { key: "events", label: "Events", icon: CalendarDays },
+            { key: "hero", label: "Homepage Images", icon: Image },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -270,6 +275,8 @@ export default function Admin() {
           <EventsManager onAuthError={handleAuthError} />
         ) : view === "registrations" ? (
           <RegistrationsManager onAuthError={handleAuthError} />
+        ) : view === "hero" ? (
+          <HeroImagesManager onAuthError={handleAuthError} />
         ) : (
           <>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
