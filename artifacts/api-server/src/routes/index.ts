@@ -11,7 +11,7 @@ import storageRouter from "./storage";
 import authRouter from "./auth";
 import checkoutRouter from "./checkout";
 import emailRouter from "./email";
-import stripeRouter from "./stripe";
+import squareRouter from "./square";
 import couponsRouter from "./coupons";
 import favoritesRouter from "./favorites";
 
@@ -29,7 +29,7 @@ router.use(adminRouter);
 router.use(storageRouter);
 router.use(checkoutRouter);
 router.use(emailRouter);
-router.use(stripeRouter);
+router.use(squareRouter);
 router.use(couponsRouter);
 router.use(favoritesRouter);
 

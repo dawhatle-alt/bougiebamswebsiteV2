@@ -26,4 +26,5 @@ channel = "stable-25_05"
 
 [userenv.shared]
 ADMIN_USER_IDS = "42645002"
-SQUARE_ENVIRONMENT = "sandbox"
+SQUARE_ENVIRONMENT = "production"
+SQUARE_LOCATION_ID = "L8B78FF399V9P"

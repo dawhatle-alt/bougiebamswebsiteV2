@@ -1,8 +1,19 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+function getSquareClient() {
+  const { SquareClient, SquareEnvironment } = require("square");
+  const token = process.env.SQUARE_ACCESS_TOKEN;
+  if (!token) return null;
+  const env = process.env.SQUARE_ENVIRONMENT === "production"
+    ? SquareEnvironment.Production
+    : SquareEnvironment.Sandbox;
+  return new SquareClient({ token, environment: env });
+}
 
 const CheckoutBody = z.object({
   items: z.array(
@@ -17,62 +28,60 @@ const CheckoutBody = z.object({
   discountCode: z.string().optional(),
 });
 
-router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
+router.post("/checkout", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const parsed = CheckoutBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid checkout request: " + parsed.error.issues[0]?.message });
     return;
   }
 
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) {
+  const client = getSquareClient();
+  if (!client) {
     res.status(503).json({
-      error:
-        "Online checkout is not yet available. Please contact us at hello@bougiebams.com to place your order.",
+      error: "Online checkout is not yet available. Please contact us at hello@bougiebams.com to place your order.",
     });
     return;
   }
 
   try {
-    const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(stripeKey);
-
     const origin =
       (req.headers["x-forwarded-proto"] ?? "https") +
       "://" +
       (req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost");
 
-    const lineItems = parsed.data.items.map((item) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.name,
-          metadata: { variationId: item.variationId },
-        },
-        unit_amount: Math.round(item.price * 100),
+    const { items, email } = parsed.data;
+    const idempotencyKey = `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const lineItems = items.map((item) => ({
+      name: item.name,
+      quantity: String(item.quantity),
+      basePriceMoney: {
+        amount: BigInt(Math.round(item.price * 100)),
+        currency: "USD",
       },
-      quantity: item.quantity,
     }));
 
-    const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
-      mode: "payment",
-      line_items: lineItems,
-      success_url: `${origin}/?checkout=success`,
-      cancel_url: `${origin}/?checkout=cancelled`,
-    };
+    const response = await client.checkout.paymentLinks.create({
+      idempotencyKey,
+      order: {
+        locationId: process.env.SQUARE_LOCATION_ID ?? "",
+        lineItems,
+      },
+      checkoutOptions: {
+        redirectUrl: `${origin}/?checkout=success`,
+        askForShippingAddress: true,
+      },
+      ...(email ? { prePopulatedData: { buyerEmail: email } } : {}),
+    });
 
-    if (parsed.data.email) {
-      sessionParams.customer_email = parsed.data.email;
+    const url = response.paymentLink?.url;
+    if (!url) {
+      throw new Error("Square did not return a checkout URL");
     }
 
-    if (parsed.data.discountCode) {
-      sessionParams.discounts = [{ coupon: parsed.data.discountCode }];
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
-    res.json({ url: session.url });
+    res.json({ url });
   } catch (err) {
-    console.error("Stripe checkout error", err);
+    logger.error({ err }, "Square product checkout error");
     res.status(500).json({ error: "Could not create checkout session. Please try again." });
   }
 });
