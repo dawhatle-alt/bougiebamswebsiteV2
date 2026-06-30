@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { ShoppingBag, Menu, X, Instagram, Facebook, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown, CalendarDays, LogIn, LogOut } from "lucide-react";
+import ChatWidget from "@/components/ChatWidget";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import SearchDialog from "@/components/SearchDialog";
@@ -761,6 +762,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           &copy; {new Date().getFullYear()} Bougie Bams. All rights reserved.
         </div>
       </footer>
+      <ChatWidget />
     </div>
   );
 }

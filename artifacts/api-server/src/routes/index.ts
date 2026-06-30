@@ -14,6 +14,7 @@ import emailRouter from "./email";
 import squareRouter from "./square";
 import couponsRouter from "./coupons";
 import favoritesRouter from "./favorites";
+import chatRouter from "./chat";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(emailRouter);
 router.use(squareRouter);
 router.use(couponsRouter);
 router.use(favoritesRouter);
+router.use(chatRouter);
 
 export default router;
