@@ -4,6 +4,7 @@ import { sql, eq } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAuth } from "../middleware/auth";
+import { sendRegistrationConfirmationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -114,6 +115,16 @@ router.post(
           .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
           .where(eq(eventsTable.id, eventId));
 
+        await sendRegistrationConfirmationEmail({
+          registrantName: name,
+          registrantEmail: email,
+          eventTitle: event.title,
+          eventDate: event.date,
+          eventTime: event.time,
+          eventLocation: event.location,
+          eventHost: event.host,
+        });
+
         res.json({ url: `${origin}/events?registration=success` });
       }
     } catch (err) {
@@ -174,10 +185,28 @@ router.post(
             .set({ status: "confirmed", paymentSessionId: session.id })
             .where(eq(registrationsTable.id, registrationId));
 
+          const [event] = await db
+            .select()
+            .from(eventsTable)
+            .where(eq(eventsTable.id, reg.eventId))
+            .limit(1);
+
           await db
             .update(eventsTable)
             .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
             .where(eq(eventsTable.id, reg.eventId));
+
+          if (event) {
+            await sendRegistrationConfirmationEmail({
+              registrantName: reg.name,
+              registrantEmail: reg.email,
+              eventTitle: event.title,
+              eventDate: event.date,
+              eventTime: event.time,
+              eventLocation: event.location,
+              eventHost: event.host,
+            });
+          }
 
           logger.info(
             { registrationId, sessionId: session.id },

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { SendContactEmailBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import { sendContactEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -14,6 +15,8 @@ router.post("/email/contact", async (req, res): Promise<void> => {
   const { name, email, subject, message } = parsed.data;
 
   logger.info({ name, email, subject }, "Contact form submission received");
+
+  await sendContactEmail({ name, email, subject, message });
 
   res.json({ message: "Message received. We will get back to you shortly." });
 });

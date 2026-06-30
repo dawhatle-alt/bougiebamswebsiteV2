@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { CreateRegistrationBody } from "@workspace/api-zod";
 import { requireAuth } from "../middleware/auth";
+import { sendRegistrationConfirmationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -65,6 +66,16 @@ router.post("/registrations", requireAuth, async (req, res): Promise<void> => {
     .update(eventsTable)
     .set({ spotsLeft: event.spotsLeft - 1 })
     .where(eq(eventsTable.id, eventId));
+
+  await sendRegistrationConfirmationEmail({
+    registrantName: name,
+    registrantEmail: email,
+    eventTitle: event.title,
+    eventDate: event.date,
+    eventTime: event.time,
+    eventLocation: event.location,
+    eventHost: event.host,
+  });
 
   res.status(201).json({ registration: toRegResponse(reg) });
 });
