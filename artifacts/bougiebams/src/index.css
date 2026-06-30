@@ -240,7 +240,7 @@
 }
 
 .badge-shimmer-wrap:hover .badge-shimmer-layer {
-  animation: badge-shimmer 2s ease-in-out forwards;
+  animation: badge-shimmer 5s ease-in-out forwards;
 }
 
 @keyframes gb-spin {
