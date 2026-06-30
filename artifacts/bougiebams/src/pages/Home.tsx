@@ -59,19 +59,10 @@ export default function Home() {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 5, mass: 0.5 }}
-              className="relative inline-flex items-center justify-center gap-4 mb-5 font-bold tracking-[0.25em] uppercase text-sm md:text-base bg-background/75 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/20 shadow-sm cursor-default overflow-hidden"
+              className="badge-shimmer-wrap relative inline-flex items-center justify-center gap-4 mb-5 font-bold tracking-[0.25em] uppercase text-sm md:text-base bg-background/75 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/20 shadow-sm cursor-default overflow-hidden"
             >
-              {/* shimmer highlight layer */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-full"
-                style={{
-                  background: "linear-gradient(105deg, transparent 40%, hsl(45deg 95% 65% / 0.55) 50%, transparent 60%)",
-                  backgroundSize: "300% 100%",
-                  backgroundPosition: "200% center",
-                  animation: "badge-shimmer 2.2s ease-in-out infinite",
-                }}
-              />
+              {/* shimmer highlight layer — fires on hover */}
+              <span aria-hidden className="badge-shimmer-layer pointer-events-none absolute inset-0 rounded-full" />
               {/* content */}
               <span className="relative z-10 inline-flex items-center gap-4 text-primary">
                 <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
