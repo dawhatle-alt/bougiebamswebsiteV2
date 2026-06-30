@@ -8,3 +8,4 @@ export * from "./auth";
 export * from "./waitlist";
 export * from "./favorites";
 export * from "./hero_images";
+export * from "./discount_codes";

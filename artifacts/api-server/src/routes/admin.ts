@@ -12,6 +12,7 @@ import {
   productImagesTable,
   registrationsTable,
   heroImagesTable,
+  discountCodesTable,
 } from "@workspace/db";
 import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
@@ -379,6 +380,79 @@ router.post("/admin/storage/upload-url", requireAdmin, async (req, res): Promise
     objectPath: `/${filename}`,
   });
 });
+
+// ── Discount Codes ───────────────────────────────────────────────────────────
+
+router.get("/admin/discount-codes", requireAdmin, async (_req, res): Promise<void> => {
+  const codes = await db.select().from(discountCodesTable).orderBy(discountCodesTable.createdAt);
+  res.json({ codes });
+});
+
+router.post("/admin/discount-codes", requireAdmin, async (req, res): Promise<void> => {
+  const { code, discountPercent, appliesTo, description, active } = req.body as {
+    code?: string; discountPercent?: number; appliesTo?: string; description?: string | null; active?: boolean;
+  };
+  if (!code || typeof discountPercent !== "number") {
+    res.status(400).json({ error: "code and discountPercent are required" });
+    return;
+  }
+  try {
+    const [row] = await db.insert(discountCodesTable).values({
+      code: code.trim().toUpperCase(),
+      discountPercent,
+      appliesTo: appliesTo ?? "both",
+      description: description ?? null,
+      active: active !== false,
+    }).returning();
+    res.status(201).json({ code: row });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("unique")) {
+      res.status(409).json({ error: "A code with that name already exists" });
+    } else {
+      res.status(500).json({ error: "Failed to create discount code" });
+    }
+  }
+});
+
+router.put("/admin/discount-codes/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { code, discountPercent, appliesTo, description, active } = req.body as {
+    code?: string; discountPercent?: number; appliesTo?: string; description?: string | null; active?: boolean;
+  };
+  try {
+    const [row] = await db.update(discountCodesTable)
+      .set({
+        ...(code !== undefined && { code: code.trim().toUpperCase() }),
+        ...(discountPercent !== undefined && { discountPercent }),
+        ...(appliesTo !== undefined && { appliesTo }),
+        ...(description !== undefined && { description }),
+        ...(active !== undefined && { active }),
+        updatedAt: new Date(),
+      })
+      .where(eq(discountCodesTable.id, id))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    res.json({ code: row });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("unique")) {
+      res.status(409).json({ error: "A code with that name already exists" });
+    } else {
+      res.status(500).json({ error: "Failed to update discount code" });
+    }
+  }
+});
+
+router.delete("/admin/discount-codes/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(discountCodesTable).where(eq(discountCodesTable.id, id));
+  res.json({ success: true });
+});
+
+// ── Storage upload ────────────────────────────────────────────────────────────
 
 router.put("/admin/storage/upload/:filename", requireAdmin, rawBodyMiddleware, async (req, res): Promise<void> => {
   const filename = req.params.filename as string;
