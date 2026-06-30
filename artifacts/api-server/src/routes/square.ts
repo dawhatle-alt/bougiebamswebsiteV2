@@ -5,7 +5,7 @@ import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
-import { getSquareClient, getSquareLocationId } from "../lib/square";
+import { getSquareClient, getSquareLocationId, isSandboxMode } from "../lib/square";
 
 const router: IRouter = Router();
 
@@ -187,40 +187,50 @@ router.post(
     const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     const notificationUrl = process.env.SQUARE_WEBHOOK_URL;
 
-    // Signature verification: performed when BOTH key and URL are configured.
-    // If only the key is set but not the URL (e.g. before first deploy), log a
-    // warning and proceed — Square can't send a verifiable signature until the
-    // webhook URL is registered in the Square dashboard anyway.
-    if (sigKey && notificationUrl && req.rawBody) {
-      try {
-        const { WebhooksHelper } = require("square");
-        const body = req.rawBody.toString("utf8");
-        const signature = req.headers["x-square-hmacsha256-signature"] as string;
-        const isValid = WebhooksHelper.isValidWebhookEventSignature(
-          body,
-          signature,
-          sigKey,
-          notificationUrl,
-        );
-        if (!isValid) {
-          logger.warn("Square webhook signature verification failed — rejecting");
-          res.status(400).json({ error: "Invalid webhook signature" });
+    // Signature verification policy:
+    // - If SQUARE_WEBHOOK_SIGNATURE_KEY is set, verification is always attempted.
+    //   Any missing prerequisite (URL, raw body) is a hard reject in production,
+    //   or a logged warning in sandbox mode (allows local testing without a URL).
+    // - If the key is not set at all, warn and proceed (key hasn't been configured yet).
+    const sandbox = isSandboxMode();
+
+    if (sigKey) {
+      if (!notificationUrl) {
+        if (sandbox) {
+          logger.warn("SQUARE_WEBHOOK_URL not set — skipping signature check (sandbox mode)");
+        } else {
+          logger.error("SQUARE_WEBHOOK_URL not set — rejecting webhook (set this env var after deploy)");
+          res.status(503).json({ error: "Webhook not fully configured" });
           return;
         }
-      } catch (err) {
-        logger.warn({ err }, "Square webhook signature check threw — rejecting");
-        res.status(400).json({ error: "Webhook verification error" });
+      } else if (!req.rawBody) {
+        logger.error("Square webhook: raw body unavailable — rejecting");
+        res.status(400).json({ error: "Webhook body unavailable" });
         return;
+      } else {
+        try {
+          const { WebhooksHelper } = require("square");
+          const body = req.rawBody.toString("utf8");
+          const signature = req.headers["x-square-hmacsha256-signature"] as string;
+          const isValid = WebhooksHelper.isValidWebhookEventSignature(
+            body,
+            signature,
+            sigKey,
+            notificationUrl,
+          );
+          if (!isValid) {
+            logger.warn("Square webhook signature verification failed — rejecting");
+            res.status(400).json({ error: "Invalid webhook signature" });
+            return;
+          }
+        } catch (err) {
+          logger.warn({ err }, "Square webhook signature check threw — rejecting");
+          res.status(400).json({ error: "Webhook verification error" });
+          return;
+        }
       }
     } else {
-      // Log why verification was skipped so it's visible in logs
-      if (!sigKey) {
-        logger.warn("SQUARE_WEBHOOK_SIGNATURE_KEY not set — skipping signature verification");
-      } else if (!notificationUrl) {
-        logger.warn("SQUARE_WEBHOOK_URL not set — skipping signature verification (set after deploy)");
-      } else if (!req.rawBody) {
-        logger.warn("Raw body not available — skipping signature verification");
-      }
+      logger.warn("SQUARE_WEBHOOK_SIGNATURE_KEY not set — skipping signature verification");
     }
 
     const event = req.body as {
