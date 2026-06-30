@@ -54,7 +54,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <span className="inline-flex items-center justify-center gap-4 mb-5 text-primary font-bold tracking-[0.25em] uppercase text-sm md:text-base [text-shadow:0_1px_8px_hsl(var(--background))]">
+            <span className="inline-flex items-center justify-center gap-4 mb-5 text-primary font-bold tracking-[0.25em] uppercase text-sm md:text-base bg-background/75 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/20 shadow-sm">
               <span className="h-px w-8 md:w-12 bg-primary/70"></span>
               The Art of the Game
               <span className="h-px w-8 md:w-12 bg-primary/70"></span>
