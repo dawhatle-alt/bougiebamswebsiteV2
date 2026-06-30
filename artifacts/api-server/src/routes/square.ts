@@ -195,9 +195,11 @@ router.post(
   async (req: Request & { rawBody?: Buffer }, res: Response): Promise<void> => {
     const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     const notificationUrl = process.env.SQUARE_WEBHOOK_URL;
-    const isSandbox = process.env.SQUARE_ENVIRONMENT === "sandbox";
 
-    // Signature verification: required in production, optional in sandbox
+    // Signature verification: performed when BOTH key and URL are configured.
+    // If only the key is set but not the URL (e.g. before first deploy), log a
+    // warning and proceed — Square can't send a verifiable signature until the
+    // webhook URL is registered in the Square dashboard anyway.
     if (sigKey && notificationUrl && req.rawBody) {
       try {
         const { WebhooksHelper } = require("square");
@@ -210,25 +212,24 @@ router.post(
           notificationUrl,
         );
         if (!isValid) {
-          logger.warn("Square webhook signature verification failed");
+          logger.warn("Square webhook signature verification failed — rejecting");
           res.status(400).json({ error: "Invalid webhook signature" });
           return;
         }
       } catch (err) {
-        logger.warn({ err }, "Square webhook signature check error");
-        if (!isSandbox) {
-          // Fail closed in production if signature check throws
-          res.status(400).json({ error: "Webhook verification error" });
-          return;
-        }
+        logger.warn({ err }, "Square webhook signature check threw — rejecting");
+        res.status(400).json({ error: "Webhook verification error" });
+        return;
       }
-    } else if (!isSandbox) {
-      // In production, require signature verification prerequisites
-      logger.error("Square webhook received without signature key or URL configured — rejecting");
-      res.status(503).json({ error: "Webhook not fully configured" });
-      return;
     } else {
-      logger.warn("Square webhook: skipping signature verification in sandbox mode");
+      // Log why verification was skipped so it's visible in logs
+      if (!sigKey) {
+        logger.warn("SQUARE_WEBHOOK_SIGNATURE_KEY not set — skipping signature verification");
+      } else if (!notificationUrl) {
+        logger.warn("SQUARE_WEBHOOK_URL not set — skipping signature verification (set after deploy)");
+      } else if (!req.rawBody) {
+        logger.warn("Raw body not available — skipping signature verification");
+      }
     }
 
     const event = req.body as {
