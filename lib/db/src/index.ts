@@ -11,7 +11,7 @@ if (process.env.SUPABASE_DATABASE_URL) {
     host: "aws-1-us-east-2.pooler.supabase.com",
     port: 5432,
     user: "postgres.gsnljjezxlfjlxtdtrpu",
-    password: "@i4GQc$rD3J8XHZ",
+    password: process.env.SUPABASE_DB_PASSWORD,
     database: "postgres",
     ssl: { rejectUnauthorized: false },
   };
