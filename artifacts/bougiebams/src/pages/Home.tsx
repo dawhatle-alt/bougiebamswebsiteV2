@@ -56,52 +56,28 @@ export default function Home() {
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <motion.span
-              initial={{ "--x": "100%", scale: 0.8 } as never}
-              animate={{ "--x": "-100%", scale: 1 } as never}
-              transition={{
-                repeat: Infinity,
-                repeatType: "loop",
-                repeatDelay: 1,
-                type: "spring",
-                stiffness: 20,
-                damping: 15,
-                mass: 2,
-                scale: { type: "spring", stiffness: 200, damping: 5, mass: 0.5 },
-              }}
-              className="relative inline-flex items-center justify-center gap-4 mb-5 font-bold tracking-[0.25em] uppercase text-sm md:text-base bg-background/75 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/20 shadow-sm cursor-default"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 5, mass: 0.5 }}
+              className="relative inline-flex items-center justify-center gap-4 mb-5 font-bold tracking-[0.25em] uppercase text-sm md:text-base bg-background/75 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/20 shadow-sm cursor-default overflow-hidden"
             >
-              <span className="relative z-[1] inline-flex items-center gap-4 text-primary">
-                <span
-                  className="h-px w-8 md:w-12 shrink-0"
-                  style={{
-                    backgroundImage: "linear-gradient(-75deg, hsl(var(--primary)/80%) calc(var(--x) + 20%), hsl(45deg 90% 60%) calc(var(--x) + 40%), hsl(var(--primary)/80%) calc(var(--x) + 60%))",
-                  }}
-                />
-                <span
-                  style={{
-                    backgroundImage: "linear-gradient(-75deg, hsl(var(--primary)) calc(var(--x) + 20%), hsl(45deg 90% 55%) calc(var(--x) + 40%), hsl(var(--primary)) calc(var(--x) + 60%))",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  The Art of the Game
-                </span>
-                <span
-                  className="h-px w-8 md:w-12 shrink-0"
-                  style={{
-                    backgroundImage: "linear-gradient(-75deg, hsl(var(--primary)/80%) calc(var(--x) + 20%), hsl(45deg 90% 60%) calc(var(--x) + 40%), hsl(var(--primary)/80%) calc(var(--x) + 60%))",
-                  }}
-                />
-              </span>
+              {/* shimmer highlight layer */}
               <span
                 aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full"
                 style={{
-                  mask: "linear-gradient(rgb(0,0,0), rgb(0,0,0)) content-box, linear-gradient(rgb(0,0,0), rgb(0,0,0))",
-                  maskComposite: "exclude",
+                  background: "linear-gradient(105deg, transparent 40%, hsl(45deg 95% 65% / 0.55) 50%, transparent 60%)",
+                  backgroundSize: "300% 100%",
+                  backgroundPosition: "200% center",
+                  animation: "badge-shimmer 2.2s ease-in-out infinite",
                 }}
-                className="absolute inset-0 z-10 block rounded-full bg-[linear-gradient(-75deg,hsl(var(--primary)/5%)_calc(var(--x)+20%),hsl(45deg_90%_60%/70%)_calc(var(--x)+35%),hsl(var(--primary)/5%)_calc(var(--x)+50%)] p-px pointer-events-none"
               />
+              {/* content */}
+              <span className="relative z-10 inline-flex items-center gap-4 text-primary">
+                <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
+                The Art of the Game
+                <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
+              </span>
             </motion.span>
             <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[1.1] text-foreground">
               <TextEffect as="span" per="word" preset="blur" className="block">
