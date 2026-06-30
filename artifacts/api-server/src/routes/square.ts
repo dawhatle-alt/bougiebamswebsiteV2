@@ -22,6 +22,7 @@ const RegistrationCheckoutBody = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   notes: z.string().optional(),
+  redirectBase: z.string().optional(),
 });
 
 router.post(
@@ -42,7 +43,7 @@ router.post(
       return;
     }
 
-    const { eventId, name, email, notes } = parsed.data;
+    const { eventId, name, email, notes, redirectBase } = parsed.data;
 
     const [event] = await db
       .select()
@@ -97,7 +98,7 @@ router.post(
             referenceId: String(registration.id),
           },
           checkoutOptions: {
-            redirectUrl: `${origin}/events?registration=success`,
+            redirectUrl: `${redirectBase || origin}/events/confirmation`,
             askForShippingAddress: false,
           },
           prePopulatedData: {

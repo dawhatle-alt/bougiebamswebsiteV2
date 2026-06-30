@@ -91,6 +91,7 @@ export default function EventDetail() {
           name: formData.name,
           email: formData.email,
           notes: formData.notes || undefined,
+          redirectBase: window.location.origin + (import.meta.env.BASE_URL ?? "/").replace(/\/$/, ""),
         }),
       });
       if (res.status === 401) { login(); return; }

@@ -91,6 +91,63 @@ router.get("/registrations/mine", requireAuth, async (req, res): Promise<void> =
   res.json({ registrations: rows.map(toRegResponse) });
 });
 
+router.get("/registrations/:id/confirmation", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      regId: registrationsTable.id,
+      regName: registrationsTable.name,
+      regEmail: registrationsTable.email,
+      regNotes: registrationsTable.notes,
+      regStatus: registrationsTable.status,
+      regCreatedAt: registrationsTable.createdAt,
+      eventId: eventsTable.id,
+      eventTitle: eventsTable.title,
+      eventDate: eventsTable.date,
+      eventTime: eventsTable.time,
+      eventLocation: eventsTable.location,
+      eventHost: eventsTable.host,
+      eventPriceCents: eventsTable.priceCents,
+      eventImagePath: eventsTable.imagePath,
+    })
+    .from(registrationsTable)
+    .innerJoin(eventsTable, eq(registrationsTable.eventId, eventsTable.id))
+    .where(eq(registrationsTable.id, id))
+    .limit(1);
+
+  if (!rows[0]) {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+
+  const r = rows[0];
+  res.json({
+    registration: {
+      id: r.regId,
+      name: r.regName,
+      email: r.regEmail,
+      notes: r.regNotes ?? null,
+      status: r.regStatus,
+      createdAt: r.regCreatedAt.toISOString(),
+      event: {
+        id: r.eventId,
+        title: r.eventTitle,
+        date: r.eventDate,
+        time: r.eventTime,
+        location: r.eventLocation,
+        host: r.eventHost,
+        priceCents: r.eventPriceCents ?? 0,
+        imagePath: r.eventImagePath ?? null,
+      },
+    },
+  });
+});
+
 router.get("/registrations/:id", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id as string, 10);
   if (Number.isNaN(id)) {
