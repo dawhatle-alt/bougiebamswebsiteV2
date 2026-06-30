@@ -711,6 +711,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+
       <main className="pt-[calc(theme(spacing.2)+theme(spacing.8)+theme(spacing.8))] md:pt-[calc(theme(spacing.2)+theme(spacing.8)+theme(spacing.12))]">
         {children}
       </main>
