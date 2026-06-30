@@ -70,15 +70,29 @@ export default function Home() {
               }}
               className="relative inline-flex items-center justify-center gap-4 mb-5 font-bold tracking-[0.25em] uppercase text-sm md:text-base bg-background/75 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/20 shadow-sm cursor-default"
             >
-              <span
-                className="relative z-[1] inline-flex items-center gap-4 text-primary"
-                style={{
-                  maskImage: "linear-gradient(-75deg, hsl(var(--primary)) calc(var(--x) + 20%), transparent calc(var(--x) + 30%), hsl(var(--primary)) calc(var(--x) + 100%))",
-                }}
-              >
-                <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
-                The Art of the Game
-                <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
+              <span className="relative z-[1] inline-flex items-center gap-4 text-primary">
+                <span
+                  className="h-px w-8 md:w-12 shrink-0"
+                  style={{
+                    backgroundImage: "linear-gradient(-75deg, hsl(var(--primary)/80%) calc(var(--x) + 20%), hsl(45deg 90% 60%) calc(var(--x) + 40%), hsl(var(--primary)/80%) calc(var(--x) + 60%))",
+                  }}
+                />
+                <span
+                  style={{
+                    backgroundImage: "linear-gradient(-75deg, hsl(var(--primary)) calc(var(--x) + 20%), hsl(45deg 90% 55%) calc(var(--x) + 40%), hsl(var(--primary)) calc(var(--x) + 60%))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  The Art of the Game
+                </span>
+                <span
+                  className="h-px w-8 md:w-12 shrink-0"
+                  style={{
+                    backgroundImage: "linear-gradient(-75deg, hsl(var(--primary)/80%) calc(var(--x) + 20%), hsl(45deg 90% 60%) calc(var(--x) + 40%), hsl(var(--primary)/80%) calc(var(--x) + 60%))",
+                  }}
+                />
               </span>
               <span
                 aria-hidden
@@ -86,7 +100,7 @@ export default function Home() {
                   mask: "linear-gradient(rgb(0,0,0), rgb(0,0,0)) content-box, linear-gradient(rgb(0,0,0), rgb(0,0,0))",
                   maskComposite: "exclude",
                 }}
-                className="absolute inset-0 z-10 block rounded-full bg-[linear-gradient(-75deg,hsl(var(--primary)/10%)_calc(var(--x)+20%),hsl(var(--primary)/50%)_calc(var(--x)+25%),hsl(var(--primary)/10%)_calc(var(--x)+100%))] p-px pointer-events-none"
+                className="absolute inset-0 z-10 block rounded-full bg-[linear-gradient(-75deg,hsl(var(--primary)/5%)_calc(var(--x)+20%),hsl(45deg_90%_60%/70%)_calc(var(--x)+35%),hsl(var(--primary)/5%)_calc(var(--x)+50%)] p-px pointer-events-none"
               />
             </motion.span>
             <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[1.1] text-foreground">
