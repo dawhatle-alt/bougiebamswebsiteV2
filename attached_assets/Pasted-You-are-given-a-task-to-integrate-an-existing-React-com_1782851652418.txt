@@ -1,0 +1,117 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+shiny-button.tsx
+"use client";
+
+import React from "react";
+import { motion, type AnimationProps } from "framer-motion";
+
+import { cn } from "@/lib/utils";
+
+const animationProps: AnimationProps = {
+  initial: { "--x": "100%", scale: 0.8 },
+  animate: { "--x": "-100%", scale: 1 },
+  whileTap: { scale: 0.95 },
+  transition: {
+    repeat: Infinity,
+    repeatType: "loop",
+    repeatDelay: 1,
+    type: "spring",
+    stiffness: 20,
+    damping: 15,
+    mass: 2,
+    scale: {
+      type: "spring",
+      stiffness: 200,
+      damping: 5,
+      mass: 0.5,
+    },
+  },
+};
+
+interface ShinyButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const ShinyButton: React.FC<ShinyButtonProps> = ({
+  children,
+  className,
+  ...props
+}) => {
+  return (
+    <motion.button
+      {...animationProps}
+      {...props}
+      className={cn(
+        "relative rounded-lg px-6 py-2 font-medium backdrop-blur-xl transition-shadow duration-300 ease-in-out hover:shadow dark:bg-[radial-gradient(circle_at_50%_0%,hsl(var(--primary)/10%)_0%,transparent_60%)] dark:hover:shadow-[0_0_20px_hsl(var(--primary)/10%)]",
+        className
+      )}
+    >
+      <span
+        className="relative block size-full text-sm uppercase tracking-wide text-[rgb(0,0,0,65%)] dark:font-light dark:text-[rgb(255,255,255,90%)]"
+        style={{
+          maskImage:
+            "linear-gradient(-75deg,hsl(var(--primary)) calc(var(--x) + 20%),transparent calc(var(--x) + 30%),hsl(var(--primary)) calc(var(--x) + 100%))",
+        }}
+      >
+        {children}
+      </span>
+      <span
+        style={{
+          mask: "linear-gradient(rgb(0,0,0), rgb(0,0,0)) content-box,linear-gradient(rgb(0,0,0), rgb(0,0,0))",
+          maskComposite: "exclude",
+        }}
+        className="absolute inset-0 z-10 block rounded-[inherit] bg-[linear-gradient(-75deg,hsl(var(--primary)/10%)_calc(var(--x)+20%),hsl(var(--primary)/50%)_calc(var(--x)+25%),hsl(var(--primary)/10%)_calc(var(--x)+100%))] p-px"
+      ></span>
+    </motion.button>
+  );
+};
+
+export default { ShinyButton };
+
+
+demo.tsx
+import { ShinyButton } from "@/components/ui/shiny-button";
+
+function ShinyButtonDemo() {
+  return <ShinyButton>Shiny Button</ShinyButton>;
+}
+
+export { ShinyButtonDemo };
+
+```
+
+Install NPM dependencies:
+```bash
+framer-motion
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them
