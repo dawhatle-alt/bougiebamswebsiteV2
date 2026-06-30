@@ -227,21 +227,6 @@
  }
 }
 
-@keyframes badge-shimmer {
-  0%   { background-position: 200% center; }
-  100% { background-position: -200% center; }
-}
-
-.badge-shimmer-layer {
-  background: linear-gradient(105deg, transparent 40%, hsl(45deg 95% 65% / 0.55) 50%, transparent 60%);
-  background-size: 300% 100%;
-  background-position: 200% center;
-  animation: none;
-}
-
-.badge-shimmer-wrap:hover .badge-shimmer-layer {
-  animation: badge-shimmer 5s ease-in-out forwards;
-}
 
 @keyframes gb-spin {
  from {
