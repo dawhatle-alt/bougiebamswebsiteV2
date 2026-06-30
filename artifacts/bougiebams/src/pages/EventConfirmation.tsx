@@ -25,63 +25,80 @@ interface ConfirmationData {
 
 export default function EventConfirmation() {
   const params = new URLSearchParams(window.location.search);
-  const referenceId = params.get("referenceId");
+  // Square appends reference_id (snake_case) in live redirects,
+  // but the sandbox testing panel link uses the bare URL without params.
+  // Also support checkoutId / checkout_id as a fallback lookup.
+  const referenceId =
+    params.get("referenceId") ??
+    params.get("reference_id");
+  const checkoutId =
+    params.get("checkoutId") ??
+    params.get("checkout_id");
 
   const [data, setData] = useState<ConfirmationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pollCount, setPollCount] = useState(0);
+  const [resolvedId, setResolvedId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!referenceId) {
-      setError("No registration reference found.");
-      setLoading(false);
-      return;
-    }
-
-    const id = parseInt(referenceId, 10);
-    if (Number.isNaN(id)) {
-      setError("Invalid registration reference.");
-      setLoading(false);
-      return;
-    }
-
     const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
 
-    const fetchConfirmation = async () => {
+    const fetchByRegistrationId = async (id: number) => {
+      const res = await fetch(`${base}/api/registrations/${id}/confirmation`);
+      if (!res.ok) throw new Error("not found");
+      const json = await res.json() as { registration: ConfirmationData };
+      setResolvedId(id);
+      setData(json.registration);
+      setLoading(false);
+    };
+
+    const fetchByCheckoutId = async (cid: string) => {
+      const res = await fetch(`${base}/api/registrations/by-checkout/${encodeURIComponent(cid)}`);
+      if (!res.ok) throw new Error("not found");
+      const json = await res.json() as { registration: ConfirmationData };
+      setResolvedId(json.registration.id);
+      setData(json.registration);
+      setLoading(false);
+    };
+
+    const run = async () => {
       try {
-        const res = await fetch(`${base}/api/registrations/${id}/confirmation`);
-        if (!res.ok) {
-          setError("Registration not found. It may have been cancelled or expired.");
-          setLoading(false);
+        if (referenceId) {
+          const id = parseInt(referenceId, 10);
+          if (!Number.isNaN(id)) {
+            await fetchByRegistrationId(id);
+            return;
+          }
+        }
+        if (checkoutId) {
+          await fetchByCheckoutId(checkoutId);
           return;
         }
-        const json = await res.json() as { registration: ConfirmationData };
-        setData(json.registration);
+        setError("No registration reference found. Please check your email for confirmation.");
         setLoading(false);
       } catch {
-        setError("Could not load registration details. Please check your email for confirmation.");
+        setError("Registration not found. It may have been cancelled or expired.");
         setLoading(false);
       }
     };
 
-    fetchConfirmation();
-  }, [referenceId]);
+    run();
+  }, [referenceId, checkoutId]);
 
   useEffect(() => {
     if (!data || data.status === "confirmed") return;
-    if (!referenceId) return;
+    if (!resolvedId) return;
 
-    const id = parseInt(referenceId, 10);
     const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
 
     const verify = async () => {
       try {
-        const res = await fetch(`${base}/api/registrations/${id}/verify-payment`, { method: "POST" });
+        const res = await fetch(`${base}/api/registrations/${resolvedId}/verify-payment`, { method: "POST" });
         if (res.ok) {
           const json = await res.json() as { status: string };
           if (json.status === "confirmed") {
-            const confRes = await fetch(`${base}/api/registrations/${id}/confirmation`);
+            const confRes = await fetch(`${base}/api/registrations/${resolvedId}/confirmation`);
             if (confRes.ok) {
               const confJson = await confRes.json() as { registration: ConfirmationData };
               setData(confJson.registration);
@@ -97,7 +114,7 @@ export default function EventConfirmation() {
     };
 
     verify();
-  }, [data?.status, pollCount, referenceId]);
+  }, [data?.status, pollCount, resolvedId]);
 
   if (loading) {
     return (
