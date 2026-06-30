@@ -1,9 +1,11 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { CreateRegistrationBody } from "@workspace/api-zod";
 import { requireAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
+import { getSquareClient } from "../lib/square";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -178,6 +180,94 @@ router.get("/registrations/:id", requireAuth, async (req, res): Promise<void> =>
   }
 
   res.json({ registration: toRegResponse(reg) });
+});
+
+router.post("/registrations/:id/verify-payment", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      reg: registrationsTable,
+      evt: eventsTable,
+    })
+    .from(registrationsTable)
+    .innerJoin(eventsTable, eq(registrationsTable.eventId, eventsTable.id))
+    .where(eq(registrationsTable.id, id))
+    .limit(1);
+
+  if (!rows[0]) {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+
+  const { reg, evt } = rows[0];
+
+  if (reg.status === "confirmed") {
+    res.json({ status: "confirmed" });
+    return;
+  }
+
+  if (!reg.paymentSessionId) {
+    res.json({ status: reg.status });
+    return;
+  }
+
+  try {
+    const client = getSquareClient();
+    if (!client) {
+      res.json({ status: reg.status });
+      return;
+    }
+
+    const linkRes = await client.checkout.paymentLinks.get({ id: reg.paymentSessionId });
+    const orderId = linkRes.paymentLink?.orderId;
+
+    if (!orderId) {
+      res.json({ status: reg.status });
+      return;
+    }
+
+    const orderRes = await client.orders.get({ orderId });
+    const order = orderRes.order;
+    const tenders = (order as any)?.tenders as Array<{ id?: string; amount_money?: unknown }> | undefined;
+    const isPaid = Array.isArray(tenders) && tenders.length > 0;
+
+    if (isPaid) {
+      const paymentId = tenders[0]?.id ?? null;
+
+      await db
+        .update(registrationsTable)
+        .set({ status: "confirmed", paymentSessionId: paymentId ?? reg.paymentSessionId })
+        .where(eq(registrationsTable.id, id));
+
+      await db
+        .update(eventsTable)
+        .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+        .where(eq(eventsTable.id, reg.eventId));
+
+      await sendRegistrationConfirmationEmail({
+        registrantName: reg.name,
+        registrantEmail: reg.email,
+        eventTitle: evt.title,
+        eventDate: evt.date,
+        eventTime: evt.time,
+        eventLocation: evt.location,
+        eventHost: evt.host,
+      });
+
+      logger.info({ registrationId: id, orderId }, "Registration confirmed via payment verification");
+      res.json({ status: "confirmed" });
+    } else {
+      res.json({ status: reg.status });
+    }
+  } catch (err) {
+    logger.error({ err }, "Error verifying payment with Square");
+    res.json({ status: reg.status });
+  }
 });
 
 export default router;

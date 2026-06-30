@@ -70,24 +70,34 @@ export default function EventConfirmation() {
 
   useEffect(() => {
     if (!data || data.status === "confirmed") return;
-    if (pollCount >= 8) return;
+    if (!referenceId) return;
 
-    const timer = setTimeout(async () => {
-      if (!referenceId) return;
-      const id = parseInt(referenceId, 10);
-      const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
+    const id = parseInt(referenceId, 10);
+    const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
+
+    const verify = async () => {
       try {
-        const res = await fetch(`${base}/api/registrations/${id}/confirmation`);
+        const res = await fetch(`${base}/api/registrations/${id}/verify-payment`, { method: "POST" });
         if (res.ok) {
-          const json = await res.json() as { registration: ConfirmationData };
-          setData(json.registration);
+          const json = await res.json() as { status: string };
+          if (json.status === "confirmed") {
+            const confRes = await fetch(`${base}/api/registrations/${id}/confirmation`);
+            if (confRes.ok) {
+              const confJson = await confRes.json() as { registration: ConfirmationData };
+              setData(confJson.registration);
+              return;
+            }
+          }
         }
       } catch {}
-      setPollCount(c => c + 1);
-    }, 3000);
 
-    return () => clearTimeout(timer);
-  }, [data, pollCount, referenceId]);
+      if (pollCount < 6) {
+        setTimeout(() => setPollCount(c => c + 1), 4000);
+      }
+    };
+
+    verify();
+  }, [data?.status, pollCount, referenceId]);
 
   if (loading) {
     return (
