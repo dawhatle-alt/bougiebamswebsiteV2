@@ -12,9 +12,9 @@ function getSquareClient() {
   const { SquareClient, SquareEnvironment } = require("square");
   const token = process.env.SQUARE_ACCESS_TOKEN;
   if (!token) return null;
-  const env = process.env.SQUARE_ENVIRONMENT === "production"
-    ? SquareEnvironment.Production
-    : SquareEnvironment.Sandbox;
+  const env = process.env.SQUARE_ENVIRONMENT === "sandbox"
+    ? SquareEnvironment.Sandbox
+    : SquareEnvironment.Production;
   return new SquareClient({ token, environment: env });
 }
 
@@ -86,11 +86,12 @@ router.post(
 
       if (priceInCents > 0) {
         const idempotencyKey = `reg-${registration.id}-${Date.now()}`;
+        const locationId = process.env.SQUARE_LOCATION_ID ?? "";
 
         const response = await client.checkout.paymentLinks.create({
           idempotencyKey,
           order: {
-            locationId: process.env.SQUARE_LOCATION_ID ?? "",
+            locationId,
             lineItems: [
               {
                 name: event.title,
@@ -149,12 +150,54 @@ router.post(
   },
 );
 
+async function confirmRegistration(registrationId: number, paymentId: string | null, eventId: number) {
+  const [reg] = await db
+    .select()
+    .from(registrationsTable)
+    .where(eq(registrationsTable.id, registrationId))
+    .limit(1);
+
+  if (!reg || reg.status !== "pending") return;
+
+  await db
+    .update(registrationsTable)
+    .set({ status: "confirmed", paymentSessionId: paymentId })
+    .where(eq(registrationsTable.id, registrationId));
+
+  const [evt] = await db
+    .select()
+    .from(eventsTable)
+    .where(eq(eventsTable.id, eventId))
+    .limit(1);
+
+  await db
+    .update(eventsTable)
+    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+    .where(eq(eventsTable.id, eventId));
+
+  if (evt) {
+    await sendRegistrationConfirmationEmail({
+      registrantName: reg.name,
+      registrantEmail: reg.email,
+      eventTitle: evt.title,
+      eventDate: evt.date,
+      eventTime: evt.time,
+      eventLocation: evt.location,
+      eventHost: evt.host,
+    });
+  }
+
+  logger.info({ registrationId, paymentId }, "Registration confirmed via Square webhook");
+}
+
 router.post(
   "/webhooks/square",
   async (req: Request & { rawBody?: Buffer }, res: Response): Promise<void> => {
     const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     const notificationUrl = process.env.SQUARE_WEBHOOK_URL;
+    const isSandbox = process.env.SQUARE_ENVIRONMENT === "sandbox";
 
+    // Signature verification: required in production, optional in sandbox
     if (sigKey && notificationUrl && req.rawBody) {
       try {
         const { WebhooksHelper } = require("square");
@@ -172,74 +215,75 @@ router.post(
           return;
         }
       } catch (err) {
-        logger.warn({ err }, "Square webhook signature check error — proceeding in sandbox mode");
+        logger.warn({ err }, "Square webhook signature check error");
+        if (!isSandbox) {
+          // Fail closed in production if signature check throws
+          res.status(400).json({ error: "Webhook verification error" });
+          return;
+        }
       }
+    } else if (!isSandbox) {
+      // In production, require signature verification prerequisites
+      logger.error("Square webhook received without signature key or URL configured — rejecting");
+      res.status(503).json({ error: "Webhook not fully configured" });
+      return;
     } else {
-      logger.warn("Square webhook signature key or URL not set — skipping verification (sandbox mode)");
+      logger.warn("Square webhook: skipping signature verification in sandbox mode");
     }
 
-    const event = req.body as { type?: string; data?: { object?: { payment?: { order_id?: string; status?: string; id?: string } } } };
+    const event = req.body as {
+      type?: string;
+      data?: {
+        object?: {
+          payment?: {
+            id?: string;
+            order_id?: string;
+            status?: string;
+          };
+        };
+      };
+    };
 
-    if (event.type === "payment.completed") {
-      const payment = event.data?.object?.payment;
-      const orderId = payment?.order_id;
+    const eventType = event.type;
+    const payment = event.data?.object?.payment;
 
-      if (orderId) {
-        try {
-          const client = getSquareClient();
-          if (!client) {
-            res.json({ received: true });
-            return;
-          }
+    // Handle both payment.completed and payment.updated (status=COMPLETED)
+    const isPaymentCompleted =
+      eventType === "payment.completed" ||
+      (eventType === "payment.updated" && payment?.status === "COMPLETED");
 
-          const orderRes = await client.orders.get({ orderId });
-          const referenceId = orderRes.order?.referenceId;
+    if (isPaymentCompleted && payment?.order_id) {
+      try {
+        const client = getSquareClient();
+        if (!client) {
+          res.json({ received: true });
+          return;
+        }
 
-          if (referenceId) {
-            const registrationId = parseInt(referenceId, 10);
-            if (!Number.isNaN(registrationId)) {
-              const [reg] = await db
-                .select()
-                .from(registrationsTable)
-                .where(eq(registrationsTable.id, registrationId))
-                .limit(1);
+        const orderRes = await client.orders.get({ orderId: payment.order_id });
+        const referenceId = orderRes.order?.referenceId;
 
-              if (reg && reg.status === "pending") {
-                await db
-                  .update(registrationsTable)
-                  .set({ status: "confirmed", paymentSessionId: payment?.id ?? null })
-                  .where(eq(registrationsTable.id, registrationId));
+        if (referenceId) {
+          const registrationId = parseInt(referenceId, 10);
+          if (!Number.isNaN(registrationId)) {
+            const eventId = orderRes.order?.lineItems?.[0] ? parseInt(
+              orderRes.order.metadata?.eventId ?? "0", 10
+            ) : 0;
 
-                const [evt] = await db
-                  .select()
-                  .from(eventsTable)
-                  .where(eq(eventsTable.id, reg.eventId))
-                  .limit(1);
+            // Look up eventId from the registration row itself
+            const [reg] = await db
+              .select()
+              .from(registrationsTable)
+              .where(eq(registrationsTable.id, registrationId))
+              .limit(1);
 
-                await db
-                  .update(eventsTable)
-                  .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
-                  .where(eq(eventsTable.id, reg.eventId));
-
-                if (evt) {
-                  await sendRegistrationConfirmationEmail({
-                    registrantName: reg.name,
-                    registrantEmail: reg.email,
-                    eventTitle: evt.title,
-                    eventDate: evt.date,
-                    eventTime: evt.time,
-                    eventLocation: evt.location,
-                    eventHost: evt.host,
-                  });
-                }
-
-                logger.info({ registrationId, paymentId: payment?.id }, "Registration confirmed via Square webhook");
-              }
+            if (reg) {
+              await confirmRegistration(registrationId, payment.id ?? null, reg.eventId);
             }
           }
-        } catch (err) {
-          logger.error({ err }, "Error processing Square payment.completed webhook");
         }
+      } catch (err) {
+        logger.error({ err }, "Error processing Square payment webhook");
       }
     }
 
