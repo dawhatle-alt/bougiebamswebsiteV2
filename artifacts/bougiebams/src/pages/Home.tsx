@@ -55,11 +55,40 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <ShinyButton as="span" className="inline-flex items-center justify-center gap-4 mb-5 text-primary font-bold tracking-[0.25em] rounded-full bg-background/75 px-5 py-2 border border-primary/20 shadow-sm cursor-default">
-              <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
-              The Art of the Game
-              <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
-            </ShinyButton>
+            <motion.span
+              initial={{ "--x": "100%", scale: 0.8 } as never}
+              animate={{ "--x": "-100%", scale: 1 } as never}
+              transition={{
+                repeat: Infinity,
+                repeatType: "loop",
+                repeatDelay: 1,
+                type: "spring",
+                stiffness: 20,
+                damping: 15,
+                mass: 2,
+                scale: { type: "spring", stiffness: 200, damping: 5, mass: 0.5 },
+              }}
+              className="relative inline-flex items-center justify-center gap-4 mb-5 font-bold tracking-[0.25em] uppercase text-sm md:text-base bg-background/75 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/20 shadow-sm cursor-default"
+            >
+              <span
+                className="relative z-[1] inline-flex items-center gap-4 text-primary"
+                style={{
+                  maskImage: "linear-gradient(-75deg, hsl(var(--primary)) calc(var(--x) + 20%), transparent calc(var(--x) + 30%), hsl(var(--primary)) calc(var(--x) + 100%))",
+                }}
+              >
+                <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
+                The Art of the Game
+                <span className="h-px w-8 md:w-12 bg-primary/70 shrink-0" />
+              </span>
+              <span
+                aria-hidden
+                style={{
+                  mask: "linear-gradient(rgb(0,0,0), rgb(0,0,0)) content-box, linear-gradient(rgb(0,0,0), rgb(0,0,0))",
+                  maskComposite: "exclude",
+                }}
+                className="absolute inset-0 z-10 block rounded-full bg-[linear-gradient(-75deg,hsl(var(--primary)/10%)_calc(var(--x)+20%),hsl(var(--primary)/50%)_calc(var(--x)+25%),hsl(var(--primary)/10%)_calc(var(--x)+100%))] p-px pointer-events-none"
+              />
+            </motion.span>
             <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[1.1] text-foreground">
               <TextEffect as="span" per="word" preset="blur" className="block">
                 Where Style Meets
