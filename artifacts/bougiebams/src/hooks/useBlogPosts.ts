@@ -1,4 +1,4 @@
-import { useListBlogPosts } from "@workspace/api-client-react";
+import { useListBlogPosts, useGetBlogPost } from "@workspace/api-client-react";
 import { ApiBlogPost } from "@/data/blog";
 
 interface UseBlogPostsResult {
@@ -30,7 +30,17 @@ export function useBlogPosts(): UseBlogPostsResult {
 }
 
 export function useBlogPost(slug: string): UseBlogPostResult {
-  const { posts, loading, error } = useBlogPosts();
-  const post = slug ? (posts.find((p) => p.slug === slug) ?? null) : null;
-  return { post, loading, error };
+  const { data, isLoading, isError, error } = useGetBlogPost(slug, {
+    query: { enabled: !!slug },
+  });
+
+  const post: ApiBlogPost | null = data?.post
+    ? (data.post as unknown as ApiBlogPost)
+    : null;
+
+  return {
+    post,
+    loading: isLoading,
+    error: isError ? (error instanceof Error ? error.message : "Post not found") : null,
+  };
 }

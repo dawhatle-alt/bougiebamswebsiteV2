@@ -64,6 +64,13 @@ export default function BlogPost() {
                 src={blogImageUrl(post.imagePath)}
                 alt={post.title}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  if (!img.dataset.fallback) {
+                    img.dataset.fallback = "1";
+                    img.src = blogImageUrl(null);
+                  }
+                }}
               />
             </div>
 
