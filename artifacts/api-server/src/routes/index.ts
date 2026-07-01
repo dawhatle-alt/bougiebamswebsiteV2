@@ -15,6 +15,7 @@ import squareRouter from "./square";
 import couponsRouter from "./coupons";
 import favoritesRouter from "./favorites";
 import chatRouter from "./chat";
+import lessonsRouter from "./lessons";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(squareRouter);
 router.use(couponsRouter);
 router.use(favoritesRouter);
 router.use(chatRouter);
+router.use(lessonsRouter);
 
 export default router;

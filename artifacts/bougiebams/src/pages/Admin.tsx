@@ -21,6 +21,7 @@ import {
   Users,
   Image,
   Tag,
+  GraduationCap,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductManager from "@/components/admin/ProductManager";
@@ -29,10 +30,11 @@ import DashboardStats from "@/components/admin/DashboardStats";
 import RegistrationsManager from "@/components/admin/RegistrationsManager";
 import HeroImagesManager from "@/components/admin/HeroImagesManager";
 import DiscountCodesManager from "@/components/admin/DiscountCodesManager";
+import LessonsManager from "@/components/admin/LessonsManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero" | "discounts";
+type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero" | "discounts" | "lessons";
 
 interface Subscriber {
   id: number;
@@ -220,7 +222,9 @@ export default function Admin() {
                           ? "Homepage Images"
                           : view === "discounts"
                             ? "Discount Codes"
-                            : "Events"}
+                            : view === "lessons"
+                              ? "Education"
+                              : "Events"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -252,6 +256,7 @@ export default function Admin() {
             { key: "events", label: "Events", icon: CalendarDays },
             { key: "hero", label: "Homepage Images", icon: Image },
             { key: "discounts", label: "Discount Codes", icon: Tag },
+            { key: "lessons", label: "Education", icon: GraduationCap },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -284,6 +289,8 @@ export default function Admin() {
           <HeroImagesManager onAuthError={handleAuthError} />
         ) : view === "discounts" ? (
           <DiscountCodesManager onAuthError={handleAuthError} />
+        ) : view === "lessons" ? (
+          <LessonsManager onAuthError={handleAuthError} />
         ) : (
           <>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
