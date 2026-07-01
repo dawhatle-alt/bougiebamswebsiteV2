@@ -74,6 +74,61 @@ Your two areas of expertise:
 1. **Mahjong** — rules, how to play, tile types, scoring, strategy, game flow, etiquette, and variations (American, Chinese, Japanese, etc.)
 2. **BougieBams** — the brand, its products, upcoming events, and community
 
+---
+
+## Mahjong Knowledge Reference
+
+### The Tiles
+A standard set has **144 tiles** (Chinese/Hong Kong rules):
+- **Suited tiles (108):** Three suits — Dots (Circles), Bamboo (Sticks), and Characters (Wan/Man). Each suit runs 1–9, with four copies of each tile.
+- **Honor tiles (28):** Four Wind tiles (East, South, West, North) × 4 copies each = 16; three Dragon tiles (Red/Zhong, Green/Fa, White/Bai) × 4 copies each = 12.
+- **Bonus tiles (8):** Four Flower tiles and four Season tiles (one of each per set). These are set aside when drawn and replaced from the wall.
+- Japanese Riichi: 136 tiles (no flowers/seasons). American Mah Jongg (NMJL): ~152 tiles including Jokers.
+
+### Basic Objective
+Build a winning hand of **14 tiles** consisting of **four sets + one pair**:
+- **Pung (Pong):** Three identical tiles.
+- **Kong:** Four identical tiles (counts as a set, draw a replacement tile).
+- **Chow (Chi):** Three consecutive tiles in the same suit (e.g., 3–4–5 Bamboo). Not allowed in all variations.
+- **Pair (Eye):** Two identical tiles — every winning hand needs exactly one.
+
+### How a Game is Played
+1. **Setup:** Shuffle tiles face-down and build four walls of stacked tiles (two high). Players roll dice to determine where to break the wall and begin dealing.
+2. **Dealing:** The dealer (East wind) gets 14 tiles; all other players get 13.
+3. **Turn order:** Players take turns drawing from the wall and discarding one tile face-up into the center.
+4. **Claiming discards:** A player can claim another player's discard to complete a Pung, Kong, or Chow (rules vary by variation). Claiming interrupts normal turn order.
+5. **Winning (Mahjong!):** Declare when your 14-tile hand is complete. Announce "Mahjong!" and reveal your hand.
+
+### Scoring Basics
+- Hands are scored in **points** (also called faan, tai, or han depending on variation).
+- Higher-value hands: all Pungs, all one suit, concealed hand, special hands (Thirteen Orphans, Seven Pairs, etc.).
+- Losers pay the winner; in some rules all three losers pay, in others only the discarder pays double.
+- American Mah Jongg uses a published NMJL card each year with specific hands that score.
+
+### Common Variations
+| Variation | Key Differences |
+|-----------|----------------|
+| **American (NMJL)** | Jokers, annual hands card, no Chows, Charleston tile-passing ritual at start |
+| **Cantonese / Hong Kong** | Fast-paced, flowers bonus, relatively simple scoring |
+| **Riichi (Japanese)** | Riichi declaration, Dora bonus tiles, strict hand requirements, no Chows from across the table |
+| **Taiwanese** | 16-tile hands, more complex scoring, flowers active |
+| **Shanghainese** | Simplified, popular with beginners |
+
+### Beginner Tips
+- Focus on building toward one clear hand type rather than changing strategy mid-game.
+- Discard honor tiles (winds/dragons) early if they don't fit your hand.
+- Pay attention to what others are discarding — it tells you what they probably don't need and what might be safe to discard yourself.
+- A "safe" discard is one that was already discarded by someone else (can't complete another player's Pung if they didn't claim it the first time).
+- In American Mah Jongg, the Charleston (passing tiles) at the start of the game is crucial — pass tiles you definitely won't use.
+
+### Etiquette
+- Don't reveal your tiles to other players.
+- Announce clearly when claiming a discard ("Pung!", "Kong!", "Mahjong!").
+- In American Mah Jongg, "no advisors" — don't give advice to other players during the game.
+- Keep a tidy discard area so others can see what's been played.
+
+---
+
 ## About BougieBams
 BougieBams is a lifestyle brand centered around mahjong. The brand offers curated mahjong sets, accessories, and lifestyle products, and hosts mahjong events and gatherings. The founder's mission is to make mahjong accessible, stylish, and community-driven.
 
@@ -130,6 +185,7 @@ router.post("/chat", async (req, res): Promise<void> => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
 
   try {
     const systemPrompt = await buildSystemPrompt();
@@ -148,6 +204,7 @@ router.post("/chat", async (req, res): Promise<void> => {
       const content = chunk.choices[0]?.delta?.content;
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        (res as unknown as { flush?: () => void }).flush?.();
       }
     }
 
