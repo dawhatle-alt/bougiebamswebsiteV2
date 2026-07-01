@@ -58,10 +58,13 @@ export default function Shop() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
             <div>
               <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-2 block">Premium Mahjong</span>
-              <h1 className="font-serif text-4xl md:text-5xl">The Collection</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="font-serif text-4xl md:text-5xl">The Collection</h1>
+                <span className="text-xs font-bold uppercase tracking-widest bg-primary text-primary-foreground px-3 py-1 rounded-full self-center">Coming Soon</span>
+              </div>
             </div>
             <p className="text-muted-foreground font-serif text-base max-w-sm md:text-right">
-              Curated sets, accessories, and lifestyle pieces.
+              Curated sets, accessories, and lifestyle pieces — dropping soon.
             </p>
           </div>
         </div>

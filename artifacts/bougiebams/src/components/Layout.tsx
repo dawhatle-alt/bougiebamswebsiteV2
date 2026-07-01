@@ -178,6 +178,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             }`}
           >
             {link.name}
+            <span className="ml-1 text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full leading-none">Soon</span>
             <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${shopMenuOpen ? "rotate-180" : ""}`} />
           </Link>
           <AnimatePresence>
@@ -656,7 +657,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               aria-expanded={mobileShopOpen}
               className="font-serif text-3xl hover:text-primary transition-colors flex items-center justify-between text-left"
             >
-              Shop
+              <span className="flex items-center gap-2">
+                Shop
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-2 py-0.5 rounded-full leading-none font-sans">Soon</span>
+              </span>
               <ChevronDown className={`w-6 h-6 transition-transform duration-300 ${mobileShopOpen ? "rotate-180 text-primary" : ""}`} />
             </button>
             {mobileShopOpen && (
