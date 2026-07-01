@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Loader2, Bot } from "lucide-react";
+import { Link } from "wouter";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -10,14 +11,76 @@ type Message = {
   content: string;
 };
 
+function renderMarkdown(text: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  const lines = text.split("\n");
+
+  lines.forEach((line, lineIdx) => {
+    if (lineIdx > 0) nodes.push(<br key={`br-${lineIdx}`} />);
+
+    const combined = /(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*)/g;
+    let last = 0;
+    let match: RegExpExecArray | null;
+    const lineNodes: React.ReactNode[] = [];
+
+    combined.lastIndex = 0;
+    while ((match = combined.exec(line)) !== null) {
+      if (match.index > last) {
+        lineNodes.push(line.slice(last, match.index));
+      }
+      if (match[0].startsWith("[")) {
+        const label = match[2];
+        const href = match[3];
+        const isInternal = href.startsWith("/");
+        if (isInternal) {
+          lineNodes.push(
+            <Link
+              key={`link-${lineIdx}-${match.index}`}
+              href={href}
+              className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium"
+            >
+              {label}
+            </Link>,
+          );
+        } else {
+          lineNodes.push(
+            <a
+              key={`link-${lineIdx}-${match.index}`}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium"
+            >
+              {label}
+            </a>,
+          );
+        }
+      } else if (match[0].startsWith("**")) {
+        lineNodes.push(
+          <strong key={`bold-${lineIdx}-${match.index}`}>{match[4]}</strong>,
+        );
+      }
+      last = match.index + match[0].length;
+    }
+
+    if (last < line.length) {
+      lineNodes.push(line.slice(last));
+    }
+
+    nodes.push(...lineNodes);
+  });
+
+  return nodes;
+}
+
 function AssistantMessage({ content }: { content: string }) {
   return (
     <div className="flex items-start gap-2">
       <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
         <Bot className="w-4 h-4 text-primary" />
       </div>
-      <div className="flex-1 bg-muted rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
-        {content}
+      <div className="flex-1 bg-muted rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm leading-relaxed">
+        {renderMarkdown(content)}
       </div>
     </div>
   );

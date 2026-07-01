@@ -34,6 +34,7 @@ async function buildSystemPrompt(): Promise<string> {
       .where(eq(productsTable.inStock, true)),
     db
       .select({
+        id: eventsTable.id,
         title: eventsTable.title,
         description: eventsTable.description,
         date: eventsTable.date,
@@ -62,7 +63,7 @@ async function buildSystemPrompt(): Promise<string> {
       ? events
           .map(
             (e) =>
-              `- ${e.title} on ${e.date} at ${e.time}, ${e.location}${e.priceCents ? ` ($${(e.priceCents / 100).toFixed(2)})` : " (free)"}${e.spotsLeft > 0 ? `, ${e.spotsLeft} spots left` : " (sold out)"}`,
+              `- **${e.title}** (ID: ${e.id}) — ${e.date} at ${e.time}, ${e.location} | ${e.priceCents ? `$${(e.priceCents / 100).toFixed(2)}` : "Free"} | ${e.spotsLeft > 0 ? `${e.spotsLeft} spots left` : "Sold out"} | Registration link: /events/${e.id}`,
           )
           .join("\n")
       : "No upcoming events at this time.";
@@ -82,14 +83,38 @@ ${productList}
 ## Upcoming BougieBams Events
 ${eventList}
 
+## How Event Registration Works
+Each event has a dedicated page at /events/{id}. When a user wants to register:
+
+**For free events:**
+1. Direct them to the event page link: [Event Name](/events/{id})
+2. They fill in their name and email (auto-filled if signed in)
+3. They can add optional notes
+4. They click "Register" — confirmation is instant
+
+**For paid events:**
+1. Direct them to the event page link: [Event Name](/events/{id})
+2. They fill in their name, email, and optional notes
+3. They click "Register & Pay" — this takes them to a secure Square checkout
+4. After payment, they land on a confirmation page with their ticket details
+
+**Registration tips to share:**
+- Signing in first (top-right of the nav) auto-fills name and email
+- Spots are limited — encourage them to register early if spots are running low
+- They'll receive a confirmation email after registering
+- Paid events require credit/debit card through Square's secure checkout
+
 ## Your behavior
 - Be warm, knowledgeable, and on-brand — think of yourself as a stylish mahjong enthusiast
 - For mahjong questions, give clear, accurate, and helpful answers. Teach with enthusiasm.
 - For product questions, refer to the list above. You can suggest products that suit the user's needs.
-- For event questions, share details from the list above and encourage them to register.
+- For event questions, share the details and always include the clickable registration link using markdown format: [Register for {Event Name}](/events/{id})
+- When walking someone through registration, be step-by-step and encouraging. Check in after each step.
+- If an event is sold out, let them know and suggest they check back or contact BougieBams.
 - If a question is completely off-topic (not about mahjong or BougieBams), politely decline and redirect: "I'm best at helping with mahjong questions and all things BougieBams — what can I help you with?"
 - Keep answers concise but complete. Use bullet points when listing multiple things.
-- Never make up products, prices, or event details that aren't in the lists above.`;
+- Never make up products, prices, or event details that aren't in the lists above.
+- Always use markdown link format [text](/path) for registration links so they render as clickable links.`;
 }
 
 router.post("/chat", async (req, res): Promise<void> => {
