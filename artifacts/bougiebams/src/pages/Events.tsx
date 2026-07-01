@@ -19,8 +19,10 @@ function priceDisplay(event: ApiEvent): string {
 function getImageUrl(event: ApiEvent): string | null {
   if (!event.imagePath) return null;
   const p = event.imagePath;
-  if (p.startsWith("http") || p.startsWith("/api/")) return p;
-  return `${import.meta.env.BASE_URL}${p.replace(/^\//, "")}`;
+  if (p.startsWith("http")) return p;
+  if (p.startsWith("/api/")) return p;
+  if (p.startsWith("/")) return `/api/storage${p}`;
+  return `${import.meta.env.BASE_URL}${p}`;
 }
 
 function CalendarView({ events }: { events: ApiEvent[] }) {
@@ -222,12 +224,12 @@ export default function Events() {
                     transition={{ delay: i * 0.05 }}
                     className="group cursor-pointer flex flex-col h-full bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300"
                   >
-                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-card">
                       {getImageUrl(event) ? (
                         <img
                           src={getImageUrl(event)!}
                           alt={event.title}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-foreground/10">
@@ -277,12 +279,12 @@ export default function Events() {
                     transition={{ delay: i * 0.04 }}
                     className="group cursor-pointer flex items-center gap-6 bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 p-4"
                   >
-                    <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-muted">
+                    <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-card">
                       {getImageUrl(event) ? (
                         <img
                           src={getImageUrl(event)!}
                           alt={event.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-foreground/10">

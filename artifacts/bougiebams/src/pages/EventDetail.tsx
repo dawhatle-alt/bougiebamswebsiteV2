@@ -123,9 +123,13 @@ export default function EventDetail() {
   const isSoldOut = event.spotsLeft <= 0;
   const price = event.priceCents ? `$${(event.priceCents / 100).toFixed(0)}` : "Free";
   const heroImage = event.imagePath
-    ? (event.imagePath.startsWith("http") || event.imagePath.startsWith("/api/")
+    ? (event.imagePath.startsWith("http")
         ? event.imagePath
-        : `${import.meta.env.BASE_URL}${event.imagePath.replace(/^\//, "")}`)
+        : event.imagePath.startsWith("/api/")
+          ? event.imagePath
+          : event.imagePath.startsWith("/")
+            ? `/api/storage${event.imagePath}`
+            : `${import.meta.env.BASE_URL}${event.imagePath}`)
     : `${import.meta.env.BASE_URL}bougie-zebra-banner.png`;
 
   return (
