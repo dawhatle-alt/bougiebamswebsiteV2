@@ -25,7 +25,7 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
     time: row.time,
     location: row.location,
     priceCents: row.priceCents ?? null,
-    category: row.category as "In-Person" | "Virtual" | "Tournament" | "Workshop",
+    category: row.category,
     imagePath: row.imagePath ?? null,
     totalSpots: row.totalSpots,
     spotsLeft: row.spotsLeft,
