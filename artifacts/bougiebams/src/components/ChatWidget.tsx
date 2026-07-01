@@ -286,7 +286,7 @@ export default function ChatWidget() {
               exit={{ rotate: 90, opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 text-white" />
             </motion.div>
           ) : (
             <motion.div
@@ -296,7 +296,7 @@ export default function ChatWidget() {
               exit={{ rotate: -90, opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              <MessageCircle className="w-6 h-6" />
+              <MessageCircle className="w-6 h-6 text-white" />
             </motion.div>
           )}
         </AnimatePresence>
