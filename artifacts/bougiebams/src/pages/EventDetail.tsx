@@ -48,18 +48,29 @@ export default function EventDetail() {
     }
   };
 
+  const parseEventDateTime = (date: string, time: string): Date => {
+    const [year, month, day] = date.split("-").map(Number);
+    const timeClean = time.replace(/\s*CT\s*$/i, "").trim();
+    const [timePart, meridiem] = timeClean.split(/\s+/);
+    const [hRaw, mRaw] = timePart.split(":").map(Number);
+    let h = hRaw;
+    if (meridiem?.toUpperCase() === "PM" && h !== 12) h += 12;
+    if (meridiem?.toUpperCase() === "AM" && h === 12) h = 0;
+    return new Date(year, month - 1, day, h, mRaw || 0);
+  };
+
   const fmtCalDate = (d: Date) =>
     d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 
   const googleCalUrl = () => {
-    const start = fmtCalDate(new Date(`${event!.date} ${event!.time}`));
-    const end = fmtCalDate(new Date(new Date(`${event!.date} ${event!.time}`).getTime() + 2 * 3600000));
+    const start = fmtCalDate(parseEventDateTime(event!.date, event!.time));
+    const end = fmtCalDate(new Date(parseEventDateTime(event!.date, event!.time).getTime() + 2 * 3600000));
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event!.title)}&dates=${start}/${end}&details=${encodeURIComponent(event!.description || "")}&location=${encodeURIComponent(event!.location)}`;
   };
 
   const downloadIcs = () => {
-    const start = fmtCalDate(new Date(`${event!.date} ${event!.time}`));
-    const end = fmtCalDate(new Date(new Date(`${event!.date} ${event!.time}`).getTime() + 2 * 3600000));
+    const start = fmtCalDate(parseEventDateTime(event!.date, event!.time));
+    const end = fmtCalDate(new Date(parseEventDateTime(event!.date, event!.time).getTime() + 2 * 3600000));
     const ics = [
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//BougieBams//Events//EN",
       "BEGIN:VEVENT",
