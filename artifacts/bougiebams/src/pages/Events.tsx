@@ -346,7 +346,7 @@ export default function Events() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const { data, isLoading } = useListEvents(
-    showUpcomingOnly ? { upcoming: "true" } : {}
+    showUpcomingOnly ? { upcoming: "true" } : { past: "true" }
   );
   const events = data?.events;
 
