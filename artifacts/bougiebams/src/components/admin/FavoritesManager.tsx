@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useReducer } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,32 @@ import { Upload, Trash2, Loader2, RefreshCw, ImageIcon, Plus, Pencil, X, Check }
 import { FAVORITES, CATEGORIES, type FavoriteProduct, type FavoriteCategory } from "@/data/favorites";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function AdminImagePreview({ src, alt }: { src: string; alt: string }) {
+  const [status, setStatus] = useReducer(
+    (_: "loading" | "ok" | "error", next: "loading" | "ok" | "error") => next,
+    "loading"
+  );
+  useEffect(() => { setStatus("loading"); }, [src]);
+  return (
+    <div className="w-full h-full flex items-center justify-center">
+      {status === "error" ? (
+        <div className="flex flex-col items-center gap-1 text-[#C5BBAC]">
+          <ImageIcon className="w-8 h-8" />
+          <span className="text-[10px]">Image unavailable — re-upload</span>
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          className={`w-full h-full object-contain transition-opacity duration-200 ${status === "ok" ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setStatus("ok")}
+          onError={() => setStatus("error")}
+        />
+      )}
+    </div>
+  );
+}
 
 interface CustomProduct {
   id: string;
@@ -297,12 +323,7 @@ export default function FavoritesManager({ onAuthError }: Props) {
               return (
                 <div key={product.id} className="bg-white border border-[#E2DBCD] rounded-lg overflow-hidden">
                   <div className="relative aspect-[4/3] bg-[#FAF7F0] flex items-center justify-center group">
-                    <img
-                      src={currentImageUrl}
-                      alt={product.name}
-                      className="w-full h-full object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
+                    <AdminImagePreview src={currentImageUrl} alt={product.name} />
                     {hasOverride && (
                       <span className="absolute top-2 right-2 bg-[#1E2A5A] text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
                         Custom
