@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ProductCard } from "@/components/ProductCard";
+import { FloatingProductCard } from "@/components/FloatingProductCard";
 import { FAVORITES, CATEGORIES, CATEGORY_DESCRIPTIONS, type FavoriteCategory, type FavoriteProduct } from "@/data/favorites";
 
 const BASE = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
@@ -178,7 +178,7 @@ export default function Favorites() {
                   </div>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {products.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                      <FloatingProductCard key={product.id} product={product} />
                     ))}
                   </div>
                 </div>

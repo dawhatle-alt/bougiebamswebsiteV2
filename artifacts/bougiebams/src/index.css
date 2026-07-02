@@ -379,3 +379,13 @@
  inset: -1px;
  }
 }
+
+@keyframes bb-float {
+  0%, 100% { transform: translateZ(46px) translateY(0); }
+  50%       { transform: translateZ(46px) translateY(-13px); }
+}
+
+.bb-float {
+  animation: bb-float 6s ease-in-out infinite;
+  will-change: transform;
+}
