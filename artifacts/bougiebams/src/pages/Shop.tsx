@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
-import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { SHOP_CATEGORIES } from "@/data/categories";
@@ -58,7 +57,7 @@ export default function Shop() {
       <div className="container mx-auto px-4 md:px-8">
         <div className="text-center mb-16">
           <h1 className="font-serif text-5xl md:text-6xl mb-6">The Collection</h1>
-          <p className="text-muted-foreground font-serif text-xl max-w-2xl mx-auto">
+          <p className="text-muted-foreground font-sans text-xl max-w-2xl mx-auto">
             Explore our curated selection of premium mahjong sets, accessories, and lifestyle pieces.
           </p>
         </div>
@@ -104,7 +103,7 @@ export default function Shop() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
-            <p className="font-serif text-lg">Loading the collection…</p>
+            <p className="font-sans text-lg">Loading the collection…</p>
           </div>
         )}
 
@@ -129,15 +128,8 @@ export default function Shop() {
               transition={{ duration: 0.5, delay: i * 0.05 }}
               className="group flex flex-col"
             >
-              <BorderRotate
-                animationMode="auto-rotate"
-                animationSpeed={4}
-                backgroundColor="hsl(var(--card))"
-                borderRadius={12}
-                borderWidth={3}
-                className="p-2 h-full flex flex-col"
-              >
-              <div className="relative aspect-square mb-4 overflow-hidden rounded-md bg-muted/30">
+              <div className="group relative h-full w-full overflow-hidden rounded-none border border-border bg-card transition-shadow duration-300 hover:shadow-lg flex flex-col">
+              <div className="relative aspect-square mb-4 overflow-hidden rounded-none bg-muted/30">
                 {product.isNew && (
                   <div className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground text-xs font-semibold tracking-widest uppercase px-3 py-1">
                     New
@@ -158,8 +150,8 @@ export default function Shop() {
                 
                 {/* Hover Actions */}
                 <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex gap-2 z-20">
-                  <Button 
-                    className="flex-1 bg-background/95 backdrop-blur-sm text-foreground hover:bg-primary hover:text-primary-foreground rounded-none"
+                  <Button
+                    className="flex-1 min-h-11 bg-background/95 backdrop-blur-sm text-foreground hover:bg-primary hover:text-primary-foreground rounded-none"
                     onClick={(e) => {
                       e.preventDefault();
                       setQuickViewProduct(product.id);
@@ -167,8 +159,8 @@ export default function Shop() {
                   >
                     <Eye className="w-4 h-4 mr-2" /> Quick View
                   </Button>
-                  <Button 
-                    className="flex-1 bg-foreground text-background hover:bg-primary rounded-none disabled:opacity-50"
+                  <Button
+                    className="flex-1 min-h-11 bg-background/95 backdrop-blur-sm text-foreground hover:bg-primary hover:text-primary-foreground rounded-none disabled:opacity-50"
                     disabled={!product.inStock}
                     onClick={(e) => {
                       e.preventDefault();
@@ -189,7 +181,7 @@ export default function Shop() {
                 </div>
                 <p className="text-muted-foreground text-sm font-sans tracking-wide">{product.category}</p>
               </div>
-              </BorderRotate>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -221,16 +213,16 @@ export default function Shop() {
                 />
               </div>
               <div className="p-8 md:p-12 flex flex-col justify-center">
-                <span className="text-primary text-xs font-semibold tracking-widest uppercase mb-4">
+                <span className="eyebrow mb-4">
                   {selectedProduct.category}
                 </span>
                 <h2 className="font-serif text-4xl mb-4">{selectedProduct.name}</h2>
                 <span className="text-2xl mb-6">${selectedProduct.price}</span>
-                <p className="text-muted-foreground font-serif text-lg leading-relaxed mb-8">
+                <p className="text-muted-foreground font-sans text-lg leading-relaxed mb-8">
                   {selectedProduct.description}
                 </p>
-                <Button 
-                  className="w-full h-14 text-lg rounded-none bg-foreground text-background hover:bg-primary"
+                <Button
+                  className="w-full h-14 text-lg rounded-none bg-primary text-primary-foreground hover:bg-primary/90"
                   disabled={!selectedProduct.inStock}
                   onClick={() => {
                     addItem(selectedProduct);

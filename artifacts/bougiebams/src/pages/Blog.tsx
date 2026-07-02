@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
 import { blogImageUrl, formatBlogDate } from "@/data/blog";
 
@@ -36,7 +35,7 @@ export default function Blog() {
       <div className="container mx-auto px-4 md:px-8">
         <div className="text-center mb-16">
           <h1 className="font-serif text-5xl md:text-6xl mb-6">The Journal</h1>
-          <p className="text-muted-foreground font-serif text-xl max-w-2xl mx-auto">
+          <p className="text-muted-foreground font-sans text-xl max-w-2xl mx-auto">
             Musings on lifestyle, entertaining, and the beautiful game.
           </p>
         </div>
@@ -59,19 +58,19 @@ export default function Blog() {
         </div>
 
         {loading && (
-          <div className="py-24 text-center text-muted-foreground font-serif text-lg">
+          <div className="py-24 text-center text-muted-foreground font-sans text-lg">
             Loading the journal…
           </div>
         )}
 
         {!loading && error && (
-          <div className="py-24 text-center text-muted-foreground font-serif text-lg">
+          <div className="py-24 text-center text-muted-foreground font-sans text-lg">
             We couldn't load the journal right now. Please try again soon.
           </div>
         )}
 
         {!loading && !error && posts.length === 0 && (
-          <div className="py-24 text-center text-muted-foreground font-serif text-lg">
+          <div className="py-24 text-center text-muted-foreground font-sans text-lg">
             No stories yet — check back soon.
           </div>
         )}
@@ -95,13 +94,13 @@ export default function Blog() {
                       />
                     </div>
                     <div className="p-8 md:p-16 flex flex-col justify-center bg-card">
-                      <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-4">
+                      <span className="eyebrow block mb-4">
                         {featuredPost.category}
                       </span>
                       <h2 className="font-serif text-4xl md:text-5xl mb-6 group-hover:text-primary transition-colors">
                         {featuredPost.title}
                       </h2>
-                      <p className="text-muted-foreground font-serif text-lg leading-relaxed mb-8">
+                      <p className="text-muted-foreground font-sans text-lg leading-relaxed mb-8">
                         {featuredPost.excerpt}
                       </p>
                       <div className="flex items-center justify-between mt-auto pt-8 border-t border-border">
@@ -119,7 +118,7 @@ export default function Blog() {
             )}
 
             {gridPosts.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground font-serif text-lg">
+              <div className="py-16 text-center text-muted-foreground font-sans text-lg">
                 No stories in this category yet.
               </div>
             ) : (
@@ -133,15 +132,8 @@ export default function Blog() {
                     className="group flex flex-col"
                   >
                     <Link href={`/blog/${post.slug}`} className="h-full">
-                      <BorderRotate
-                        animationMode="auto-rotate"
-                        animationSpeed={4}
-                        backgroundColor="hsl(var(--card))"
-                        borderRadius={12}
-                        borderWidth={3}
-                        className="p-2 h-full flex flex-col cursor-pointer"
-                      >
-                        <div className="aspect-[4/3] overflow-hidden mb-4 rounded-md bg-muted">
+                      <div className="group relative h-full w-full overflow-hidden rounded-none border border-border bg-card transition-shadow duration-300 hover:shadow-lg flex flex-col cursor-pointer">
+                        <div className="aspect-[4/3] overflow-hidden mb-4 rounded-none bg-muted">
                           <img
                             src={blogImageUrl(post.imagePath)}
                             alt={post.title}
@@ -149,13 +141,13 @@ export default function Blog() {
                           />
                         </div>
                         <div className="flex flex-col flex-1 px-2 pb-2">
-                          <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-3 block">
+                          <span className="eyebrow block mb-3">
                             {post.category}
                           </span>
                           <h3 className="font-serif text-2xl mb-3 group-hover:text-primary transition-colors">
                             {post.title}
                           </h3>
-                          <p className="text-muted-foreground font-serif leading-relaxed mb-6 flex-1">
+                          <p className="text-muted-foreground font-sans leading-relaxed mb-6 flex-1">
                             {post.excerpt}
                           </p>
                           <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
@@ -167,7 +159,7 @@ export default function Blog() {
                             </span>
                           </div>
                         </div>
-                      </BorderRotate>
+                      </div>
                     </Link>
                   </motion.div>
                 ))}

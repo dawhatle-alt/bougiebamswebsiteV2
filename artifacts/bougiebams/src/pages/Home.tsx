@@ -1,60 +1,110 @@
 import { Link } from "wouter";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import PressBar from "@/components/PressBar";
 import buildImg from "@assets/images/mahjong-tiles-closeup.png";
 import { Button } from "@/components/ui/button";
-import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { TextEffect } from "@/components/ui/text-effect";
 import { useProducts } from "@/hooks/useProducts";
 import { images } from "@/data/images";
 import { useCart } from "@/context/CartContext";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronRight, ArrowRight, Quote, Star, ShoppingBag } from "lucide-react";
+import { ChevronRight, ArrowRight, Quote, Star, ShoppingBag, Check, Loader2 } from "lucide-react";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function Home() {
-  const [emblaRef] = useEmblaCarousel({ loop: true });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const { addItem } = useCart();
   const { products } = useProducts();
 
   const bestsellers = products.filter(p => p.isBestseller).slice(0, 4);
 
+  // Newsletter form state
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (status === "loading") return;
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      const res = await fetch(`${API_BASE}/api/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Something went wrong. Please try again.");
+      }
+      setDiscountCode(data.discountCode || "BOUGIE15");
+      setStatus("success");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    }
+  };
+
   const testimonials = [
     {
       name: "Eleanor S.",
       quote: "I've been playing for 20 years and this is by far the most beautiful set I've ever owned. The weight of the tiles is perfect.",
-      avatar: "https://i.pravatar.cc/150?u=1"
     },
     {
       name: "Margaret P.",
       quote: "BougieBams completely transformed our weekly game night. It feels less like a game and more like an event now.",
-      avatar: "https://i.pravatar.cc/150?u=2"
     },
     {
       name: "Victoria C.",
       quote: "The Rose Gold set was a gift for my 40th birthday. It's stunning. The craftsmanship is undeniable.",
-      avatar: "https://i.pravatar.cc/150?u=3"
     },
     {
       name: "Jacqueline H.",
       quote: "Finally, a mahjong brand that understands aesthetics. It looks gorgeous sitting on my coffee table even when we're not playing.",
-      avatar: "https://i.pravatar.cc/150?u=4"
     }
   ];
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((w) => w.charAt(0))
+      .join("")
+      .toUpperCase();
 
   return (
     <div className="flex flex-col w-full">
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
         <HeroShuffleGrid />
-        
+        <div className="absolute inset-0 z-[5] bg-gradient-to-t from-background via-background/70 to-transparent" />
+
         <div className="relative z-10 max-w-4xl mx-auto space-y-8 mt-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <span className="inline-flex items-center justify-center gap-4 mb-5 text-primary font-bold tracking-[0.25em] uppercase text-sm md:text-base [text-shadow:0_1px_8px_hsl(var(--background))]">
+            <span className="inline-flex items-center justify-center gap-4 mb-5 text-primary font-bold tracking-[0.25em] uppercase text-sm md:text-base">
               <span className="h-px w-8 md:w-12 bg-primary/70"></span>
               The Art of the Game
               <span className="h-px w-8 md:w-12 bg-primary/70"></span>
@@ -68,18 +118,18 @@ export default function Home() {
               </TextEffect>
             </h1>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
-            <p className="text-xl md:text-2xl text-foreground font-serif max-w-2xl mx-auto mb-10 [text-shadow:0_1px_10px_hsl(var(--background)),0_0_24px_hsl(var(--background))]">
+            <p className="text-xl md:text-2xl text-foreground font-serif max-w-2xl mx-auto mb-10">
               Premium Mahjong collections for the modern player. Curated, confident, and unapologetically stylish.
             </p>
-            <Button size="lg" className="h-14 px-8 text-lg bg-foreground text-background hover:bg-primary transition-all duration-300 rounded-none group" asChild>
+            <Button size="lg" className="h-14 px-8 text-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 rounded-none group" asChild>
               <Link href="/shop">
-                Shop the Collection 
+                Shop the Collection
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
@@ -95,7 +145,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
             <div>
               <h2 className="font-serif text-4xl md:text-5xl mb-4">Curated Collections</h2>
-              <p className="text-muted-foreground text-lg max-w-xl font-serif">
+              <p className="text-muted-foreground text-lg max-w-xl font-sans">
                 Discover sets designed to complement your space and elevate your play.
               </p>
             </div>
@@ -110,7 +160,7 @@ export default function Home() {
               { title: "The Rose Gold Set", img: images.productRosegold, path: "/shop?category=Complete+Sets" },
               { title: "Accessories & Extras", img: images.heroTile3, path: "/shop?category=Tiles+%26+Accessories" }
             ].map((collection, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -118,18 +168,11 @@ export default function Home() {
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 className="group relative aspect-[3/4]"
               >
-                <BorderRotate
-                  animationMode="auto-rotate"
-                  animationSpeed={4}
-                  backgroundColor="hsl(var(--card))"
-                  borderRadius={12}
-                  borderWidth={3}
-                  className="h-full w-full overflow-hidden cursor-pointer"
-                >
-                <Link href={collection.path} className="block relative h-full w-full overflow-hidden rounded-[10px]">
+                <div className="group relative h-full w-full overflow-hidden rounded-none border border-border bg-card transition-shadow duration-300 hover:shadow-lg">
+                <Link href={collection.path} className="block relative h-full w-full overflow-hidden rounded-none">
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500 z-10" />
-                  <img 
-                    src={collection.img} 
+                  <img
+                    src={collection.img}
                     alt={collection.title}
                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                   />
@@ -144,7 +187,7 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
-                </BorderRotate>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -155,7 +198,7 @@ export default function Home() {
       <section className="py-24 bg-card border-y border-border">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
-            <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-4 block">Our Standard</span>
+            <span className="eyebrow mb-4 block">Our Standard</span>
             <h2 className="font-serif text-4xl md:text-5xl">Why BougieBams?</h2>
           </div>
 
@@ -179,7 +222,7 @@ export default function Home() {
                   <span className="font-serif text-2xl italic">{i + 1}</span>
                 </div>
                 <h3 className="font-serif text-2xl">{feature.title}</h3>
-                <p className="text-muted-foreground font-serif text-lg leading-relaxed">{feature.desc}</p>
+                <p className="text-muted-foreground font-sans text-lg leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -196,9 +239,9 @@ export default function Home() {
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.6 }}
             >
-              <span className="text-primary font-semibold tracking-[0.2em] uppercase text-xs mb-4 block">Made Your Way</span>
+              <span className="eyebrow-invert mb-4 block">Made Your Way</span>
               <h2 className="font-serif text-4xl md:text-5xl mb-6 text-white">Build Your Own Set</h2>
-              <p className="font-serif text-lg text-secondary-foreground/70 mb-8 max-w-md">
+              <p className="font-sans text-lg text-secondary-foreground/70 mb-8 max-w-md">
                 Hand-pick your tiles, accessories, and finishing touches. We'll bundle them together into a set that's unmistakably yours.
               </p>
               <Button size="lg" className="h-14 px-8 text-lg rounded-none bg-primary text-primary-foreground hover:bg-primary/90 group" asChild>
@@ -213,7 +256,7 @@ export default function Home() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.7 }}
-              className="relative aspect-[4/3] overflow-hidden rounded-md"
+              className="relative aspect-[4/3] overflow-hidden rounded-none"
             >
               <img src={buildImg} alt="Build your own mahjong set" className="w-full h-full object-cover" />
             </motion.div>
@@ -226,9 +269,9 @@ export default function Home() {
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
             <div>
-              <span className="text-primary font-semibold tracking-[0.2em] uppercase text-xs mb-3 block">Most Loved</span>
+              <span className="eyebrow mb-3 block">Most Loved</span>
               <h2 className="font-serif text-4xl md:text-5xl mb-4">Best Sellers</h2>
-              <p className="text-muted-foreground text-lg max-w-xl font-serif">
+              <p className="text-muted-foreground text-lg max-w-xl font-sans">
                 The sets and accessories our community returns to, time and again.
               </p>
             </div>
@@ -247,16 +290,9 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: i * 0.08 }}
                 className="group"
               >
-                <BorderRotate
-                  animationMode="auto-rotate"
-                  animationSpeed={4}
-                  backgroundColor="hsl(var(--card))"
-                  borderRadius={12}
-                  borderWidth={3}
-                  className="p-2 h-full"
-                >
-                <Link href={`/shop/${product.id}`} className="block">
-                  <div className="relative aspect-square bg-muted mb-3 overflow-hidden rounded-md">
+                <div className="group relative h-full w-full overflow-hidden rounded-none border border-border bg-card transition-shadow duration-300 hover:shadow-lg">
+                <Link href={`/shop/${product.id}`} className="block p-2">
+                  <div className="relative aspect-square bg-muted mb-3 overflow-hidden rounded-none">
                     {product.isBestseller && (
                       <div className="absolute top-4 left-4 z-10 bg-background text-foreground text-xs font-semibold tracking-widest uppercase px-3 py-1 shadow-sm">
                         Best Seller
@@ -282,14 +318,14 @@ export default function Home() {
                       <span className="text-lg font-medium">${product.price}</span>
                       <button
                         onClick={(e) => { e.preventDefault(); addItem(product, 1); }}
-                        className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
+                        className="flex items-center gap-2 min-h-11 px-4 text-xs font-semibold tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
                       >
                         <ShoppingBag className="w-4 h-4" /> Add
                       </button>
                     </div>
                   </div>
                 </Link>
-                </BorderRotate>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -313,11 +349,9 @@ export default function Home() {
                       <p className="font-serif text-2xl md:text-3xl leading-relaxed text-foreground mb-10">
                         "{testimonial.quote}"
                       </p>
-                      <img 
-                        src={testimonial.avatar} 
-                        alt={testimonial.name}
-                        className="w-16 h-16 rounded-full object-cover mb-4 ring-2 ring-primary/20 p-1"
-                      />
+                      <div className="w-16 h-16 rounded-full bg-primary/10 ring-2 ring-primary/20 flex items-center justify-center mb-4">
+                        <span className="font-serif text-primary text-xl">{getInitials(testimonial.name)}</span>
+                      </div>
                       <span className="font-sans font-medium tracking-widest uppercase text-xs text-muted-foreground">
                         {testimonial.name}
                       </span>
@@ -325,6 +359,25 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Pagination dots */}
+            <div className="flex items-center justify-center gap-2 mt-10">
+              {testimonials.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => emblaApi?.scrollTo(i)}
+                  aria-label={`Go to testimonial ${i + 1}`}
+                  className="flex items-center justify-center h-11 w-6"
+                >
+                  <span
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      i === selectedIndex ? "w-6 bg-primary" : "w-2 bg-primary/30"
+                    }`}
+                  />
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -334,25 +387,58 @@ export default function Home() {
       <section className="bg-secondary text-secondary-foreground py-24 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 bg-primary rounded-full blur-3xl opacity-10"></div>
         <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 bg-accent rounded-full blur-3xl opacity-10"></div>
-        
+
         <div className="container mx-auto px-4 relative z-10 text-center max-w-2xl">
-          <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-4 block">The Inner Circle</span>
+          <span className="eyebrow-invert mb-4 block">The Inner Circle</span>
           <h2 className="font-serif text-4xl md:text-5xl mb-6 text-white">Join the Club</h2>
-          <p className="font-serif text-lg md:text-xl text-secondary-foreground/70 mb-10">
+          <p className="font-sans text-lg md:text-xl text-secondary-foreground/70 mb-10">
             Sign up for exclusive access to new collections, limited edition drops, and expert playing strategies.
           </p>
-          
-          <form className="flex flex-col sm:flex-row gap-4" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="Email address"
-              className="flex-1 h-14 bg-white/5 border border-white/10 px-6 font-sans text-white placeholder:text-white/40 focus:outline-none focus:border-primary transition-colors rounded-sm"
-              required
-            />
-            <Button type="submit" className="h-14 px-8 bg-primary text-primary-foreground hover:bg-primary/90 font-medium tracking-widest uppercase text-sm rounded-sm">
-              Subscribe
-            </Button>
-          </form>
+
+          <div aria-live="polite">
+            {status === "success" ? (
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mb-6">
+                  <Check className="w-7 h-7 text-primary" />
+                </div>
+                <p className="font-serif text-2xl text-white mb-3">You're in.</p>
+                <p className="font-sans text-secondary-foreground/70">
+                  Here's your welcome code — use{" "}
+                  <span className="font-semibold tracking-widest text-primary">{discountCode}</span>{" "}
+                  at checkout for a warm welcome.
+                </p>
+              </div>
+            ) : (
+              <form className="flex flex-col sm:flex-row gap-4" onSubmit={handleNewsletterSubmit}>
+                <label htmlFor="newsletter-email" className="sr-only">Email address</label>
+                <input
+                  id="newsletter-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="flex-1 h-14 bg-white/5 border border-white/10 px-6 font-sans text-white placeholder:text-white/40 focus:outline-none focus:border-primary transition-colors rounded-none"
+                  required
+                />
+                <Button
+                  type="submit"
+                  disabled={status === "loading"}
+                  className="h-14 px-8 bg-primary text-primary-foreground hover:bg-primary/90 font-medium tracking-widest uppercase text-sm rounded-none"
+                >
+                  {status === "loading" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Subscribing…
+                    </>
+                  ) : (
+                    "Subscribe"
+                  )}
+                </Button>
+              </form>
+            )}
+            {status === "error" && (
+              <p className="font-sans text-sm text-destructive mt-4">{errorMsg}</p>
+            )}
+          </div>
         </div>
       </section>
     </div>

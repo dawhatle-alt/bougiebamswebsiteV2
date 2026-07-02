@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { BougieBamsEvent, EventCategory } from "@/data/events";
 import { useEvents } from "@/hooks/useEvents";
 import { Button } from "@/components/ui/button";
-import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Calendar,
@@ -73,16 +72,9 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5 }}
-      className="group flex flex-col hover:shadow-md transition-shadow duration-300"
+      className="group flex flex-col"
     >
-      <BorderRotate
-        animationMode="auto-rotate"
-        animationSpeed={4}
-        backgroundColor="hsl(var(--card))"
-        borderRadius={12}
-        borderWidth={3}
-        className="overflow-hidden flex flex-col h-full"
-      >
+      <div className="group relative h-full w-full overflow-hidden rounded-none border border-border bg-card transition-shadow duration-300 hover:shadow-lg flex flex-col">
       <div className="relative aspect-[16/9] overflow-hidden">
         <img
           src={event.image}
@@ -91,12 +83,12 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute top-4 left-4">
-          <span className={`text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-sm ${CATEGORY_COLORS[event.category]}`}>
+          <span className={`text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-none ${CATEGORY_COLORS[event.category]}`}>
             {event.category}
           </span>
         </div>
         {event.price === "Free" && (
-          <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-sm">
+          <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-none">
             Free
           </div>
         )}
@@ -125,7 +117,7 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
           )}
         </div>
 
-        <p className="font-serif text-muted-foreground leading-relaxed mb-6 flex-1 text-sm md:text-base line-clamp-3">
+        <p className="font-sans text-muted-foreground leading-relaxed mb-6 flex-1 text-sm md:text-base line-clamp-3">
           {event.description}
         </p>
 
@@ -157,7 +149,7 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
             </div>
           )}
           <Button
-            className="w-full h-11 rounded-none group/btn bg-foreground text-background hover:bg-primary transition-colors"
+            className="w-full h-11 rounded-none group/btn bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             onClick={() => onRegister(event)}
           >
             Register Now
@@ -165,7 +157,7 @@ function EventCard({ event, onRegister }: { event: BougieBamsEvent; onRegister: 
           </Button>
         </div>
       </div>
-      </BorderRotate>
+      </div>
     </motion.div>
   );
 }
@@ -334,7 +326,7 @@ function CalendarView({
                 <Button
                   size="sm"
                   onClick={() => onRegister(e)}
-                  className="rounded-none text-xs h-8 bg-foreground text-background hover:bg-primary flex-shrink-0"
+                  className="rounded-none text-xs h-8 bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0"
                 >
                   Register
                 </Button>
@@ -415,7 +407,7 @@ function RegisterSheet({
               </div>
               <div>
                 <p className="font-serif text-xl mb-2">See you there, {name.split(" ")[0]}!</p>
-                <p className="text-muted-foreground font-serif leading-relaxed">
+                <p className="text-muted-foreground font-sans leading-relaxed">
                   A confirmation has been sent to <strong>{email}</strong>. We can't wait to see you at{" "}
                   <em>{event?.title}</em>.
                 </p>
@@ -488,7 +480,7 @@ function RegisterSheet({
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 rounded-none bg-foreground text-background hover:bg-primary"
+                  className="w-full h-12 rounded-none bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   {loading ? "Reserving…" : event?.price === "Free" ? "Reserve Free Spot" : `Confirm — $${event?.price}`}
                 </Button>
@@ -531,11 +523,11 @@ export default function Events() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <span className="text-primary font-semibold tracking-[0.2em] uppercase text-xs mb-4 block">
+            <span className="eyebrow block mb-4">
               Gather & Play
             </span>
             <h1 className="font-serif text-5xl md:text-6xl mb-6">Upcoming Events</h1>
-            <p className="text-muted-foreground font-serif text-xl leading-relaxed">
+            <p className="text-muted-foreground font-sans text-xl leading-relaxed">
               Game nights, beginner workshops, high-stakes tournaments — find your table and join the community.
             </p>
           </motion.div>
@@ -598,7 +590,7 @@ export default function Events() {
         {/* Error */}
         {!loading && error && (
           <div className="text-center py-24">
-            <p className="font-serif text-xl text-muted-foreground">{error}</p>
+            <p className="font-sans text-xl text-muted-foreground">{error}</p>
           </div>
         )}
 
@@ -617,7 +609,7 @@ export default function Events() {
 
                 {filtered.length === 0 && (
                   <div className="text-center py-24">
-                    <p className="font-serif text-2xl text-muted-foreground">
+                    <p className="font-sans text-2xl text-muted-foreground">
                       {activeCategory === "All"
                         ? "No events scheduled right now."
                         : `No ${activeCategory} events scheduled right now.`}
@@ -638,13 +630,13 @@ export default function Events() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mt-24 bg-secondary text-secondary-foreground rounded-sm p-12 text-center"
+          className="mt-24 bg-secondary text-secondary-foreground rounded-none p-12 text-center"
         >
-          <span className="text-primary font-semibold tracking-[0.2em] uppercase text-xs mb-4 block">
+          <span className="eyebrow-invert block mb-4">
             Private Experiences
           </span>
           <h2 className="font-serif text-4xl mb-6">Host Your Own Event</h2>
-          <p className="font-serif text-xl text-secondary-foreground/80 max-w-xl mx-auto mb-8">
+          <p className="font-sans text-xl text-secondary-foreground/80 max-w-xl mx-auto mb-8">
             Birthdays, bachelorettes, corporate team building. We bring the tiles, the expertise, and the luxury experience — you bring the guests.
           </p>
           <Button

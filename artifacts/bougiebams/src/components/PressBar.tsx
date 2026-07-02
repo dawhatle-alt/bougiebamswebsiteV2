@@ -1,28 +1,52 @@
-// Placeholder press mentions — swap these names (or drop in real logo images)
-// for the publications and retailers that have actually featured BougieBams.
-const OUTLETS = [
-  "The Tile Edit",
-  "Modern Hostess",
-  "Salon & Soirée",
-  "Heritage Living",
-  "Atelier Weekly",
+import { Gem, Truck, RotateCcw, ShieldCheck } from "lucide-react";
+
+const TRUST_ITEMS = [
+  {
+    icon: Gem,
+    label: "Handcrafted Quality",
+    sub: "Made with intention",
+  },
+  {
+    icon: Truck,
+    label: "Fast, Tracked Shipping",
+    sub: "On every order",
+  },
+  {
+    icon: RotateCcw,
+    label: "30-Day Returns",
+    sub: "Simple and hassle-free",
+  },
+  {
+    icon: ShieldCheck,
+    label: "Secure Checkout",
+    sub: "Encrypted payments",
+  },
 ];
 
 export default function PressBar() {
   return (
     <section className="py-12 bg-card border-y border-border">
       <div className="container mx-auto px-4 md:px-8">
-        <p className="text-center text-xs tracking-[0.3em] uppercase text-muted-foreground mb-8">
-          As Featured In
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6 md:gap-x-16">
-          {OUTLETS.map((name) => (
-            <span
-              key={name}
-              className="font-serif text-xl md:text-2xl text-foreground/40 hover:text-foreground/70 transition-colors duration-300 whitespace-nowrap"
+        <div className="flex flex-wrap items-start justify-center gap-x-12 gap-y-10 md:justify-between">
+          {TRUST_ITEMS.map(({ icon: Icon, label, sub }) => (
+            <div
+              key={label}
+              className="flex flex-col items-center text-center gap-3 min-w-[8rem] flex-1"
             >
-              {name}
-            </span>
+              <Icon
+                aria-hidden="true"
+                strokeWidth={1.5}
+                className="w-6 h-6 text-primary"
+              />
+              <div>
+                <p className="font-sans text-sm font-medium tracking-wide text-foreground">
+                  {label}
+                </p>
+                <p className="font-sans text-xs tracking-wide text-muted-foreground mt-1">
+                  {sub}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
       </div>
