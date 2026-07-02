@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import EventGallery from "@/components/EventGallery";
 import { startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, format } from "date-fns";
 import { formatDateShortCT } from "@/lib/dateUtils";
 import { Calendar, Users, MapPin, Search, LayoutGrid, LayoutList, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
@@ -313,6 +314,8 @@ export default function Events() {
           )}
         </div>
       </section>
+
+      <EventGallery />
     </div>
   );
 }

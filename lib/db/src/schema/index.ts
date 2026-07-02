@@ -12,3 +12,4 @@ export * from "./discount_codes";
 export * from "./conversations";
 export * from "./messages";
 export * from "./lessons";
+export * from "./event_gallery";

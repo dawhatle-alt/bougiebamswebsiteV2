@@ -16,6 +16,7 @@ import couponsRouter from "./coupons";
 import favoritesRouter from "./favorites";
 import chatRouter from "./chat";
 import lessonsRouter from "./lessons";
+import galleryRouter from "./gallery";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(couponsRouter);
 router.use(favoritesRouter);
 router.use(chatRouter);
 router.use(lessonsRouter);
+router.use(galleryRouter);
 
 export default router;

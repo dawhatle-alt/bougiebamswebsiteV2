@@ -23,6 +23,7 @@ import {
   Tag,
   GraduationCap,
   Heart,
+  Camera,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductManager from "@/components/admin/ProductManager";
@@ -33,10 +34,11 @@ import HeroImagesManager from "@/components/admin/HeroImagesManager";
 import DiscountCodesManager from "@/components/admin/DiscountCodesManager";
 import LessonsManager from "@/components/admin/LessonsManager";
 import FavoritesManager from "@/components/admin/FavoritesManager";
+import GalleryManager from "@/components/admin/GalleryManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero" | "discounts" | "lessons" | "favorites";
+type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero" | "discounts" | "lessons" | "favorites" | "gallery";
 
 interface Subscriber {
   id: number;
@@ -228,7 +230,9 @@ export default function Admin() {
                               ? "Education"
                               : view === "favorites"
                                 ? "Favorites"
-                                : "Events"}
+                                : view === "gallery"
+                                  ? "Event Gallery"
+                                  : "Events"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -262,6 +266,7 @@ export default function Admin() {
             { key: "discounts", label: "Discount Codes", icon: Tag },
             { key: "lessons", label: "Education", icon: GraduationCap },
             { key: "favorites", label: "Favorites", icon: Heart },
+            { key: "gallery", label: "Gallery", icon: Camera },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -298,6 +303,8 @@ export default function Admin() {
           <LessonsManager onAuthError={handleAuthError} />
         ) : view === "favorites" ? (
           <FavoritesManager onAuthError={handleAuthError} />
+        ) : view === "gallery" ? (
+          <GalleryManager onAuthError={handleAuthError} />
         ) : (
           <>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
