@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
@@ -11,11 +12,28 @@ import { images } from "@/data/images";
 import { useCart } from "@/context/CartContext";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronRight, ArrowRight, Quote, Star, ShoppingBag } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [emblaRef] = useEmblaCarousel({ loop: true });
   const { addItem } = useCart();
   const { products } = useProducts();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authError = params.get("auth_error");
+    if (authError) {
+      toast({
+        title: "Sign in failed",
+        description: "Something went wrong during sign in. Please try again.",
+        variant: "destructive",
+      });
+      params.delete("auth_error");
+      const newSearch = params.toString();
+      window.history.replaceState({}, "", newSearch ? `/?${newSearch}` : "/");
+    }
+  }, [toast]);
 
   const bestsellers = products.filter(p => p.isBestseller).slice(0, 4);
 

@@ -23,10 +23,18 @@ const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
 const router: IRouter = Router();
 
+function firstValue(header: string | string[] | undefined): string | undefined {
+  if (!header) return undefined;
+  if (Array.isArray(header)) return header[0]?.trim();
+  return header.split(",")[0]?.trim();
+}
+
 function getOrigin(req: Request): string {
-  const proto = req.headers["x-forwarded-proto"] || "https";
+  const proto = firstValue(req.headers["x-forwarded-proto"]) || "https";
   const host =
-    req.headers["x-forwarded-host"] || req.headers["host"] || "localhost";
+    firstValue(req.headers["x-forwarded-host"]) ||
+    firstValue(req.headers["host"]) ||
+    "localhost";
   return `${proto}://${host}`;
 }
 
@@ -123,7 +131,8 @@ router.get("/callback", async (req: Request, res: Response) => {
   const expectedState = req.cookies?.state;
 
   if (!codeVerifier || !expectedState) {
-    res.redirect("/api/login");
+    logger.error({ hasCookies: !!req.cookies, keys: Object.keys(req.cookies ?? {}) }, "OAuth callback missing OIDC cookies — possible SameSite/cookie issue");
+    res.redirect("/?auth_error=session");
     return;
   }
 
@@ -139,8 +148,9 @@ router.get("/callback", async (req: Request, res: Response) => {
       expectedState,
       idTokenExpected: true,
     });
-  } catch {
-    res.redirect("/api/login");
+  } catch (err) {
+    logger.error({ err, callbackUrl, currentUrl: currentUrl.toString() }, "OAuth authorizationCodeGrant failed");
+    res.redirect("/?auth_error=token");
     return;
   }
 
@@ -153,7 +163,8 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const claims = tokens.claims();
   if (!claims) {
-    res.redirect("/api/login");
+    logger.error("OAuth callback: no claims in token response");
+    res.redirect("/?auth_error=claims");
     return;
   }
 
