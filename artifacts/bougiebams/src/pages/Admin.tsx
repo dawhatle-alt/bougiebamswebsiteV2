@@ -135,6 +135,14 @@ export default function Admin() {
   }
 
   function handleExport() {
+    // Neutralize CSV/spreadsheet formula injection: a cell that begins with
+    // =, +, -, @, tab, or CR is prefixed with a single quote so Excel/Sheets
+    // treats it as text instead of executing it in the admin's context.
+    const csvSafe = (value: string) =>
+      /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+    const encodeCell = (value: unknown) =>
+      `"${csvSafe(String(value)).replace(/"/g, '""')}"`;
+
     const header = ["Email", "Source", "Discount Code", "Date Joined"];
     const rows = subscribers.map((s) => [
       s.email,
@@ -143,9 +151,7 @@ export default function Admin() {
       formatDate(s.createdAt),
     ]);
     const csv = [header, ...rows]
-      .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
-      )
+      .map((row) => row.map(encodeCell).join(","))
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

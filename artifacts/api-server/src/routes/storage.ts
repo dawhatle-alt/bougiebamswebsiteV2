@@ -33,6 +33,28 @@ router.get(/^\/storage\/public-objects\/(.+)$/, async (req, res) => {
     const response = await objectStorage.downloadObject(file);
     response.headers.forEach((value, key) => res.setHeader(key, value));
     res.setHeader("X-Content-Type-Options", "nosniff");
+
+    // These uploads are meant to be images. An uploaded HTML or SVG file served
+    // inline from this same origin would be a stored-XSS vector, so only let a
+    // strict allowlist of raster image types render inline; anything else
+    // (including image/svg+xml) is forced to a non-executable type and
+    // downloaded as an attachment.
+    const INLINE_SAFE = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+      "image/avif",
+    ]);
+    const contentType = (res.getHeader("Content-Type") as string) || "";
+    const baseType = contentType.split(";")[0].trim().toLowerCase();
+    if (INLINE_SAFE.has(baseType)) {
+      res.setHeader("Content-Disposition", "inline");
+    } else {
+      res.setHeader("Content-Type", "application/octet-stream");
+      res.setHeader("Content-Disposition", "attachment");
+    }
+
     res.status(response.status);
     if (response.body) {
       Readable.fromWeb(

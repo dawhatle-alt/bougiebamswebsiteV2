@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ReplitConnectors } from "@replit/connectors-sdk";
 import { db, subscribersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { createRateLimiter } from "../lib/rateLimit";
 
 const router = Router();
 const connectors = new ReplitConnectors();
@@ -11,7 +12,15 @@ const DISCOUNT_CODE = "BOUGIE15";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-router.post("/subscribe", async (req, res) => {
+// Subscribing writes to the DB and sends a welcome email — throttle per IP so it
+// can't be used to bomb arbitrary addresses or pollute the subscriber table.
+const subscribeRateLimit = createRateLimiter({
+  windowMs: 1000 * 60 * 10,
+  max: 5,
+  prefix: "subscribe",
+});
+
+router.post("/subscribe", subscribeRateLimit, async (req, res) => {
   const rawEmail =
     typeof req.body?.email === "string" ? req.body.email.trim() : "";
 

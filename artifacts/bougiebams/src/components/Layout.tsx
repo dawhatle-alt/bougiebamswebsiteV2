@@ -72,7 +72,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       if (!res.ok || !data?.url) {
         throw new Error(data?.error || "We couldn't start checkout. Please try again.");
       }
-      window.location.href = data.url;
+      // Only follow an https redirect (Square's hosted checkout). Guards against
+      // a javascript: or off-scheme URL being executed if the response is ever
+      // tampered with.
+      let checkoutUrl: URL;
+      try {
+        checkoutUrl = new URL(data.url);
+      } catch {
+        throw new Error("We couldn't start checkout. Please try again.");
+      }
+      if (checkoutUrl.protocol !== "https:") {
+        throw new Error("We couldn't start checkout. Please try again.");
+      }
+      window.location.href = checkoutUrl.toString();
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "We couldn't start checkout. Please try again.");
       setCheckoutLoading(false);

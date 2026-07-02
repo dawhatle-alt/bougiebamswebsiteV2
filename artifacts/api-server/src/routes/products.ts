@@ -2,10 +2,19 @@ import { Router } from "express";
 import { db, subscribersTable, productImagesTable } from "@workspace/db";
 import { and, eq, isNull } from "drizzle-orm";
 import { squareFetch, getLocationId, getSquareToken, SquareError } from "../lib/square";
+import { createRateLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Checkout hits the Square API (catalog + payment-link creation) on every call.
+// Throttle per IP to prevent cost/rate-limit abuse against Square.
+const checkoutRateLimit = createRateLimiter({
+  windowMs: 1000 * 60 * 5,
+  max: 20,
+  prefix: "checkout",
+});
 
 interface NormalizedProduct {
   id: string; // Square variation id
@@ -171,7 +180,7 @@ router.get("/products", async (req, res) => {
 });
 
 // POST /api/checkout — create a Square hosted checkout (payment link).
-router.post("/checkout", async (req, res) => {
+router.post("/checkout", checkoutRateLimit, async (req, res) => {
   if (!getSquareToken()) {
     return res.status(503).json({ error: "Checkout is not available yet." });
   }
