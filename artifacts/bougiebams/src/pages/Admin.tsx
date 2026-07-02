@@ -22,6 +22,7 @@ import {
   Image,
   Tag,
   GraduationCap,
+  Heart,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductManager from "@/components/admin/ProductManager";
@@ -31,10 +32,11 @@ import RegistrationsManager from "@/components/admin/RegistrationsManager";
 import HeroImagesManager from "@/components/admin/HeroImagesManager";
 import DiscountCodesManager from "@/components/admin/DiscountCodesManager";
 import LessonsManager from "@/components/admin/LessonsManager";
+import FavoritesManager from "@/components/admin/FavoritesManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero" | "discounts" | "lessons";
+type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero" | "discounts" | "lessons" | "favorites";
 
 interface Subscriber {
   id: number;
@@ -224,7 +226,9 @@ export default function Admin() {
                             ? "Discount Codes"
                             : view === "lessons"
                               ? "Education"
-                              : "Events"}
+                              : view === "favorites"
+                                ? "Favorites"
+                                : "Events"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -257,6 +261,7 @@ export default function Admin() {
             { key: "hero", label: "Homepage Images", icon: Image },
             { key: "discounts", label: "Discount Codes", icon: Tag },
             { key: "lessons", label: "Education", icon: GraduationCap },
+            { key: "favorites", label: "Favorites", icon: Heart },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -291,6 +296,8 @@ export default function Admin() {
           <DiscountCodesManager onAuthError={handleAuthError} />
         ) : view === "lessons" ? (
           <LessonsManager onAuthError={handleAuthError} />
+        ) : view === "favorites" ? (
+          <FavoritesManager onAuthError={handleAuthError} />
         ) : (
           <>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
