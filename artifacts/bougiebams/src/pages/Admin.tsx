@@ -24,6 +24,8 @@ import {
   GraduationCap,
   Heart,
   Camera,
+  Menu,
+  X,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductManager from "@/components/admin/ProductManager";
@@ -38,7 +40,18 @@ import GalleryManager from "@/components/admin/GalleryManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-type AdminView = "dashboard" | "subscribers" | "blog" | "products" | "events" | "registrations" | "hero" | "discounts" | "lessons" | "favorites" | "gallery";
+type AdminView =
+  | "dashboard"
+  | "subscribers"
+  | "blog"
+  | "products"
+  | "events"
+  | "registrations"
+  | "hero"
+  | "discounts"
+  | "lessons"
+  | "favorites"
+  | "gallery";
 
 interface Subscriber {
   id: number;
@@ -96,10 +109,64 @@ function sourceLabel(source: string | null) {
     .join(" ");
 }
 
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [
+      { key: "dashboard" as AdminView, label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Community",
+    items: [
+      { key: "subscribers" as AdminView, label: "Subscribers", icon: Mail },
+      { key: "registrations" as AdminView, label: "Registrations", icon: Users },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { key: "blog" as AdminView, label: "Blog", icon: FileText },
+      { key: "events" as AdminView, label: "Events", icon: CalendarDays },
+      { key: "lessons" as AdminView, label: "Education", icon: GraduationCap },
+    ],
+  },
+  {
+    label: "Shop",
+    items: [
+      { key: "products" as AdminView, label: "Products", icon: Package },
+      { key: "discounts" as AdminView, label: "Discount Codes", icon: Tag },
+      { key: "favorites" as AdminView, label: "Favorites", icon: Heart },
+    ],
+  },
+  {
+    label: "Site",
+    items: [
+      { key: "hero" as AdminView, label: "Homepage Images", icon: Image },
+      { key: "gallery" as AdminView, label: "Event Gallery", icon: Camera },
+    ],
+  },
+];
+
+const VIEW_LABELS: Record<AdminView, string> = {
+  dashboard: "Overview",
+  subscribers: "Email Subscribers",
+  blog: "Blog Manager",
+  products: "Products",
+  events: "Events",
+  registrations: "Event Registrations",
+  hero: "Homepage Images",
+  discounts: "Discount Codes",
+  lessons: "Education",
+  favorites: "Favorites",
+  gallery: "Event Gallery",
+};
+
 export default function Admin() {
   const { user, isLoading, isAuthenticated } = useAuth();
 
   const [view, setView] = useState<AdminView>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -163,6 +230,11 @@ export default function Admin() {
     URL.revokeObjectURL(url);
   }
 
+  function navigate(key: AdminView) {
+    setView(key);
+    setSidebarOpen(false);
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#1E2A5A]">
@@ -200,190 +272,215 @@ export default function Admin() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#FAF7F0]">
-      <header className="bg-[#1E2A5A] px-6 py-5">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <h1
-              className="text-2xl text-[#D4AF37]"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
-              BougieBams Admin
-            </h1>
-            <p className="text-xs uppercase tracking-widest text-[rgba(245,240,234,0.6)] mt-1">
-              {view === "dashboard"
-                ? "Overview"
-                : view === "subscribers"
-                  ? "Email Subscribers"
-                  : view === "blog"
-                    ? "Blog Manager"
-                    : view === "products"
-                      ? "Products"
-                      : view === "registrations"
-                        ? "Event Registrations"
-                        : view === "hero"
-                          ? "Homepage Images"
-                          : view === "discounts"
-                            ? "Discount Codes"
-                            : view === "lessons"
-                              ? "Education"
-                              : view === "favorites"
-                                ? "Favorites"
-                                : view === "gallery"
-                                  ? "Event Gallery"
-                                  : "Events"}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {user?.firstName && (
-              <span className="text-xs text-[rgba(245,240,234,0.6)]">
-                {user.firstName}
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              onClick={handleLogout}
-              className="text-[#FAF7F0] hover:bg-white/10 hover:text-white"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
+  const sidebar = (
+    <aside className="flex flex-col h-full bg-[#1E2A5A] w-60 shrink-0">
+      {/* Logo */}
+      <div className="px-5 py-5 border-b border-white/10">
+        <p
+          className="text-[#D4AF37] text-xl leading-tight"
+          style={{ fontFamily: "'Cormorant Garamond', serif" }}
+        >
+          BougieBams
+        </p>
+        <p className="text-[10px] uppercase tracking-widest text-white/40 mt-0.5">
+          Admin Panel
+        </p>
+      </div>
 
-      <nav className="bg-[#172248] px-6">
-        <div className="max-w-5xl mx-auto flex items-center gap-1">
-          {([
-            { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-            { key: "subscribers", label: "Subscribers", icon: Mail },
-            { key: "registrations", label: "Registrations", icon: Users },
-            { key: "blog", label: "Blog", icon: FileText },
-            { key: "products", label: "Products", icon: Package },
-            { key: "events", label: "Events", icon: CalendarDays },
-            { key: "hero", label: "Homepage Images", icon: Image },
-            { key: "discounts", label: "Discount Codes", icon: Tag },
-            { key: "lessons", label: "Education", icon: GraduationCap },
-            { key: "favorites", label: "Favorites", icon: Heart },
-            { key: "gallery", label: "Gallery", icon: Camera },
-          ] as const).map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setView(key)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors ${
-                view === key
-                  ? "border-[#D4AF37] text-[#D4AF37]"
-                  : "border-transparent text-[rgba(245,240,234,0.7)] hover:text-[#FAF7F0]"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </div>
+      {/* Nav groups */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="text-[10px] uppercase tracking-widest text-white/35 px-2 mb-1.5 font-medium">
+              {group.label}
+            </p>
+            <ul className="space-y-0.5">
+              {group.items.map(({ key, label, icon: Icon }) => {
+                const active = view === key;
+                return (
+                  <li key={key}>
+                    <button
+                      onClick={() => navigate(key)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                        active
+                          ? "bg-[#D4AF37]/15 text-[#D4AF37]"
+                          : "text-white/65 hover:text-white hover:bg-white/8"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[#D4AF37]" : ""}`} />
+                      <span className="truncate">{label}</span>
+                      {active && (
+                        <span className="ml-auto w-1 h-4 rounded-full bg-[#D4AF37] shrink-0" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {view === "dashboard" ? (
-          <DashboardStats onAuthError={handleAuthError} />
-        ) : view === "blog" ? (
-          <BlogManager onAuthError={handleAuthError} />
-        ) : view === "products" ? (
-          <ProductManager onAuthError={handleAuthError} />
-        ) : view === "events" ? (
-          <EventsManager onAuthError={handleAuthError} />
-        ) : view === "registrations" ? (
-          <RegistrationsManager onAuthError={handleAuthError} />
-        ) : view === "hero" ? (
-          <HeroImagesManager onAuthError={handleAuthError} />
-        ) : view === "discounts" ? (
-          <DiscountCodesManager onAuthError={handleAuthError} />
-        ) : view === "lessons" ? (
-          <LessonsManager onAuthError={handleAuthError} />
-        ) : view === "favorites" ? (
-          <FavoritesManager onAuthError={handleAuthError} />
-        ) : view === "gallery" ? (
-          <GalleryManager onAuthError={handleAuthError} />
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <div className="flex items-center gap-2 text-[#1E2A5A]">
-                <Mail className="w-5 h-5 text-[#D4AF37]" />
-                <span className="text-lg font-medium">
-                  {subscribers.length}{" "}
-                  {subscribers.length === 1 ? "subscriber" : "subscribers"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={loadSubscribers}
-                  disabled={loading}
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-                  />
-                  Refresh
-                </Button>
-                <Button
-                  onClick={handleExport}
-                  disabled={subscribers.length === 0}
-                  className="bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
-              </div>
-            </div>
-
-            {loadError && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {loadError}
-              </div>
-            )}
-
-            <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
-              {loading && subscribers.length === 0 ? (
-                <div className="py-16 text-center text-[#5A6178]">Loading…</div>
-              ) : subscribers.length === 0 ? (
-                <div className="py-16 text-center text-[#5A6178]">
-                  No subscribers yet. They'll appear here as people sign up.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Discount Code</TableHead>
-                      <TableHead className="text-right">Date Joined</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscribers.map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-medium text-[#1E2A5A]">
-                          {s.email}
-                        </TableCell>
-                        <TableCell className="text-[#5A6178]">
-                          {sourceLabel(s.source)}
-                        </TableCell>
-                        <TableCell className="text-[#5A6178]">
-                          {s.discountCode ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-right text-[#5A6178]">
-                          {formatDate(s.createdAt)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          </>
+      {/* User + logout */}
+      <div className="px-4 py-4 border-t border-white/10">
+        {user?.firstName && (
+          <p className="text-xs text-white/40 truncate mb-2">
+            Signed in as {user.firstName}
+          </p>
         )}
-      </main>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-sm text-white/55 hover:text-white transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign out
+        </button>
+      </div>
+    </aside>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#FAF7F0] flex">
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex flex-col h-screen sticky top-0">
+        {sidebar}
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="relative flex flex-col h-full">
+            {sidebar}
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar */}
+        <header className="bg-white border-b border-[#E2DBCD] px-5 py-4 flex items-center gap-4 sticky top-0 z-10">
+          <button
+            className="lg:hidden text-[#1E2A5A] p-1 rounded hover:bg-[#FAF7F0] transition-colors"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div>
+            <h1
+              className="text-lg text-[#1E2A5A] leading-tight"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              {VIEW_LABELS[view]}
+            </h1>
+          </div>
+        </header>
+
+        <main className="flex-1 px-5 py-7 max-w-5xl w-full">
+          {view === "dashboard" ? (
+            <DashboardStats onAuthError={handleAuthError} />
+          ) : view === "blog" ? (
+            <BlogManager onAuthError={handleAuthError} />
+          ) : view === "products" ? (
+            <ProductManager onAuthError={handleAuthError} />
+          ) : view === "events" ? (
+            <EventsManager onAuthError={handleAuthError} />
+          ) : view === "registrations" ? (
+            <RegistrationsManager onAuthError={handleAuthError} />
+          ) : view === "hero" ? (
+            <HeroImagesManager onAuthError={handleAuthError} />
+          ) : view === "discounts" ? (
+            <DiscountCodesManager onAuthError={handleAuthError} />
+          ) : view === "lessons" ? (
+            <LessonsManager onAuthError={handleAuthError} />
+          ) : view === "favorites" ? (
+            <FavoritesManager onAuthError={handleAuthError} />
+          ) : view === "gallery" ? (
+            <GalleryManager onAuthError={handleAuthError} />
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                <div className="flex items-center gap-2 text-[#1E2A5A]">
+                  <Mail className="w-5 h-5 text-[#D4AF37]" />
+                  <span className="text-lg font-medium">
+                    {subscribers.length}{" "}
+                    {subscribers.length === 1 ? "subscriber" : "subscribers"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={loadSubscribers}
+                    disabled={loading}
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                    />
+                    Refresh
+                  </Button>
+                  <Button
+                    onClick={handleExport}
+                    disabled={subscribers.length === 0}
+                    className="bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+              </div>
+
+              {loadError && (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {loadError}
+                </div>
+              )}
+
+              <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
+                {loading && subscribers.length === 0 ? (
+                  <div className="py-16 text-center text-[#5A6178]">Loading…</div>
+                ) : subscribers.length === 0 ? (
+                  <div className="py-16 text-center text-[#5A6178]">
+                    No subscribers yet. They'll appear here as people sign up.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Source</TableHead>
+                        <TableHead>Discount Code</TableHead>
+                        <TableHead className="text-right">Date Joined</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscribers.map((s) => (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-medium text-[#1E2A5A]">
+                            {s.email}
+                          </TableCell>
+                          <TableCell className="text-[#5A6178]">
+                            {sourceLabel(s.source)}
+                          </TableCell>
+                          <TableCell className="text-[#5A6178]">
+                            {s.discountCode ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-right text-[#5A6178]">
+                            {formatDate(s.createdAt)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
