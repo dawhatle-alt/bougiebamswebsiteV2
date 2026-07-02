@@ -1,8 +1,8 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { count, eq } from "drizzle-orm";
-import crypto from "crypto";
 import path from "path";
 import fs from "fs";
+import { ObjectStorageService } from "../lib/objectStorage";
 import {
   db,
   eventsTable,
@@ -43,18 +43,6 @@ function slugify(title: string): string {
   );
 }
 
-function rawBodyMiddleware(req: Request, res: Response, next: NextFunction) {
-  const chunks: Buffer[] = [];
-  req.on("data", (chunk: Buffer) => chunks.push(chunk));
-  req.on("end", () => {
-    (req as Request & { body: Buffer }).body = Buffer.concat(chunks);
-    next();
-  });
-  req.on("error", (err: Error) => {
-    logger.error({ err }, "Upload stream error");
-    res.status(500).json({ error: "Stream error" });
-  });
-}
 
 function toApiPost(row: typeof blogPostsTable.$inferSelect) {
   return {
@@ -373,15 +361,17 @@ router.delete("/admin/product-images/:sku", requireAdmin, async (req, res): Prom
   res.sendStatus(204);
 });
 
+const objectStorage = new ObjectStorageService();
+
 router.post("/admin/storage/upload-url", requireAdmin, async (req, res): Promise<void> => {
-  const ext = ((req.query.ext as string | undefined) ?? "jpg")
-    .replace(/[^a-z0-9]/gi, "")
-    .toLowerCase() || "jpg";
-  const filename = `${crypto.randomUUID()}.${ext}`;
-  res.json({
-    uploadURL: `/api/admin/storage/upload/${filename}`,
-    objectPath: `/${filename}`,
-  });
+  try {
+    const uploadURL = await objectStorage.getObjectEntityUploadURL();
+    const objectPath = objectStorage.normalizeObjectEntityPath(uploadURL);
+    res.json({ uploadURL, objectPath });
+  } catch (err) {
+    logger.error({ err }, "Failed to generate upload URL");
+    res.status(500).json({ error: "Could not generate upload URL" });
+  }
 });
 
 // ── Discount Codes ───────────────────────────────────────────────────────────
@@ -455,27 +445,5 @@ router.delete("/admin/discount-codes/:id", requireAdmin, async (req, res): Promi
   res.json({ success: true });
 });
 
-// ── Storage upload ────────────────────────────────────────────────────────────
-
-router.put("/admin/storage/upload/:filename", requireAdmin, rawBodyMiddleware, async (req, res): Promise<void> => {
-  const filename = req.params.filename as string;
-  if (!filename || !/^[\w-]+\.\w+$/.test(filename)) {
-    res.status(400).json({ error: "Invalid filename" });
-    return;
-  }
-  const destPath = path.resolve(uploadsDir, filename);
-  if (!destPath.startsWith(uploadsDir)) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-  try {
-    fs.writeFileSync(destPath, (req as Request & { body: Buffer }).body);
-    logger.info({ filename }, "File uploaded");
-    res.json({ objectPath: `/${filename}` });
-  } catch (err) {
-    logger.error({ err }, "File upload failed");
-    res.status(500).json({ error: "Upload failed" });
-  }
-});
 
 export default router;
