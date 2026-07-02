@@ -78,6 +78,7 @@ async function upsertUser(claims: Record<string, unknown>) {
 }
 
 router.get("/auth/me", (req: Request, res: Response) => {
+  res.setHeader("Cache-Control", "no-store");
   res.json(
     GetCurrentAuthUserResponse.parse({
       user: req.isAuthenticated() ? req.user : null,
