@@ -163,9 +163,10 @@ function GridCard({ event, index }: { event: ApiEvent; index: number }) {
   return (
     <Link href={`/events/${event.id}`}>
       <motion.article
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.06, duration: 0.4, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ delay: index * 0.06, duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
         className="group cursor-pointer flex flex-col h-full rounded-2xl overflow-hidden bg-white border border-[#E2DBCD] shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
         style={{
           "--hover-border": GOLD,
@@ -263,9 +264,10 @@ function ListCard({ event, index }: { event: ApiEvent; index: number }) {
   return (
     <Link href={`/events/${event.id}`}>
       <motion.article
-        initial={{ opacity: 0, x: -12 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: index * 0.04, duration: 0.35, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ delay: index * 0.04, duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
         className="group cursor-pointer flex items-center gap-5 bg-white rounded-2xl border border-[#E2DBCD] shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 p-4 overflow-hidden"
       >
         {/* Thumbnail */}
@@ -378,16 +380,22 @@ export default function Events() {
         />
 
         <div className="relative z-10 flex flex-col justify-end h-full px-6 py-16 md:py-20 max-w-6xl mx-auto" style={{ minHeight: "480px" }}>
-          <div className="max-w-2xl">
-            {/* eyebrow */}
-            <p
+          <motion.div
+            className="max-w-2xl"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12 } } }}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0, transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } } }}
               className="text-xs font-bold tracking-[0.25em] uppercase mb-4"
               style={{ color: GOLD }}
             >
               BougieBams Events
-            </p>
+            </motion.p>
 
-            <h1
+            <motion.h1
+              variants={{ hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0, transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } } }}
               className="font-medium leading-none mb-5 text-white"
               style={{
                 fontFamily: "'Cormorant Garamond', serif",
@@ -396,16 +404,19 @@ export default function Events() {
               }}
             >
               Life's too short<br />for ordinary.
-            </h1>
+            </motion.h1>
 
-            <p className="text-base md:text-lg text-white/80 mb-8 font-light">
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0, transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } } }}
+              className="text-base md:text-lg text-white/80 mb-8 font-light"
+            >
               Let's make mahjong{" "}
               <strong className="text-white font-bold">BOUGIE</strong> —{" "}
               <strong className="text-white font-bold">BAM!</strong>
-            </p>
+            </motion.p>
 
-            {/* Pull quote */}
-            <blockquote
+            <motion.blockquote
+              variants={{ hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0, transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } } }}
               className="border-l-2 pl-5 py-1"
               style={{ borderColor: GOLD }}
             >
@@ -417,8 +428,8 @@ export default function Events() {
               <footer className="mt-2 text-xs font-medium tracking-wider uppercase" style={{ color: GOLD }}>
                 — Patsy Miller, Founder &amp; CEO
               </footer>
-            </blockquote>
-          </div>
+            </motion.blockquote>
+          </motion.div>
         </div>
       </section>
 
@@ -508,7 +519,14 @@ export default function Events() {
               >
                 {showUpcomingOnly ? "Upcoming Events" : "Past Events"}
               </h2>
-              <div className="flex-1 h-px" style={{ backgroundColor: `${GOLD}50` }} />
+              <motion.div
+                className="flex-1 h-px"
+                style={{ backgroundColor: `${GOLD}50` }}
+                initial={{ scaleX: 0, originX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
+              />
               {(filtered?.length ?? 0) > 0 && (
                 <span className="text-sm shrink-0" style={{ color: "#5A6178" }}>
                   {filtered?.length} event{filtered?.length !== 1 ? "s" : ""}

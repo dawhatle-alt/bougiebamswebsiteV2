@@ -29,12 +29,12 @@ import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-const ease: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 const pageVariants = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease } },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.2, ease } },
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.38, ease } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.22, ease } },
 };
 
 function AnimatedRoutes() {

@@ -1,5 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import {
+  heroContainer, heroItem,
+  scrollContainer, fadeUp, dividerLine,
+  VP,
+} from "@/lib/motion";
 
 const NAVY = "#1E2A5A";
 const GOLD = "#D4AF37";
@@ -9,7 +14,7 @@ export default function Founder() {
   return (
     <div className="w-full">
 
-      {/* ── Hero ─────────────────────────────────── */}
+      {/* ── Hero — mount animated ─────────────────── */}
       <section
         className="relative py-24 md:py-36 px-6 overflow-hidden"
         style={{ minHeight: "420px" }}
@@ -27,18 +32,16 @@ export default function Founder() {
           }}
         />
         <div className="max-w-5xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <p
+          <motion.div variants={heroContainer} initial="hidden" animate="show">
+            <motion.p
+              variants={heroItem}
               className="text-xs font-bold tracking-[0.25em] uppercase mb-5"
               style={{ color: GOLD }}
             >
               Bougie Bams
-            </p>
-            <h1
+            </motion.p>
+            <motion.h1
+              variants={heroItem}
               className="font-medium leading-none text-white mb-4"
               style={{
                 fontFamily: "'Cormorant Garamond', serif",
@@ -46,30 +49,32 @@ export default function Founder() {
               }}
             >
               Meet the Founder
-            </h1>
-            <p
+            </motion.h1>
+            <motion.p
+              variants={heroItem}
               className="text-lg font-light max-w-xl"
               style={{ color: "rgba(255,255,255,0.65)" }}
             >
               The colorful, over-the-top Texan behind your favorite mahjong community.
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Main content ─────────────────────────── */}
+      {/* ── Main content — scroll animated ───────── */}
       <section className="py-20 md:py-28 px-6" style={{ backgroundColor: CREAM }}>
         <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="grid md:grid-cols-[1fr_1.7fr] gap-14 md:gap-20 items-start"
-          >
+          <div className="grid md:grid-cols-[1fr_1.7fr] gap-14 md:gap-20 items-start">
+
             {/* ── Photo mosaic ── */}
-            <div className="relative">
-              {/* Main portrait with gold accent */}
-              <div className="relative">
+            <motion.div
+              variants={scrollContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={VP}
+              className="relative"
+            >
+              <motion.div variants={fadeUp} className="relative">
                 <div
                   className="absolute -top-2 -left-2 w-full h-full rounded-2xl"
                   style={{ border: `2px solid ${GOLD}`, opacity: 0.6 }}
@@ -80,7 +85,6 @@ export default function Founder() {
                     alt="Patsy Miller — Founder & CEO of Bougie Bams"
                     className="w-full h-full object-cover object-top"
                   />
-                  {/* Gold overlay strip at bottom */}
                   <div
                     className="absolute bottom-0 left-0 right-0 px-4 py-3"
                     style={{
@@ -95,10 +99,9 @@ export default function Founder() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Two smaller photos */}
-              <div className="grid grid-cols-2 gap-3 mt-3">
+              <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 mt-3">
                 <div className="aspect-square rounded-xl overflow-hidden shadow-md">
                   <img
                     src={`${import.meta.env.BASE_URL}patsy-mahj-bash.jpg`}
@@ -113,12 +116,18 @@ export default function Founder() {
                     className="w-full h-full object-cover object-top"
                   />
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* ── Biography ── */}
-            <div className="flex flex-col gap-6 pt-2">
-              <div>
+            <motion.div
+              variants={scrollContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={VP}
+              className="flex flex-col gap-6 pt-2"
+            >
+              <motion.div variants={fadeUp}>
                 <h2
                   className="font-medium leading-none mb-2"
                   style={{
@@ -135,12 +144,16 @@ export default function Founder() {
                 >
                   Founder &amp; CEO, Bougie Bams
                 </p>
+                {/* Gold rule — scaleX sweep */}
+                <motion.div
+                  variants={dividerLine}
+                  className="mt-4 h-px w-16"
+                  style={{ backgroundColor: GOLD }}
+                />
+              </motion.div>
 
-                {/* Thin gold rule */}
-                <div className="mt-4 h-px w-16" style={{ backgroundColor: GOLD }} />
-              </div>
-
-              <div
+              <motion.div
+                variants={fadeUp}
                 className="space-y-4 text-[15px] font-light leading-relaxed"
                 style={{ color: "#3D4562" }}
               >
@@ -173,10 +186,10 @@ export default function Founder() {
                   to bamboo tiles — a little wink to the game that brought all of this
                   together.
                 </p>
-              </div>
+              </motion.div>
 
-              {/* Pull quote */}
-              <blockquote
+              <motion.blockquote
+                variants={fadeUp}
                 className="border-l-2 pl-5 py-1 my-2"
                 style={{ borderColor: GOLD }}
               >
@@ -189,17 +202,18 @@ export default function Founder() {
                   are created, and people leave feeling a little happier than when they
                   arrived."
                 </p>
-              </blockquote>
+              </motion.blockquote>
 
-              <p
+              <motion.p
+                variants={fadeUp}
                 className="text-sm italic font-light"
                 style={{ color: "#5A6178" }}
               >
                 Because life is simply better when there's color, community, and a seat
                 for everyone at the table. I'm so glad you're here.
-              </p>
+              </motion.p>
 
-              <div className="flex flex-wrap gap-3 pt-2">
+              <motion.div variants={fadeUp} className="flex flex-wrap gap-3 pt-2">
                 <Link href="/events">
                   <button
                     className="px-6 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
@@ -216,25 +230,33 @@ export default function Founder() {
                     Our Story
                   </button>
                 </Link>
-              </div>
-            </div>
-          </motion.div>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ── Closing CTA ──────────────────────────── */}
+      {/* ── Closing CTA — scroll animated ────────── */}
       <section
         className="py-20 px-6 text-center"
         style={{ backgroundColor: NAVY }}
       >
-        <div className="max-w-2xl mx-auto">
-          <p
+        <motion.div
+          variants={scrollContainer}
+          initial="hidden"
+          whileInView="show"
+          viewport={VP}
+          className="max-w-2xl mx-auto"
+        >
+          <motion.p
+            variants={fadeUp}
             className="text-xs font-bold tracking-[0.25em] uppercase mb-4"
             style={{ color: GOLD }}
           >
             Come Play
-          </p>
-          <h2
+          </motion.p>
+          <motion.h2
+            variants={fadeUp}
             className="font-medium text-white mb-4"
             style={{
               fontFamily: "'Cormorant Garamond', serif",
@@ -242,22 +264,25 @@ export default function Founder() {
             }}
           >
             Ready to join the table?
-          </h2>
-          <p
+          </motion.h2>
+          <motion.p
+            variants={fadeUp}
             className="text-base mb-10 font-light"
             style={{ color: "rgba(255,255,255,0.65)" }}
           >
             Find an upcoming event and experience the Bougie Bams community for yourself.
-          </p>
-          <Link href="/events">
-            <button
-              className="px-8 py-3 rounded-full text-sm font-bold tracking-wide transition-opacity hover:opacity-85"
-              style={{ backgroundColor: GOLD, color: NAVY }}
-            >
-              See Upcoming Events
-            </button>
-          </Link>
-        </div>
+          </motion.p>
+          <motion.div variants={fadeUp}>
+            <Link href="/events">
+              <button
+                className="px-8 py-3 rounded-full text-sm font-bold tracking-wide transition-opacity hover:opacity-85"
+                style={{ backgroundColor: GOLD, color: NAVY }}
+              >
+                See Upcoming Events
+              </button>
+            </Link>
+          </motion.div>
+        </motion.div>
       </section>
 
     </div>

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { images } from "@/data/images";
 import { Play } from "lucide-react";
+import { heroContainer, heroItem, scrollContainer, fadeUp, dividerLine, VP } from "@/lib/motion";
 
 const NAVY = "#1E2A5A";
 const GOLD = "#D4AF37";
@@ -59,9 +60,10 @@ function VideoCard({ lesson, index }: { lesson: Lesson; index: number }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, duration: 0.4 }}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ delay: index * 0.07, duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
       className="group rounded-2xl overflow-hidden border shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 bg-white"
       style={{ borderColor: "#E2DBCD" }}
     >
@@ -135,7 +137,14 @@ function SectionRule({ title }: { title: string }) {
       >
         <em style={{ color: GOLD }}>{title}</em>
       </h2>
-      <div className="flex-1 h-px" style={{ backgroundColor: `${GOLD}50` }} />
+      <motion.div
+        variants={dividerLine}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        className="flex-1 h-px"
+        style={{ backgroundColor: `${GOLD}50` }}
+      />
     </div>
   );
 }
@@ -175,18 +184,16 @@ export default function Learn() {
           }}
         />
         <div className="max-w-5xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <p
+          <motion.div variants={heroContainer} initial="hidden" animate="show">
+            <motion.p
+              variants={heroItem}
               className="text-xs font-bold tracking-[0.25em] uppercase mb-5"
               style={{ color: GOLD }}
             >
               Learn to Play
-            </p>
-            <h1
+            </motion.p>
+            <motion.h1
+              variants={heroItem}
               className="font-medium leading-[1.05] text-white mb-6"
               style={{
                 fontFamily: "'Cormorant Garamond', serif",
@@ -195,15 +202,16 @@ export default function Learn() {
             >
               Master the art<br />
               <em style={{ color: GOLD }}>of mahjong.</em>
-            </h1>
-            <p
+            </motion.h1>
+            <motion.p
+              variants={heroItem}
               className="text-lg font-light max-w-xl leading-relaxed"
               style={{ color: "rgba(255,255,255,0.7)" }}
             >
               Intimidated by the tiles? Don't be. From beginner basics to advanced
               strategy, we've got you covered — with video lessons and a full guide
               written just for you.
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>
