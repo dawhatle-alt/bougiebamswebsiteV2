@@ -105,7 +105,7 @@ export function FloatingProductCard({ product }: Props) {
             alt={product.name}
             loading="lazy"
             onError={() => setImgFailed(true)}
-            className="bb-float max-h-[236px] max-w-[264px] object-contain"
+            className="bb-float max-h-[236px] max-w-[264px] object-contain rounded-3xl"
             style={{
               filter: `drop-shadow(0 22px 18px ${palette.shadow})`,
             }}
