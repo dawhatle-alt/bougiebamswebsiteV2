@@ -18,14 +18,19 @@ export default function About() {
       {/* ── Hero ─────────────────────────────────── */}
       <section
         className="relative py-24 md:py-36 px-6 overflow-hidden"
-        style={{ backgroundColor: NAVY }}
+        style={{ minHeight: "420px" }}
       >
-        {/* Subtle background texture */}
+        <img
+          src={`${import.meta.env.BASE_URL}bougie-zebra-banner.png`}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
+        />
+        {/* Heavy overlay — navy with slight gradient so text is always legible */}
         <div
-          className="absolute inset-0 opacity-[0.04]"
+          className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, ${GOLD} 1px, transparent 0)`,
-            backgroundSize: "40px 40px",
+            background: `linear-gradient(150deg, rgba(30,42,90,0.88) 0%, rgba(30,42,90,0.72) 60%, rgba(30,42,90,0.55) 100%)`,
           }}
         />
 
