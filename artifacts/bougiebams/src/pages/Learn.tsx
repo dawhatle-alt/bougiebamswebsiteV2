@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 import { images } from "@/data/images";
 import { Play } from "lucide-react";
 
+const NAVY = "#1E2A5A";
+const GOLD = "#D4AF37";
+const CREAM = "#FAF7F0";
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface Lesson {
@@ -50,18 +52,20 @@ function getThumbnailUrl(url: string): string | null {
   return null;
 }
 
-function VideoCard({ lesson }: { lesson: Lesson }) {
+function VideoCard({ lesson, index }: { lesson: Lesson; index: number }) {
   const [playing, setPlaying] = useState(false);
   const embedUrl = getEmbedUrl(lesson.videoUrl);
   const thumbnail = getThumbnailUrl(lesson.videoUrl);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group bg-card border border-border overflow-hidden"
+      transition={{ delay: index * 0.07, duration: 0.4 }}
+      className="group rounded-2xl overflow-hidden border shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 bg-white"
+      style={{ borderColor: "#E2DBCD" }}
     >
-      <div className="aspect-video relative bg-muted">
+      <div className="aspect-video relative" style={{ backgroundColor: NAVY }}>
         {playing && embedUrl ? (
           <iframe
             src={`${embedUrl}?autoplay=1`}
@@ -73,34 +77,66 @@ function VideoCard({ lesson }: { lesson: Lesson }) {
           <button
             className="w-full h-full flex items-center justify-center relative"
             onClick={() => setPlaying(true)}
+            aria-label={`Play ${lesson.title}`}
           >
             {thumbnail ? (
               <img
                 src={thumbnail}
                 alt={lesson.title}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity"
               />
             ) : (
-              <div className="absolute inset-0 bg-secondary" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, ${NAVY} 0%, #2d3f7a 100%)`,
+                }}
+              />
             )}
-            <div className="relative z-10 w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Play className="w-6 h-6 text-primary-foreground ml-1" fill="currentColor" />
+            {/* Play button */}
+            <div
+              className="relative z-10 w-14 h-14 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-200"
+              style={{ backgroundColor: GOLD }}
+            >
+              <Play className="w-5 h-5 ml-0.5" fill={NAVY} color={NAVY} />
             </div>
           </button>
         )}
       </div>
-      <div className="p-5">
-        <span className="text-xs text-primary font-semibold uppercase tracking-widest">
+      <div className="p-5" style={{ backgroundColor: CREAM }}>
+        <p
+          className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1.5"
+          style={{ color: GOLD }}
+        >
           {lesson.category}
-        </span>
-        <h3 className="font-serif text-xl mt-1 mb-2">{lesson.title}</h3>
+        </p>
+        <h3
+          className="font-medium text-lg mb-2 leading-snug"
+          style={{ fontFamily: "'Cormorant Garamond', serif", color: NAVY }}
+        >
+          {lesson.title}
+        </h3>
         {lesson.description && (
-          <p className="text-sm text-muted-foreground font-serif leading-relaxed">
+          <p className="text-sm leading-relaxed" style={{ color: "#5A6178" }}>
             {lesson.description}
           </p>
         )}
       </div>
     </motion.div>
+  );
+}
+
+function SectionRule({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-4 mb-8">
+      <h2
+        className="text-2xl md:text-3xl font-medium shrink-0"
+        style={{ fontFamily: "'Cormorant Garamond', serif", color: NAVY }}
+      >
+        <em style={{ color: GOLD }}>{title}</em>
+      </h2>
+      <div className="flex-1 h-px" style={{ backgroundColor: `${GOLD}50` }} />
+    </div>
   );
 }
 
@@ -119,176 +155,334 @@ export default function Learn() {
   const categories = [...new Set(lessons.map((l) => l.category))];
 
   return (
-    <div className="pt-32 pb-24 min-h-screen bg-background">
-      <div className="container mx-auto px-4 md:px-8">
+    <div className="w-full">
 
-        {/* Video Lessons Section */}
-        {(loadingLessons || lessons.length > 0) && (
-          <section className="mb-32">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-4 block">
+      {/* ── Hero ─────────────────────────────────── */}
+      <section
+        className="relative py-24 md:py-36 px-6 overflow-hidden"
+        style={{ backgroundColor: NAVY }}
+      >
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, ${GOLD} 1px, transparent 0)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <p
+              className="text-xs font-bold tracking-[0.25em] uppercase mb-5"
+              style={{ color: GOLD }}
+            >
+              Learn to Play
+            </p>
+            <h1
+              className="font-medium leading-[1.05] text-white mb-6"
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: "clamp(3rem, 7vw, 5.5rem)",
+              }}
+            >
+              Master the art<br />
+              <em style={{ color: GOLD }}>of mahjong.</em>
+            </h1>
+            <p
+              className="text-lg font-light max-w-xl leading-relaxed"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              Intimidated by the tiles? Don't be. From beginner basics to advanced
+              strategy, we've got you covered — with video lessons and a full guide
+              written just for you.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Video lessons ─────────────────────────── */}
+      {(loadingLessons || lessons.length > 0) && (
+        <section className="py-16 md:py-24 px-6" style={{ backgroundColor: CREAM }}>
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-12">
+              <p
+                className="text-xs font-bold tracking-[0.25em] uppercase mb-3"
+                style={{ color: GOLD }}
+              >
                 Video Lessons
-              </span>
-              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl mb-6">
+              </p>
+              <h2
+                className="font-medium leading-tight"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "clamp(2rem, 5vw, 3rem)",
+                  color: NAVY,
+                }}
+              >
                 Learn from BougieBams
-              </h1>
-              <p className="text-xl text-muted-foreground font-serif leading-relaxed">
-                Step-by-step video lessons created just for you — from tiles to tactics.
+              </h2>
+              <p className="mt-2 text-base font-light" style={{ color: "#5A6178" }}>
+                Step-by-step video lessons — from tiles to tactics.
               </p>
             </div>
 
             {loadingLessons ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="aspect-video bg-muted animate-pulse rounded-sm" />
+                  <div key={i} className="rounded-2xl overflow-hidden border border-[#E2DBCD] animate-pulse">
+                    <div className="aspect-video bg-[#D0C8B8]" />
+                    <div className="p-5 bg-white space-y-2">
+                      <div className="h-3 bg-[#E2DBCD] rounded w-1/4" />
+                      <div className="h-5 bg-[#E2DBCD] rounded w-3/4" />
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-12">
+              <div className="space-y-14">
                 {categories.map((cat) => (
                   <div key={cat}>
-                    <h2 className="font-serif text-2xl mb-6 flex items-center gap-3">
-                      <span className="text-primary italic">{cat}</span>
-                      <span className="flex-1 border-t border-border" />
-                    </h2>
+                    <SectionRule title={cat} />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {lessons
                         .filter((l) => l.category === cat)
-                        .map((lesson) => (
-                          <VideoCard key={lesson.id} lesson={lesson} />
+                        .map((lesson, i) => (
+                          <VideoCard key={lesson.id} lesson={lesson} index={i} />
                         ))}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </section>
-        )}
+          </div>
+        </section>
+      )}
 
-        {/* Static Beginner's Guide */}
-        {!loadingLessons && (
-          <>
-            <div className="text-center max-w-3xl mx-auto mb-20">
-              <span className="text-primary font-semibold tracking-widest uppercase text-xs mb-4 block">
+      {/* ── Beginner's guide ──────────────────────── */}
+      {!loadingLessons && (
+        <section
+          className="py-16 md:py-24 px-6"
+          style={{ backgroundColor: lessons.length > 0 ? "#fff" : CREAM }}
+        >
+          <div className="max-w-5xl mx-auto">
+            {/* Section intro */}
+            <div className="mb-16 max-w-2xl">
+              <p
+                className="text-xs font-bold tracking-[0.25em] uppercase mb-3"
+                style={{ color: GOLD }}
+              >
                 Beginner's Guide
-              </span>
-              <h2 className="font-serif text-5xl md:text-6xl lg:text-7xl mb-6">
+              </p>
+              <h2
+                className="font-medium leading-tight mb-4"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "clamp(2rem, 5vw, 3rem)",
+                  color: NAVY,
+                }}
+              >
                 {lessons.length > 0 ? "The Basics" : "Master the Art of Mahjong"}
               </h2>
-              <p className="text-xl text-muted-foreground font-serif leading-relaxed">
-                Intimidated by the tiles? Don't be. Welcome to the BougieBams guide to playing
-                American Mahjong with confidence and style.
+              <p className="text-base font-light leading-relaxed" style={{ color: "#5A6178" }}>
+                Intimidated by the tiles? Don't be. Welcome to the BougieBams guide to
+                playing American Mahjong with confidence and style.
               </p>
             </div>
 
-            <div className="max-w-4xl mx-auto space-y-32">
-              <section>
-                <h2 className="font-serif text-4xl mb-8 flex items-center">
-                  <span className="text-primary italic mr-4">01.</span> The Tiles
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                  <div className="aspect-square bg-muted p-8 flex items-center justify-center">
+            <div className="space-y-24">
+
+              {/* The Tiles */}
+              <div>
+                <SectionRule title="The Tiles" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+                  <div
+                    className="aspect-square rounded-2xl overflow-hidden shadow-md"
+                    style={{ backgroundColor: CREAM }}
+                  >
                     <img
                       src={images.mahjongTilesCloseup}
-                      alt="Tiles"
-                      className="w-full h-full object-cover shadow-xl"
+                      alt="Mahjong tiles close-up"
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="font-serif text-lg leading-relaxed text-muted-foreground space-y-4">
+                  <div className="space-y-4 text-[15px] font-light leading-relaxed" style={{ color: "#3D4562" }}>
                     <p>
-                      A standard American Mahjong set consists of 152 tiles. These are broken
-                      down into several categories:
+                      A standard American Mahjong set consists of 152 tiles, broken down
+                      into several categories:
                     </p>
-                    <ul className="list-disc pl-5 space-y-2 text-foreground">
-                      <li>
-                        <strong className="font-semibold text-primary">Suits:</strong> Bams
-                        (bamboos), Craks (characters), and Dots. Numbered 1–9.
-                      </li>
-                      <li>
-                        <strong className="font-semibold text-primary">Winds:</strong> North,
-                        South, East, and West.
-                      </li>
-                      <li>
-                        <strong className="font-semibold text-primary">Dragons:</strong> Red,
-                        Green, and White (often represented by a blank tile or a frame).
-                      </li>
-                      <li>
-                        <strong className="font-semibold text-primary">Flowers:</strong>{" "}
-                        Beautiful illustrative tiles.
-                      </li>
-                      <li>
-                        <strong className="font-semibold text-primary">Jokers:</strong> The
-                        wildcards of the game.
-                      </li>
+                    <ul className="space-y-3">
+                      {[
+                        { term: "Suits", desc: "Bams (bamboos), Craks (characters), and Dots. Numbered 1–9." },
+                        { term: "Winds", desc: "North, South, East, and West." },
+                        { term: "Dragons", desc: "Red, Green, and White (often represented by a blank tile or a frame)." },
+                        { term: "Flowers", desc: "Beautiful illustrative tiles." },
+                        { term: "Jokers", desc: "The wildcards of the game." },
+                      ].map(({ term, desc }) => (
+                        <li key={term} className="flex gap-3">
+                          <span
+                            className="shrink-0 font-bold text-sm pt-0.5"
+                            style={{ color: GOLD }}
+                          >
+                            {term}
+                          </span>
+                          <span>{desc}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
-              </section>
+              </div>
 
-              <section>
-                <h2 className="font-serif text-4xl mb-8 flex items-center">
-                  <span className="text-primary italic mr-4">02.</span> The Objective
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center md:flex-row-reverse">
-                  <div className="font-serif text-lg leading-relaxed text-muted-foreground space-y-4 order-2 md:order-1">
+              {/* The Objective */}
+              <div>
+                <SectionRule title="The Objective" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+                  <div className="space-y-4 text-[15px] font-light leading-relaxed order-2 md:order-1" style={{ color: "#3D4562" }}>
                     <p>
                       The goal is simple: be the first player to match your 14 tiles to a
                       specific pattern listed on the National Mah Jongg League card.
                     </p>
                     <p>
-                      Think of it like a very complex, very chic version of Rummy. You draw a
-                      tile, you discard a tile, and you slowly build your hand until you can
-                      declare "Mahjong!"
+                      Think of it like a very complex, very chic version of Rummy. You
+                      draw a tile, you discard a tile, and you slowly build your hand until
+                      you can declare{" "}
+                      <strong className="font-semibold" style={{ color: NAVY }}>
+                        "Mahjong!"
+                      </strong>
                     </p>
-                    <p>The card changes every year, keeping the game fresh and players on their toes.</p>
+                    <p>
+                      The card changes every year, keeping the game fresh and every player
+                      on their toes.
+                    </p>
                   </div>
-                  <div className="aspect-square bg-card border border-border p-12 flex flex-col items-center justify-center text-center order-1 md:order-2">
-                    <h3 className="font-serif text-3xl mb-4">Mahjong!</h3>
-                    <p className="text-muted-foreground font-serif">
-                      The sweetest word you can say at the table.
+
+                  <div
+                    className="flex flex-col items-center justify-center text-center p-12 rounded-2xl border order-1 md:order-2"
+                    style={{ backgroundColor: CREAM, borderColor: "#E2DBCD" }}
+                  >
+                    <p
+                      className="text-[10px] font-bold tracking-[0.25em] uppercase mb-3"
+                      style={{ color: GOLD }}
+                    >
+                      The sweetest word at the table
+                    </p>
+                    <p
+                      className="font-medium"
+                      style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: "clamp(3rem, 8vw, 5rem)",
+                        color: NAVY,
+                        lineHeight: 1,
+                      }}
+                    >
+                      Mahjong!
                     </p>
                   </div>
                 </div>
-              </section>
+              </div>
 
-              <section>
-                <h2 className="font-serif text-4xl mb-8 flex items-center">
-                  <span className="text-primary italic mr-4">03.</span> The Charleston
-                </h2>
-                <div className="bg-secondary text-secondary-foreground p-8 md:p-16 rounded-sm">
-                  <h3 className="font-serif text-2xl mb-6 text-white">The Pre-Game Dance</h3>
-                  <div className="font-serif text-lg leading-relaxed text-white/80 space-y-4 max-w-2xl">
-                    <p>
-                      Before the drawing and discarding begins, there is The Charleston. This is
-                      a mandatory passing phase where players exchange three tiles at a time with
-                      the players next to and across from them.
-                    </p>
-                    <p>
-                      It's your chance to dump the tiles that don't fit your desired hand, and
-                      hopefully pick up ones that do. It requires strategy, a poker face, and
-                      knowing which tiles to hold onto.
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              <div className="text-center pt-16 border-t border-border">
-                <h2 className="font-serif text-3xl mb-6">Ready to play?</h2>
-                <p className="text-muted-foreground font-serif text-lg mb-8 max-w-xl mx-auto">
-                  Grab a beautiful set, call three friends, and pour something delicious.
-                </p>
-                <Button
-                  asChild
-                  size="lg"
-                  className="h-14 px-10 text-lg bg-foreground text-background hover:bg-primary rounded-none"
+              {/* The Charleston */}
+              <div>
+                <SectionRule title="The Charleston" />
+                <div
+                  className="rounded-2xl px-8 py-12 md:px-16 md:py-16 relative overflow-hidden"
+                  style={{ backgroundColor: NAVY }}
                 >
-                  <Link href="/shop">Shop Starter Sets</Link>
-                </Button>
+                  {/* Dot texture */}
+                  <div
+                    className="absolute inset-0 opacity-[0.04]"
+                    style={{
+                      backgroundImage: `radial-gradient(circle at 1px 1px, ${GOLD} 1px, transparent 0)`,
+                      backgroundSize: "32px 32px",
+                    }}
+                  />
+                  <div className="relative z-10 max-w-2xl">
+                    <p
+                      className="text-xs font-bold tracking-[0.25em] uppercase mb-4"
+                      style={{ color: GOLD }}
+                    >
+                      The Pre-Game Dance
+                    </p>
+                    <h3
+                      className="font-medium text-white mb-6"
+                      style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
+                      }}
+                    >
+                      Before the game begins, there's strategy.
+                    </h3>
+                    <div
+                      className="space-y-4 text-[15px] font-light leading-relaxed"
+                      style={{ color: "rgba(255,255,255,0.75)" }}
+                    >
+                      <p>
+                        Before the drawing and discarding begins, there is The Charleston.
+                        This is a mandatory passing phase where players exchange three tiles
+                        at a time with the players next to and across from them.
+                      </p>
+                      <p>
+                        It's your chance to dump the tiles that don't fit your desired hand,
+                        and hopefully pick up ones that do. It requires strategy, a poker
+                        face, and knowing which tiles to hold onto.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* CTA */}
+            <div
+              className="mt-24 pt-12 border-t text-center"
+              style={{ borderColor: "#E2DBCD" }}
+            >
+              <p
+                className="text-xs font-bold tracking-[0.25em] uppercase mb-4"
+                style={{ color: GOLD }}
+              >
+                Ready to play?
+              </p>
+              <h2
+                className="font-medium mb-3"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "clamp(2rem, 4vw, 3rem)",
+                  color: NAVY,
+                }}
+              >
+                Grab a beautiful set,<br />call three friends.
+              </h2>
+              <p className="text-sm mb-8 max-w-md mx-auto" style={{ color: "#5A6178" }}>
+                Grab a beautiful set, pour something delicious, and let the tiles do the rest.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link href="/shop">
+                  <button
+                    className="px-8 py-3 rounded-full text-sm font-bold tracking-wide transition-opacity hover:opacity-85"
+                    style={{ backgroundColor: NAVY, color: "#fff" }}
+                  >
+                    Shop Starter Sets
+                  </button>
+                </Link>
+                <Link href="/events">
+                  <button
+                    className="px-8 py-3 rounded-full text-sm font-semibold border transition-colors hover:border-[#1E2A5A]"
+                    style={{ borderColor: "#D0C8B8", color: NAVY }}
+                  >
+                    Find an Event
+                  </button>
+                </Link>
               </div>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </section>
+      )}
+
     </div>
   );
 }
