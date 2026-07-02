@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 
@@ -12,6 +13,7 @@ const pillars = [
 ];
 
 export default function About() {
+  const [videoError, setVideoError] = useState(false);
   return (
     <div className="w-full">
 
@@ -173,14 +175,23 @@ export default function About() {
                 className="relative overflow-hidden shadow-2xl w-full"
                 style={{ aspectRatio: "3/4", borderRadius: "50% / 40%", border: `6px solid ${CREAM}` }}
               >
-                <video
-                  src={`${import.meta.env.BASE_URL}about-oval-video.mp4`}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
+                {videoError ? (
+                  <img
+                    src={`${import.meta.env.BASE_URL}patsy-atx-tournament.jpg`}
+                    alt="Patsy Miller at a Bougie Bams event"
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <video
+                    src={`${import.meta.env.BASE_URL}about-oval-video.mp4`}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                    onError={() => setVideoError(true)}
+                  />
+                )}
               </div>
             </motion.div>
           </div>
