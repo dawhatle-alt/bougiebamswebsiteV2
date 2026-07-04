@@ -1,4 +1,5 @@
 - [BougieBams site patterns](bougiebams-site.md) — image stubs silent-fail; API proxy on port 8080; build-restart cycle; checkout flow must handle 401 and non-OK responses explicitly
 - [GCS object storage upload](gcs-upload-pattern.md) — uploads use GCS presigned URLs; objectPath stored as /objects/uploads/<uuid>; storage route checks for objects/ prefix to route to GCS vs local disk
 - [Admin auth pattern](admin-auth.md) — Replit OIDC session cookies (credentials:"include"), NOT Bearer tokens; requireAdmin vs requireAuth distinction
+- [Dual auth pattern](dual-auth.md) — Supabase shoppers (Bearer JWT) + Replit admin (OIDC cookie) coexist; requireAnyAuth, injectShopperUser; SUPABASE_JWT_SECRET needed at startup
 - [Stripe registration flow](stripe-registration.md) — requireAuth on checkout; raw body via express.json verify callback; IDOR: check userId===user.id||isAdmin, never ||!isAuthenticated()
