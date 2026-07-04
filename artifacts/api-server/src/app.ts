@@ -5,6 +5,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
+import { injectShopperUser } from "./middleware/auth";
 
 const app: Express = express();
 
@@ -38,6 +39,7 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 app.use(authMiddleware);
+app.use(injectShopperUser);
 
 app.use("/api", router);
 

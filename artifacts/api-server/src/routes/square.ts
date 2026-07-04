@@ -3,7 +3,7 @@ import { z } from "zod";
 import { sql, eq } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
-import { requireAuth } from "../middleware/auth";
+import { requireAnyAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
 import { getSquareClient, getSquareLocationId, isSandboxMode } from "../lib/square";
 
@@ -27,7 +27,7 @@ const RegistrationCheckoutBody = z.object({
 
 router.post(
   "/registrations/checkout",
-  requireAuth,
+  requireAnyAuth,
   async (req: Request, res: Response): Promise<void> => {
     const client = getSquareClient();
     if (!client) {
@@ -72,7 +72,7 @@ router.post(
           email,
           notes: notes ?? null,
           status: priceInCents > 0 ? "pending" : "confirmed",
-          userId: req.user!.id,
+          userId: req.isAuthenticated() ? req.user!.id : (req.shopperUser?.sub ?? null),
         })
         .returning();
 

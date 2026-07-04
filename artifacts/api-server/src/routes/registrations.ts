@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { CreateRegistrationBody } from "@workspace/api-zod";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requireAnyAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
 import { getSquareClient } from "../lib/square";
 import { logger } from "../lib/logger";
@@ -21,7 +21,7 @@ function toRegResponse(reg: typeof registrationsTable.$inferSelect) {
   };
 }
 
-router.post("/registrations", requireAuth, async (req, res): Promise<void> => {
+router.post("/registrations", requireAnyAuth, async (req, res): Promise<void> => {
   const parsed = CreateRegistrationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -60,7 +60,7 @@ router.post("/registrations", requireAuth, async (req, res): Promise<void> => {
       email,
       notes: notes ?? null,
       status: "confirmed",
-      userId: req.isAuthenticated() ? req.user!.id : null,
+      userId: req.isAuthenticated() ? req.user!.id : (req.shopperUser?.sub ?? null),
     })
     .returning();
 
@@ -82,8 +82,8 @@ router.post("/registrations", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json({ registration: toRegResponse(reg) });
 });
 
-router.get("/registrations/mine", requireAuth, async (req, res): Promise<void> => {
-  const userId = req.user!.id;
+router.get("/registrations/mine", requireAnyAuth, async (req, res): Promise<void> => {
+  const userId = req.isAuthenticated() ? req.user!.id : req.shopperUser!.sub;
   const rows = await db
     .select()
     .from(registrationsTable)
@@ -207,7 +207,7 @@ router.get("/registrations/:id/confirmation", async (req, res): Promise<void> =>
   });
 });
 
-router.get("/registrations/:id", requireAuth, async (req, res): Promise<void> => {
+router.get("/registrations/:id", requireAnyAuth, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id as string, 10);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -225,13 +225,17 @@ router.get("/registrations/:id", requireAuth, async (req, res): Promise<void> =>
     return;
   }
 
+  const currentUserId = req.isAuthenticated() ? req.user!.id : req.shopperUser!.sub;
   const adminUserIds = process.env.ADMIN_USER_IDS
     ?.split(",")
     .map((s) => s.trim())
     .filter(Boolean);
   const isAdmin =
-    adminUserIds && adminUserIds.length > 0 && adminUserIds.includes(req.user!.id);
-  if (reg.userId !== req.user!.id && !isAdmin) {
+    req.isAuthenticated() &&
+    adminUserIds &&
+    adminUserIds.length > 0 &&
+    adminUserIds.includes(req.user!.id);
+  if (reg.userId !== currentUserId && !isAdmin) {
     res.status(403).json({ error: "Not authorized" });
     return;
   }

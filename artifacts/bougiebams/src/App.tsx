@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import { SupabaseAuthProvider } from "@/context/SupabaseAuthContext";
 
 import Layout from "@/components/Layout";
 import WelcomeOfferDialog from "@/components/WelcomeOfferDialog";
@@ -25,6 +26,9 @@ import EventConfirmation from "@/pages/EventConfirmation";
 import Favorites from "@/pages/Favorites";
 import Contact from "@/pages/Contact";
 import Admin from "@/pages/Admin";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import Account from "@/pages/Account";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -65,6 +69,7 @@ function AnimatedRoutes() {
           <Route path="/events/:id" component={EventDetail} />
           <Route path="/events" component={Events} />
           <Route path="/my-events" component={MyEvents} />
+          <Route path="/account" component={Account} />
           <Route path="/favorites" component={Favorites} />
           <Route path="/contact" component={Contact} />
           <Route component={NotFound} />
@@ -87,6 +92,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/admin" component={Admin} />
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
       <Route component={MarketingRouter} />
     </Switch>
   );
@@ -96,14 +103,16 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-          </WishlistProvider>
-        </CartProvider>
+        <SupabaseAuthProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </WishlistProvider>
+          </CartProvider>
+        </SupabaseAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

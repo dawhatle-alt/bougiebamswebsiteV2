@@ -1,4 +1,5 @@
 import { useAuth } from "@workspace/replit-auth-web";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { formatDateCT } from "@/lib/dateUtils";
@@ -32,7 +33,12 @@ interface RegistrationRecord {
 }
 
 export default function MyEvents() {
-  const { user, isLoading, isAuthenticated, login } = useAuth();
+  const { user, isLoading: adminLoading, isAuthenticated } = useAuth();
+  const { user: shopperUser, isAuthenticated: shopperAuthenticated, isLoading: shopperLoading, accessToken } = useSupabaseAuth();
+
+  const anyAuthenticated = isAuthenticated || shopperAuthenticated;
+  const anyLoading = adminLoading || shopperLoading;
+
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>([]);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,10 +51,14 @@ export default function MyEvents() {
   );
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!anyAuthenticated) return;
     setFetching(true);
     const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
-    fetch(`${base}/api/registrations/mine`, { credentials: "include" })
+    const headers: Record<string, string> = {};
+    if (shopperAuthenticated && accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+    fetch(`${base}/api/registrations/mine`, { headers, credentials: "include" })
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<{ registrations: RegistrationRecord[] }>;
@@ -61,7 +71,7 @@ export default function MyEvents() {
         setError(err.message);
         setFetching(false);
       });
-  }, [isAuthenticated]);
+  }, [anyAuthenticated, shopperAuthenticated, accessToken, isAuthenticated]);
 
   function handleCancelled(regId: number) {
     setRegistrations(prev =>
@@ -69,7 +79,7 @@ export default function MyEvents() {
     );
   }
 
-  if (isLoading) {
+  if (anyLoading) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <p className="text-muted-foreground">Loading…</p>
@@ -77,23 +87,36 @@ export default function MyEvents() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!anyAuthenticated) {
     return (
       <div className="container mx-auto px-4 py-24 text-center space-y-6">
         <h1 className="font-serif text-3xl md:text-4xl font-semibold">My Events</h1>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Log in to view the events you've registered for.
+          Sign in to view the events you've registered for.
         </p>
-        <Button onClick={login} size="lg" className="rounded-full px-8">
-          <LogIn className="mr-2 h-4 w-4" />
-          Log in
-        </Button>
+        <Link href="/login">
+          <Button size="lg" className="rounded-full px-8">
+            <LogIn className="mr-2 h-4 w-4" />
+            Sign In
+          </Button>
+        </Link>
       </div>
     );
   }
 
-  const initials = `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`.toUpperCase() || "U";
-  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Member";
+  const shopperMeta = shopperUser?.user_metadata;
+  const shopperFirstName: string = shopperMeta?.first_name ?? shopperMeta?.firstName ?? "";
+  const shopperLastName: string = shopperMeta?.last_name ?? shopperMeta?.lastName ?? "";
+  const shopperInitials = `${shopperFirstName?.[0] ?? ""}${shopperLastName?.[0] ?? ""}`.toUpperCase() || "U";
+  const shopperFullName = [shopperFirstName, shopperLastName].filter(Boolean).join(" ") || shopperUser?.email?.split("@")[0] || "Member";
+
+  const adminInitials = `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`.toUpperCase() || "U";
+  const adminFullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Member";
+
+  const displayInitials = shopperAuthenticated ? shopperInitials : adminInitials;
+  const displayFullName = shopperAuthenticated ? shopperFullName : adminFullName;
+  const displayEmail = shopperAuthenticated ? shopperUser?.email : user?.email;
+  const displayAvatar = shopperAuthenticated ? undefined : user?.profileImageUrl;
 
   const now = new Date();
   const upcoming = registrations.filter(r => {
@@ -113,14 +136,14 @@ export default function MyEvents() {
         className="bg-card border border-border rounded-2xl px-6 py-5 mb-10 flex items-center gap-5"
       >
         <Avatar className="h-16 w-16 shrink-0">
-          {user?.profileImageUrl && <AvatarImage src={user.profileImageUrl} alt={fullName} />}
+          {displayAvatar && <AvatarImage src={displayAvatar} alt={displayFullName} />}
           <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">
-            {initials}
+            {displayInitials}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-2xl md:text-3xl font-semibold leading-tight truncate">{fullName}</h1>
-          {user?.email && <p className="text-sm text-muted-foreground mt-1 truncate">{user.email}</p>}
+          <h1 className="font-serif text-2xl md:text-3xl font-semibold leading-tight truncate">{displayFullName}</h1>
+          {displayEmail && <p className="text-sm text-muted-foreground mt-1 truncate">{displayEmail}</p>}
         </div>
       </motion.div>
 
@@ -152,6 +175,7 @@ export default function MyEvents() {
                 event={eventsById.get(reg.eventId)}
                 index={i}
                 onCancelled={handleCancelled}
+                accessToken={shopperAuthenticated ? accessToken : undefined}
               />
             ))}
           </div>
@@ -169,6 +193,7 @@ export default function MyEvents() {
                 event={eventsById.get(reg.eventId)}
                 index={i}
                 isPast
+                accessToken={shopperAuthenticated ? accessToken : undefined}
               />
             ))}
           </div>
@@ -184,12 +209,14 @@ function RegistrationCard({
   index,
   isPast = false,
   onCancelled,
+  accessToken,
 }: {
   registration: RegistrationRecord;
   event: ApiEvent | undefined;
   index: number;
   isPast?: boolean;
   onCancelled?: (id: number) => void;
+  accessToken?: string | null;
 }) {
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -202,8 +229,11 @@ function RegistrationCard({
     setCancelError(null);
     try {
       const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
+      const headers: Record<string, string> = {};
+      if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
       const res = await fetch(`${base}/api/registrations/${registration.id}`, {
         method: "DELETE",
+        headers,
         credentials: "include",
       });
       if (!res.ok) {

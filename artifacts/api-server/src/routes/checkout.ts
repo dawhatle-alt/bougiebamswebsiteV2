@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
-import { requireAuth } from "../middleware/auth";
+import { requireAnyAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { getSquareClient, getSquareLocationId } from "../lib/square";
 
@@ -19,7 +19,7 @@ const CheckoutBody = z.object({
   discountCode: z.string().optional(),
 });
 
-router.post("/checkout", requireAuth, async (req: Request, res: Response): Promise<void> => {
+router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Promise<void> => {
   const parsed = CheckoutBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid checkout request: " + parsed.error.issues[0]?.message });

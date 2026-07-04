@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, X, Instagram, Facebook, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown, CalendarDays, LogIn, LogOut } from "lucide-react";
+import { ShoppingBag, Menu, X, Instagram, Facebook, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown, CalendarDays, LogIn, LogOut, User } from "lucide-react";
 import ChatWidget from "@/components/ChatWidget";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -85,6 +86,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { products } = useProducts();
   const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth();
+  const { user: shopperUser, isAuthenticated: shopperAuthenticated, isLoading: shopperLoading, accessToken, signOut: shopperSignOut } = useSupabaseAuth();
 
   const shopGroups = useMemo(
     () =>
@@ -107,14 +109,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "U"
     : "";
 
+  const shopperMeta = shopperUser?.user_metadata;
+  const shopperFirstName: string = shopperMeta?.first_name ?? shopperMeta?.firstName ?? shopperUser?.email?.split("@")[0] ?? "";
+  const shopperLastName: string = shopperMeta?.last_name ?? shopperMeta?.lastName ?? "";
+  const shopperInitials = `${shopperFirstName?.[0] ?? ""}${shopperLastName?.[0] ?? ""}`.toUpperCase() || "U";
+
+  const anyAuthLoading = authLoading || shopperLoading;
+
   const handleCheckout = async () => {
     if (items.length === 0 || checkoutLoading) return;
+
+    if (!isAuthenticated && !shopperAuthenticated) {
+      setIsOpen(false);
+      window.location.href = `${API_BASE}/login?redirect=/`;
+      return;
+    }
+
     setCheckoutLoading(true);
     setCheckoutError(null);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (shopperAuthenticated && accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
       const res = await fetch(`${API_BASE}/api/checkout`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        credentials: "include",
         body: JSON.stringify({
           items: items.map((item) => ({
             variationId: item.product.id,
@@ -352,8 +373,49 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Search className="w-6 h-6" />
                 </button>
 
-                {/* Auth avatar */}
-                {!authLoading && isAuthenticated && (
+                {/* Shopper (Supabase) auth dropdown */}
+                {!anyAuthLoading && shopperAuthenticated && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                            {shopperInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <div className="px-3 py-2 text-sm font-medium truncate">
+                        {shopperFirstName && shopperLastName ? `${shopperFirstName} ${shopperLastName}`.trim() : shopperUser?.email}
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/account" className="flex items-center gap-2 cursor-pointer">
+                          <User className="h-4 w-4" />
+                          My Account
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/my-events" className="flex items-center gap-2 cursor-pointer">
+                          <CalendarDays className="h-4 w-4" />
+                          My Events
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => shopperSignOut()}
+                        className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* Admin (Replit) auth dropdown — only when no shopper is logged in */}
+                {!anyAuthLoading && !shopperAuthenticated && isAuthenticated && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary">
@@ -385,15 +447,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </DropdownMenu>
                 )}
 
-                {!authLoading && !isAuthenticated && (
-                  <button
-                    onClick={login}
+                {/* Sign in link — shown when no session at all */}
+                {!anyAuthLoading && !isAuthenticated && !shopperAuthenticated && (
+                  <Link
+                    href="/login"
                     className="hidden md:flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors"
                     aria-label="Sign in"
                   >
                     <LogIn className="w-5 h-5" />
                     <span className="text-xs tracking-widest uppercase">Sign In</span>
-                  </button>
+                  </Link>
                 )}
 
                 <Sheet open={wishlistOpen} onOpenChange={setWishlistOpen}>
@@ -689,7 +752,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/blog" className="font-serif text-3xl hover:text-primary transition-colors">Journal</Link>
             <Link href="/favorites" className="font-serif text-3xl hover:text-primary transition-colors">Favorites</Link>
             <Link href="/contact" className="font-serif text-3xl hover:text-primary transition-colors">Contact</Link>
-            {isAuthenticated ? (
+            {shopperAuthenticated ? (
+              <>
+                <Link href="/account" className="font-serif text-3xl hover:text-primary transition-colors flex items-center gap-3">
+                  <User className="w-7 h-7" />
+                  My Account
+                </Link>
+                <Link href="/my-events" className="font-serif text-3xl hover:text-primary transition-colors flex items-center gap-3">
+                  <CalendarDays className="w-7 h-7" />
+                  My Events
+                </Link>
+                <button
+                  onClick={() => shopperSignOut()}
+                  className="font-serif text-2xl text-destructive hover:opacity-80 transition-opacity text-left flex items-center gap-3"
+                >
+                  <LogOut className="w-6 h-6" />
+                  Sign out
+                </button>
+              </>
+            ) : isAuthenticated ? (
               <>
                 <Link href="/my-events" className="font-serif text-3xl hover:text-primary transition-colors flex items-center gap-3">
                   <CalendarDays className="w-7 h-7" />
@@ -704,13 +785,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </>
             ) : (
-              <button
-                onClick={login}
+              <Link
+                href="/login"
                 className="font-serif text-2xl hover:text-primary transition-colors text-left flex items-center gap-3"
               >
                 <LogIn className="w-6 h-6" />
                 Sign In
-              </button>
+              </Link>
             )}
           </nav>
         </div>

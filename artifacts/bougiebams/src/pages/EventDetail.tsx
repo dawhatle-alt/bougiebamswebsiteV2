@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ export default function EventDetail() {
   const event = eventData?.event;
 
   const { user, isAuthenticated, login } = useAuth();
+  const { user: shopperUser, isAuthenticated: shopperAuthenticated, accessToken } = useSupabaseAuth();
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -28,14 +30,23 @@ export default function EventDetail() {
   const [formData, setFormData] = useState({ name: "", email: "", notes: "" });
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (shopperAuthenticated && shopperUser) {
+      const meta = shopperUser.user_metadata;
+      const firstName: string = meta?.first_name ?? meta?.firstName ?? "";
+      const lastName: string = meta?.last_name ?? meta?.lastName ?? "";
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || [firstName, lastName].filter(Boolean).join(" ") || shopperUser.email?.split("@")[0] || "",
+        email: prev.email || shopperUser.email || "",
+      }));
+    } else if (isAuthenticated && user) {
       setFormData(prev => ({
         ...prev,
         name: prev.name || [user.firstName, user.lastName].filter(Boolean).join(" "),
         email: prev.email || user.email || "",
       }));
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, shopperAuthenticated, shopperUser]);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -93,9 +104,13 @@ export default function EventDetail() {
     setSubmitError(null);
     try {
       const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (shopperAuthenticated && accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
       const res = await fetch(`${base}/api/registrations/checkout`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify({
           eventId: event.id,
@@ -105,7 +120,14 @@ export default function EventDetail() {
           redirectBase: window.location.origin + (import.meta.env.BASE_URL ?? "/").replace(/\/$/, ""),
         }),
       });
-      if (res.status === 401) { login(); return; }
+      if (res.status === 401) {
+        if (shopperAuthenticated || isAuthenticated) {
+          const data = await res.json().catch(() => ({})) as { error?: string };
+          throw new Error(data.error || "Authentication error. Please try signing in again.");
+        }
+        setLocation("/login");
+        return;
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(data.error || "Registration failed. Please try again.");
