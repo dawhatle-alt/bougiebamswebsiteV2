@@ -125,7 +125,8 @@ export default function EventDetail() {
           const data = await res.json().catch(() => ({})) as { error?: string };
           throw new Error(data.error || "Authentication error. Please try signing in again.");
         }
-        setLocation("/login");
+        const currentPath = encodeURIComponent(window.location.pathname);
+        setLocation(`/login?redirect=${currentPath}`);
         return;
       }
       if (!res.ok) {
@@ -285,12 +286,14 @@ export default function EventDetail() {
                     <Button variant="outline" className="rounded-full w-full">Browse Other Events</Button>
                   </Link>
                 </div>
-              ) : !isAuthenticated ? (
+              ) : !isAuthenticated && !shopperAuthenticated ? (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground text-center">Sign in to reserve your spot</p>
-                  <Button onClick={login} className="w-full h-12 rounded-xl">
-                    Sign in to Register
-                  </Button>
+                  <Link href={`/login?redirect=${encodeURIComponent(window.location.pathname)}`}>
+                    <Button className="w-full h-12 rounded-xl">
+                      Sign in to Register
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">

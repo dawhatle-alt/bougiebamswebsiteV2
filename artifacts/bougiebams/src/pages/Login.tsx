@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
+import { supabase } from "@/context/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get("redirect") ?? "/";
@@ -35,6 +38,25 @@ export default function Login() {
       setSubmitting(false);
     } else {
       navigate(redirect);
+    }
+  }
+
+  async function handleForgotPassword(e: React.MouseEvent) {
+    e.preventDefault();
+    if (!email) {
+      setError("Enter your email address above, then click Forgot password.");
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setResetSent(true);
     }
   }
 
@@ -66,14 +88,14 @@ export default function Login() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <a
-                href="https://supabase.com/dashboard"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetLoading}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-60"
               >
-                Forgot password?
-              </a>
+                {resetLoading ? "Sending…" : "Forgot password?"}
+              </button>
             </div>
             <Input
               id="password"
@@ -85,6 +107,12 @@ export default function Login() {
               placeholder="••••••••"
             />
           </div>
+
+          {resetSent && (
+            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              Password reset email sent! Check your inbox.
+            </p>
+          )}
 
           {error && (
             <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{error}</p>

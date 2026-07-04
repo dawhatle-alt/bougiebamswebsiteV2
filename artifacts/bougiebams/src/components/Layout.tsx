@@ -121,7 +121,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     if (!isAuthenticated && !shopperAuthenticated) {
       setIsOpen(false);
-      window.location.href = `${API_BASE}/login?redirect=/`;
+      const currentPath = encodeURIComponent(window.location.pathname);
+      window.location.href = `/login?redirect=${currentPath}`;
       return;
     }
 
