@@ -2,8 +2,8 @@ import { Resend } from "resend";
 import { logger } from "./logger";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL ?? "noreply@bougiebams.com";
-const CONTACT_EMAIL = process.env.CONTACT_EMAIL ?? "hello@bougiebams.com";
+const FROM_EMAIL = process.env.EMAIL_FROM ?? process.env.FROM_EMAIL ?? "noreply@bougiebams.com";
+const CONTACT_EMAIL = process.env.OWNER_EMAIL ?? process.env.CONTACT_EMAIL ?? "hello@bougiebams.com";
 
 function getClient(): Resend | null {
   if (!RESEND_API_KEY) {
@@ -23,6 +23,7 @@ export async function sendContactEmail(opts: {
   if (!client) return;
 
   const { name, email, subject, message } = opts;
+  const safeMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const { error } = await client.emails.send({
     from: FROM_EMAIL,
@@ -34,7 +35,7 @@ export async function sendContactEmail(opts: {
       <p><strong>From:</strong> ${name} &lt;${email}&gt;</p>
       <p><strong>Subject:</strong> ${subject}</p>
       <hr />
-      <p style="white-space:pre-wrap">${message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+      <p style="white-space:pre-wrap">${safeMsg}</p>
     `,
     text: `New contact message from ${name} <${email}>\nSubject: ${subject}\n\n${message}`,
   });

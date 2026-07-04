@@ -27,27 +27,21 @@ router.get("/storage/{*splat}", async (req, res): Promise<void> => {
   if (splat.startsWith("objects/")) {
     try {
       const objectPath = `/${splat}`;
-      const file = await objectStorage.getObjectEntityFile(objectPath);
-      const response = await objectStorage.downloadObject(file);
-      const contentType = response.headers.get("Content-Type") ?? "application/octet-stream";
-      const cacheControl = response.headers.get("Cache-Control") ?? "private, max-age=3600";
-      const contentLength = response.headers.get("Content-Length");
-      res.setHeader("Content-Type", contentType);
-      res.setHeader("Cache-Control", cacheControl);
-      if (contentLength) res.setHeader("Content-Length", contentLength);
-      const arrayBuffer = await response.arrayBuffer();
-      res.end(Buffer.from(arrayBuffer));
+      const { publicUrl } = await objectStorage.getObjectEntityFile(objectPath);
+      // Redirect to Supabase public URL — avoids proxying bandwidth through the API server
+      res.redirect(302, publicUrl);
     } catch (err) {
       if (err instanceof ObjectNotFoundError) {
         res.status(404).json({ error: "File not found" });
       } else {
-        logger.error({ err }, "GCS serve error");
+        logger.error({ err }, "Storage error");
         res.status(500).json({ error: "Storage error" });
       }
     }
     return;
   }
 
+  // Legacy local file serving (uploads/ directory — dev only)
   const filePath = path.resolve(uploadsDir, splat);
   if (!filePath.startsWith(uploadsDir)) {
     res.status(403).json({ error: "Forbidden" });

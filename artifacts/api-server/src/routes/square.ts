@@ -10,6 +10,7 @@ import { getSquareClient, getSquareLocationId, isSandboxMode } from "../lib/squa
 const router: IRouter = Router();
 
 function getOrigin(req: Request): string {
+  if (process.env.PUBLIC_WEB_ORIGIN) return process.env.PUBLIC_WEB_ORIGIN;
   return (
     (req.headers["x-forwarded-proto"] ?? "https") +
     "://" +
@@ -269,10 +270,6 @@ router.post(
         if (referenceId) {
           const registrationId = parseInt(referenceId, 10);
           if (!Number.isNaN(registrationId)) {
-            const eventId = orderRes.order?.lineItems?.[0] ? parseInt(
-              orderRes.order.metadata?.eventId ?? "0", 10
-            ) : 0;
-
             // Look up eventId from the registration row itself
             const [reg] = await db
               .select()

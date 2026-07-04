@@ -19,6 +19,15 @@ const CheckoutBody = z.object({
   discountCode: z.string().optional(),
 });
 
+function getWebOrigin(req: Request): string {
+  if (process.env.PUBLIC_WEB_ORIGIN) return process.env.PUBLIC_WEB_ORIGIN;
+  return (
+    (req.headers["x-forwarded-proto"] ?? "https") +
+    "://" +
+    (req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost")
+  );
+}
+
 router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Promise<void> => {
   const parsed = CheckoutBody.safeParse(req.body);
   if (!parsed.success) {
@@ -35,11 +44,7 @@ router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Pr
   }
 
   try {
-    const origin =
-      (req.headers["x-forwarded-proto"] ?? "https") +
-      "://" +
-      (req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost");
-
+    const origin = getWebOrigin(req);
     const { items, email } = parsed.data;
     const idempotencyKey = `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 

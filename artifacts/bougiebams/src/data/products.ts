@@ -52,8 +52,18 @@ export interface ApiProduct {
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/**
+ * Converts an image path from the DB into a displayable URL.
+ *
+ * - Full URLs (e.g. Supabase public URLs starting with "https://") are returned as-is.
+ * - Internal /objects/... paths are proxied through /api/storage (which redirects to Supabase).
+ * - Relative paths without a leading slash are treated as /objects/ paths for compat.
+ */
 export function productImageUrl(imagePath: string): string {
-  return `${API_BASE}/api/storage${imagePath}`;
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  const normalized = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+  return `${API_BASE}/api/storage${normalized}`;
 }
 
 interface ProductMeta {
@@ -101,6 +111,8 @@ export const productMeta: Record<string, ProductMeta> = {
   acc_napkins:   { images: [productNapkins],          rating: 4.7, reviewCount: 15 },
 };
 
+// DEV-ONLY FALLBACK: in production these are superseded by the live Square catalog
+// fetched from /api/products. Only shown when the API returns no products.
 export const localProducts: Product[] = [
   {
     id: "local_prod_1",

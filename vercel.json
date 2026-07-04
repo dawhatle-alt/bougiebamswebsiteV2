@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @workspace/bougiebams run build",
+  "outputDirectory": "artifacts/bougiebams/dist/public",
+  "functions": {
+    "api/index.ts": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
