@@ -3,7 +3,7 @@ import { logger } from "./lib/logger";
 import { startReminderCron } from "./lib/reminderCron";
 
 // Hard-fail on secrets required for every request
-const hardRequired = ["SUPABASE_JWT_SECRET"] as const;
+const hardRequired = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"] as const;
 for (const key of hardRequired) {
   if (!process.env[key]) {
     throw new Error(
@@ -15,7 +15,7 @@ for (const key of hardRequired) {
 
 // Warn on secrets needed for specific features (server still starts without them)
 const warnIfMissing = [
-  "SUPABASE_SERVICE_ROLE_KEY", // required for image uploads via Supabase Storage
+  "SUPABASE_JWT_SECRET",       // kept for legacy token verification fallback
   "RESEND_API_KEY",            // required for email delivery
   "EMAIL_FROM",                // required for email delivery
   "OWNER_EMAIL",               // required for contact email delivery

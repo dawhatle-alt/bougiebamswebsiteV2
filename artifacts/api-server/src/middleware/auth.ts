@@ -1,6 +1,13 @@
 import { type Request, type Response, type NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { createClient } from "@supabase/supabase-js";
 import { logger } from "../lib/logger";
+
+function getSupabaseAdminClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 export interface ShopperUser {
   sub: string;
@@ -61,28 +68,30 @@ export function requireShopperAuth(
   res: Response,
   next: NextFunction,
 ): void {
-  const jwtSecret = process.env.SUPABASE_JWT_SECRET;
-  if (!jwtSecret) {
-    logger.error("SUPABASE_JWT_SECRET is not set — shopper auth unavailable");
-    res.status(503).json({ error: "Shopper authentication is not configured" });
-    return;
-  }
-
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Missing or invalid Authorization header" });
     return;
   }
-
   const token = authHeader.slice(7);
-  try {
-    const decoded = jwt.verify(token, jwtSecret) as ShopperUser;
-    req.shopperUser = decoded;
-    next();
-  } catch (err) {
-    logger.warn({ err }, "Shopper JWT verification failed");
-    res.status(401).json({ error: "Invalid or expired token" });
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    logger.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — shopper auth unavailable");
+    res.status(503).json({ error: "Shopper authentication is not configured" });
+    return;
   }
+  supabase.auth.getUser(token).then(({ data, error }) => {
+    if (error || !data.user) {
+      logger.warn({ error }, "Shopper JWT verification failed");
+      res.status(401).json({ error: "Invalid or expired token" });
+      return;
+    }
+    req.shopperUser = { sub: data.user.id, email: data.user.email, role: data.user.role };
+    next();
+  }).catch((err) => {
+    logger.warn({ err }, "Shopper auth error");
+    res.status(401).json({ error: "Invalid or expired token" });
+  });
 }
 
 export function injectShopperUser(
@@ -90,17 +99,17 @@ export function injectShopperUser(
   _res: Response,
   next: NextFunction,
 ): void {
-  const jwtSecret = process.env.SUPABASE_JWT_SECRET;
-  if (!jwtSecret) { next(); return; }
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) { next(); return; }
   const token = authHeader.slice(7);
-  try {
-    const decoded = jwt.verify(token, jwtSecret) as ShopperUser;
-    req.shopperUser = decoded;
-  } catch {
-  }
-  next();
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) { next(); return; }
+  supabase.auth.getUser(token).then(({ data }) => {
+    if (data.user) {
+      req.shopperUser = { sub: data.user.id, email: data.user.email, role: data.user.role };
+    }
+    next();
+  }).catch(() => next());
 }
 
 export function requireAnyAuth(
