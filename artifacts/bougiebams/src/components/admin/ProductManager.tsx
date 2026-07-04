@@ -38,6 +38,7 @@ interface ApiProduct {
   price: number;
   category: string;
   inStock: boolean;
+  published: boolean;
   imagePath?: string | null;
 }
 
@@ -94,7 +95,7 @@ export default function ProductManager({ onAuthError }: Props) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_BASE}/api/products`);
+      const res = await fetch(`${API_BASE}/api/admin/products`, { credentials: "include" });
       if (!res.ok) throw new Error("Load failed");
       const data = await res.json() as { products: ApiProduct[] };
       setProducts(data.products ?? []);
@@ -225,6 +226,25 @@ export default function ProductManager({ onAuthError }: Props) {
     }
   }
 
+  async function handlePublishedToggle(p: ApiProduct) {
+    const updated = { ...p, published: !p.published };
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? updated : x)));
+    try {
+      const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(p.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ published: !p.published }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) {
+        setProducts((prev) => prev.map((x) => (x.id === p.id ? p : x)));
+      }
+    } catch {
+      setProducts((prev) => prev.map((x) => (x.id === p.id ? p : x)));
+    }
+  }
+
   async function handleUpload(file: File, sku: string, productId: string) {
     setUploading(sku);
     setUploadError(null);
@@ -343,6 +363,7 @@ export default function ProductManager({ onAuthError }: Props) {
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-center">In Stock</TableHead>
+                <TableHead className="text-center">Visible</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -404,6 +425,21 @@ export default function ProductManager({ onAuthError }: Props) {
                         <span
                           className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
                             p.inStock ? "translate-x-5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <button
+                        onClick={() => void handlePublishedToggle(p)}
+                        className={`w-10 h-5 rounded-full transition-colors relative ${
+                          p.published ? "bg-emerald-500" : "bg-[#D0CCBF]"
+                        }`}
+                        title={p.published ? "Visible on site — click to hide" : "Hidden from site — click to show"}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
+                            p.published ? "translate-x-5" : "translate-x-0.5"
                           }`}
                         />
                       </button>

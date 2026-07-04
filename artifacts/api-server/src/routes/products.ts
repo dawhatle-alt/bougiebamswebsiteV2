@@ -17,31 +17,15 @@ const router: IRouter = Router();
 
 router.get("/products", async (req, res): Promise<void> => {
   const { category } = req.query;
-  const baseQuery = db.select().from(productsTable);
-  const rows = await (
-    category && typeof category === "string"
-      ? baseQuery.where(eq(productsTable.category, category))
-      : baseQuery
-  ).orderBy(productsTable.createdAt);
-  const products = rows.map((r) => ({
-    id: r.id,
-    sku: r.sku,
-    name: r.name,
-    description: r.description,
-    price: Number(r.price),
-    category: r.category,
-    inStock: r.inStock,
-    imagePath: r.imagePath ?? null,
-    featured: r.featured,
-    affiliateUrl: r.affiliateUrl ?? null,
-  }));
-  res.json(ListProductsResponse.parse({ products }));
-});
-
-router.get("/products/featured", async (_req, res): Promise<void> => {
-  const { eq: eqFn } = await import("drizzle-orm");
-  const rows = await db.select().from(productsTable)
-    .where(eqFn(productsTable.featured, true))
+  const conditions = [eq(productsTable.published, true)];
+  if (category && typeof category === "string") {
+    conditions.push(eq(productsTable.category, category));
+  }
+  const { and } = await import("drizzle-orm");
+  const rows = await db
+    .select()
+    .from(productsTable)
+    .where(and(...conditions))
     .orderBy(productsTable.createdAt);
   const products = rows.map((r) => ({
     id: r.id,
@@ -53,6 +37,28 @@ router.get("/products/featured", async (_req, res): Promise<void> => {
     inStock: r.inStock,
     imagePath: r.imagePath ?? null,
     featured: r.featured,
+    published: r.published,
+    affiliateUrl: r.affiliateUrl ?? null,
+  }));
+  res.json(ListProductsResponse.parse({ products }));
+});
+
+router.get("/products/featured", async (_req, res): Promise<void> => {
+  const { eq: eqFn, and: andFn } = await import("drizzle-orm");
+  const rows = await db.select().from(productsTable)
+    .where(andFn(eqFn(productsTable.featured, true), eqFn(productsTable.published, true)))
+    .orderBy(productsTable.createdAt);
+  const products = rows.map((r) => ({
+    id: r.id,
+    sku: r.sku,
+    name: r.name,
+    description: r.description,
+    price: Number(r.price),
+    category: r.category,
+    inStock: r.inStock,
+    imagePath: r.imagePath ?? null,
+    featured: r.featured,
+    published: r.published,
     affiliateUrl: r.affiliateUrl ?? null,
   }));
   res.json(ListProductsResponse.parse({ products }));
@@ -86,9 +92,36 @@ router.get("/products/:id", async (req, res): Promise<void> => {
         category: row.category,
         inStock: row.inStock,
         imagePath: row.imagePath ?? null,
+        featured: row.featured,
+        published: row.published,
+        affiliateUrl: row.affiliateUrl ?? null,
       },
     }),
   );
+});
+
+router.get("/admin/products", requireAdmin, async (req, res): Promise<void> => {
+  const { category } = req.query;
+  const baseQuery = db.select().from(productsTable);
+  const rows = await (
+    category && typeof category === "string"
+      ? baseQuery.where(eq(productsTable.category, category))
+      : baseQuery
+  ).orderBy(productsTable.createdAt);
+  const products = rows.map((r) => ({
+    id: r.id,
+    sku: r.sku,
+    name: r.name,
+    description: r.description,
+    price: Number(r.price),
+    category: r.category,
+    inStock: r.inStock,
+    imagePath: r.imagePath ?? null,
+    featured: r.featured,
+    published: r.published,
+    affiliateUrl: r.affiliateUrl ?? null,
+  }));
+  res.json(ListProductsResponse.parse({ products }));
 });
 
 router.post("/products", requireAdmin, async (req, res): Promise<void> => {
@@ -123,6 +156,9 @@ router.post("/products", requireAdmin, async (req, res): Promise<void> => {
         category: row.category,
         inStock: row.inStock,
         imagePath: row.imagePath ?? null,
+        featured: row.featured,
+        published: row.published,
+        affiliateUrl: row.affiliateUrl ?? null,
       },
     }),
   );
@@ -147,6 +183,7 @@ router.patch("/products/:id", requireAdmin, async (req, res): Promise<void> => {
   if (parsed.data.price !== undefined) updateData.price = String(parsed.data.price);
   if (parsed.data.category !== undefined) updateData.category = parsed.data.category;
   if (parsed.data.inStock !== undefined) updateData.inStock = parsed.data.inStock;
+  if (parsed.data.published !== undefined) updateData.published = parsed.data.published;
 
   const [row] = await db
     .update(productsTable)
