@@ -6,12 +6,66 @@ settings:
 
 catalogs:
   default:
+    '@replit/vite-plugin-cartographer':
+      specifier: ^0.5.21
+      version: 0.5.21
+    '@replit/vite-plugin-dev-banner':
+      specifier: ^0.1.1
+      version: 0.1.2
+    '@replit/vite-plugin-runtime-error-modal':
+      specifier: ^0.0.6
+      version: 0.0.6
+    '@tailwindcss/vite':
+      specifier: ^4.1.14
+      version: 4.3.1
+    '@tanstack/react-query':
+      specifier: ^5.90.21
+      version: 5.101.0
     '@types/node':
       specifier: ^25.3.3
       version: 25.9.4
+    '@types/react':
+      specifier: 19.2.17
+      version: 19.2.17
+    '@types/react-dom':
+      specifier: ^19.2.0
+      version: 19.2.3
+    '@vitejs/plugin-react':
+      specifier: ^5.0.4
+      version: 5.2.0
+    class-variance-authority:
+      specifier: ^0.7.1
+      version: 0.7.1
+    clsx:
+      specifier: ^2.1.1
+      version: 2.1.1
     drizzle-orm:
       specifier: ^0.45.2
       version: 0.45.2
+    framer-motion:
+      specifier: ^12.23.24
+      version: 12.40.0
+    lucide-react:
+      specifier: ^0.545.0
+      version: 0.545.0
+    react:
+      specifier: 19.1.0
+      version: 19.1.0
+    react-dom:
+      specifier: 19.1.0
+      version: 19.1.0
+    tailwind-merge:
+      specifier: ^3.3.1
+      version: 3.6.0
+    tailwindcss:
+      specifier: ^4.1.14
+      version: 4.3.1
+    tsx:
+      specifier: ^4.21.0
+      version: 4.22.4
+    vite:
+      specifier: ^7.3.2
+      version: 7.3.5
     zod:
       specifier: 3.25.76
       version: 3.25.76
@@ -138,7 +192,7 @@ importers:
         version: 2.8.6
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)(postgres@3.4.9)
       express:
         specifier: ^5.2.1
         version: 5.2.1
@@ -596,13 +650,16 @@ importers:
     dependencies:
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)
+        version: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)(postgres@3.4.9)
       drizzle-zod:
         specifier: ^0.8.3
-        version: 0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.22.0))(zod@3.25.76)
+        version: 0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.22.0)(postgres@3.4.9))(zod@3.25.76)
       pg:
         specifier: ^8.22.0
         version: 8.22.0
+      postgres:
+        specifier: ^3.4.7
+        version: 3.4.9
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -2920,6 +2977,10 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
+  postgres@3.4.9:
+    resolution: {integrity: sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw==}
+    engines: {node: '>=12'}
+
   prettier@3.8.4:
     resolution: {integrity: sha512-N2MylSdi48+5N/6S5j+maeHbUSIzzZ5uOcX5Hm4QpV8Dkb1HFjfAKTKX6yNPJQD9AhcT3ifHNB66tWTTJDi11Q==}
     engines: {node: '>=14'}
@@ -5070,16 +5131,15 @@ snapshots:
       esbuild: 0.27.3
       tsx: 4.22.4
 
-  drizzle-orm@0.45.2: {}
-
-  drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.22.0):
+  drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.22.0)(postgres@3.4.9):
     optionalDependencies:
       '@types/pg': 8.20.0
       pg: 8.22.0
+      postgres: 3.4.9
 
-  drizzle-zod@0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.22.0))(zod@3.25.76):
+  drizzle-zod@0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.22.0)(postgres@3.4.9))(zod@3.25.76):
     dependencies:
-      drizzle-orm: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)
+      drizzle-orm: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)(postgres@3.4.9)
       zod: 3.25.76
 
   dunder-proto@1.0.1:
@@ -5811,6 +5871,8 @@ snapshots:
   postgres-interval@1.2.0:
     dependencies:
       xtend: 4.0.2
+
+  postgres@3.4.9: {}
 
   prettier@3.8.4: {}
 

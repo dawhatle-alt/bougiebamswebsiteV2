@@ -1,26 +1,22 @@
-﻿import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+﻿import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
-
-const { Pool } = pg;
 
 const connectionString =
   process.env.DATABASE_URL ?? process.env.SUPABASE_DATABASE_URL;
 
 if (!connectionString) {
-  throw new Error(
-    "DATABASE_URL or SUPABASE_DATABASE_URL must be set.",
-  );
+  throw new Error("DATABASE_URL or SUPABASE_DATABASE_URL must be set.");
 }
 
-export const pool = new Pool({
-  connectionString,
-  ssl: { rejectUnauthorized: false },
+const client = postgres(connectionString, {
+  ssl: "require",
+  prepare: false,
   max: 2,
-  idleTimeoutMillis: 10_000,
-  connectionTimeoutMillis: 5_000,
+  idle_timeout: 10,
+  connect_timeout: 5,
 });
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(client, { schema });
 
 export * from "./schema";
