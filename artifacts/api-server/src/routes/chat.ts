@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { getOpenAIClient } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { productsTable, eventsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
@@ -190,7 +190,7 @@ router.post("/chat", async (req, res): Promise<void> => {
   try {
     const systemPrompt = await buildSystemPrompt();
 
-    const stream = await openai.chat.completions.create({
+    const stream = await getOpenAIClient().chat.completions.create({
       model: "gpt-5-mini",
       max_completion_tokens: 1024,
       messages: [

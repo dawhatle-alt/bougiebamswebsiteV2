@@ -1,18 +1,32 @@
 import OpenAI from "openai";
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?",
-  );
+let _openai: OpenAI | null = null;
+
+export function getOpenAIClient(): OpenAI {
+  if (_openai) return _openai;
+
+  const apiKey =
+    process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
+  const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+
+  if (!apiKey) {
+    throw new Error(
+      "OpenAI is not configured. Set OPENAI_API_KEY (or provision the OpenAI AI integration in Replit).",
+    );
+  }
+
+  _openai = new OpenAI({
+    apiKey,
+    ...(baseURL ? { baseURL } : {}),
+  });
+
+  return _openai;
 }
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_API_KEY must be set. Did you forget to provision the OpenAI AI integration?",
-  );
-}
-
-export const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+export const openai = new Proxy({} as OpenAI, {
+  get(_target, prop) {
+    return (getOpenAIClient() as unknown as Record<string | symbol, unknown>)[
+      prop
+    ];
+  },
 });
