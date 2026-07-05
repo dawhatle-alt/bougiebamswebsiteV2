@@ -28,6 +28,7 @@ import Contact from "@/pages/Contact";
 import Admin from "@/pages/Admin";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import ResetPassword from "@/pages/ResetPassword";
 import Account from "@/pages/Account";
 import NotFound from "@/pages/not-found";
 
@@ -94,6 +95,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route component={MarketingRouter} />
     </Switch>
   );
