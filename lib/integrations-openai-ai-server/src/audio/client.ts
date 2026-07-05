@@ -1,4 +1,4 @@
-import OpenAI, { toFile } from "openai";
+﻿import OpenAI, { toFile } from "openai";
 import { Buffer } from "node:buffer";
 import { spawn } from "child_process";
 import { writeFile, unlink, readFile } from "fs/promises";
@@ -68,81 +68,9 @@ export async function voiceChat(
   return { transcript, audioResponse: Buffer.from(audioData, "base64") };
 }
 
-export async function voiceChatStream(
-  audioBuffer: Buffer,
-  voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "alloy",
-  inputFormat: "wav" | "mp3" = "wav"
-): Promise<AsyncIterable<{ type: "transcript" | "audio"; data: string }>> {
-  const openai = getOpenAIClient();
-  const audioBase64 = audioBuffer.toString("base64");
-  const stream = await openai.chat.completions.create({
-    model: "gpt-audio", modalities: ["text", "audio"], audio: { voice, format: "pcm16" },
-    messages: [{ role: "user", content: [{ type: "input_audio", input_audio: { data: audioBase64, format: inputFormat } }] }],
-    stream: true,
-  });
-  return (async function* () {
-    for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta as any;
-      if (!delta) continue;
-      if (delta?.audio?.transcript) yield { type: "transcript", data: delta.audio.transcript };
-      if (delta?.audio?.data) yield { type: "audio", data: delta.audio.data };
-    }
-  })();
-}
-
-export async function textToSpeech(
-  text: string,
-  voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "alloy",
-  format: "wav" | "mp3" | "flac" | "opus" | "pcm16" = "wav"
-): Promise<Buffer> {
-  const openai = getOpenAIClient();
-  const response = await openai.chat.completions.create({
-    model: "gpt-audio", modalities: ["text", "audio"], audio: { voice, format },
-    messages: [
-      { role: "system", content: "You are an assistant that performs text-to-speech." },
-      { role: "user", content: `Repeat the following text verbatim: ${text}` },
-    ],
-  });
-  const audioData = (response.choices[0]?.message as any)?.audio?.data ?? "";
-  return Buffer.from(audioData, "base64");
-}
-
-export async function textToSpeechStream(
-  text: string,
-  voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "alloy"
-): Promise<AsyncIterable<string>> {
-  const openai = getOpenAIClient();
-  const stream = await openai.chat.completions.create({
-    model: "gpt-audio", modalities: ["text", "audio"], audio: { voice, format: "pcm16" },
-    messages: [
-      { role: "system", content: "You are an assistant that performs text-to-speech." },
-      { role: "user", content: `Repeat the following text verbatim: ${text}` },
-    ],
-    stream: true,
-  });
-  return (async function* () {
-    for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta as any;
-      if (!delta) continue;
-      if (delta?.audio?.data) yield delta.audio.data;
-    }
-  })();
-}
-
 export async function speechToText(audioBuffer: Buffer, format: "wav" | "mp3" | "webm" = "wav"): Promise<string> {
   const openai = getOpenAIClient();
   const file = await toFile(audioBuffer, `audio.${format}`);
   const response = await openai.audio.transcriptions.create({ file, model: "gpt-4o-mini-transcribe" });
   return response.text;
-}
-
-export async function speechToTextStream(audioBuffer: Buffer, format: "wav" | "mp3" | "webm" = "wav"): Promise<AsyncIterable<string>> {
-  const openai = getOpenAIClient();
-  const file = await toFile(audioBuffer, `audio.${format}`);
-  const stream = await openai.audio.transcriptions.create({ file, model: "gpt-4o-mini-transcribe", stream: true });
-  return (async function* () {
-    for await (const event of stream) {
-      if (event.type === "transcript.text.delta") yield event.delta;
-    }
-  })();
 }
