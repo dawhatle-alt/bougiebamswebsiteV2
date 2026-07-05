@@ -4,24 +4,23 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-let poolConfig: pg.PoolConfig;
+const connectionString =
+  process.env.DATABASE_URL ?? process.env.SUPABASE_DATABASE_URL;
 
-if (process.env.SUPABASE_DATABASE_URL) {
-  poolConfig = {
-    host: "aws-1-us-east-2.pooler.supabase.com",
-    port: 5432,
-    user: "postgres.gsnljjezxlfjlxtdtrpu",
-    password: process.env.SUPABASE_DB_PASSWORD,
-    database: "postgres",
-    ssl: { rejectUnauthorized: false },
-  };
-} else if (process.env.DATABASE_URL) {
-  poolConfig = { connectionString: process.env.DATABASE_URL };
-} else {
-  throw new Error("SUPABASE_DATABASE_URL must be set.");
+if (!connectionString) {
+  throw new Error(
+    "DATABASE_URL or SUPABASE_DATABASE_URL must be set.",
+  );
 }
 
-export const pool = new Pool(poolConfig);
+export const pool = new Pool({
+  connectionString,
+  ssl: { rejectUnauthorized: false },
+  max: 2,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 5_000,
+});
+
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
