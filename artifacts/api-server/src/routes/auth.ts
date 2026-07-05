@@ -1,5 +1,6 @@
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
+import { eq } from "drizzle-orm";
 import {
   GetCurrentAuthUserResponse,
   ExchangeMobileAuthorizationCodeBody,
@@ -131,7 +132,7 @@ router.get("/callback", async (req: Request, res: Response) => {
   const expectedState = req.cookies?.state;
 
   if (!codeVerifier || !expectedState) {
-    logger.error({ hasCookies: !!req.cookies, keys: Object.keys(req.cookies ?? {}) }, "OAuth callback missing OIDC cookies — possible SameSite/cookie issue");
+    logger.error({ hasCookies: !!req.cookies, keys: Object.keys(req.cookies ?? {}) }, "OAuth callback missing OIDC cookies â€” possible SameSite/cookie issue");
     res.redirect("/?auth_error=session");
     return;
   }
@@ -261,6 +262,60 @@ router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
   const sid = getSessionId(req);
   if (sid) await deleteSession(sid);
   res.json(LogoutMobileSessionResponse.parse({ success: true }));
+});
+
+router.post("/admin-login", async (req: Request, res: Response) => {
+  const adminToken = process.env.ADMIN_TOKEN;
+  if (!adminToken) {
+    res.status(400).json({ error: "ADMIN_TOKEN not configured on this server", useOidc: true });
+    return;
+  }
+
+  const { token } = req.body as { token?: string };
+  if (!token || token !== adminToken) {
+    res.status(401).json({ error: "Invalid admin token" });
+    return;
+  }
+
+  const adminUserIds = (process.env.ADMIN_USER_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!adminUserIds.length) {
+    res.status(500).json({ error: "ADMIN_USER_IDS not configured" });
+    return;
+  }
+
+  const adminId = adminUserIds[0];
+
+  await db
+    .insert(usersTable)
+    .values({ id: adminId, email: null, firstName: "Admin", lastName: null, profileImageUrl: null })
+    .onConflictDoNothing();
+
+  const [dbUser] = await db.select().from(usersTable).where(eq(usersTable.id, adminId));
+  if (!dbUser) {
+    res.status(500).json({ error: "Could not resolve admin user" });
+    return;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const sessionData: SessionData = {
+    user: {
+      id: dbUser.id,
+      email: dbUser.email,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      profileImageUrl: dbUser.profileImageUrl,
+    },
+    access_token: "admin-token-login",
+    expires_at: now + Math.floor(SESSION_TTL / 1000),
+  };
+
+  const sid = await createSession(sessionData);
+  setSessionCookie(res, sid);
+  res.json({ success: true });
 });
 
 export default router;

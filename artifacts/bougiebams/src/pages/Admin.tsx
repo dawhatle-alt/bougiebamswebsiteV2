@@ -102,7 +102,7 @@ function formatDate(value: string) {
 }
 
 function sourceLabel(source: string | null) {
-  if (!source) return "—";
+  if (!source) return "â€”";
   return source
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -161,6 +161,92 @@ const VIEW_LABELS: Record<AdminView, string> = {
   favorites: "Favorites",
   gallery: "Event Gallery",
 };
+
+function AdminLoginScreen({ apiBase }: { apiBase: string }) {
+  const [token, setToken] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleTokenLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/admin-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token }),
+      });
+      const data = (await res.json()) as { success?: boolean; error?: string; useOidc?: boolean };
+      if (data.useOidc) {
+        window.location.href = `${apiBase}/api/login?returnTo=/admin`;
+        return;
+      }
+      if (!res.ok) {
+        setError(data.error ?? "Invalid token");
+        setLoading(false);
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setError("Network error â€” please try again");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#1E2A5A] px-4">
+      <div className="w-full max-w-sm bg-[#FAF7F0] rounded-md border border-[#E2DBCD] p-8 shadow-xl">
+        <div className="flex flex-col items-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#1E2A5A] mb-4">
+            <Mail className="w-5 h-5 text-[#D4AF37]" />
+          </div>
+          <h1
+            className="text-2xl text-[#1E2A5A] mb-1"
+            style={{ fontFamily: "'Cormorant Garamond', serif" }}
+          >
+            BougieBams Admin
+          </h1>
+          <p className="text-sm text-[#5A6178] text-center">
+            Enter your admin token to continue.
+          </p>
+        </div>
+
+        <form onSubmit={handleTokenLogin} className="space-y-3">
+          <input
+            type="password"
+            placeholder="Admin token"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            className="w-full px-3 py-2 border border-[#E2DBCD] rounded text-sm bg-white text-[#1E2A5A] placeholder-[#B0A99A] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+            autoComplete="current-password"
+            required
+          />
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2 inline" /> : null}
+            Sign in
+          </Button>
+        </form>
+
+        <div className="mt-4 pt-4 border-t border-[#E2DBCD] text-center">
+          <button
+            type="button"
+            className="text-xs text-[#5A6178] hover:text-[#1E2A5A] underline underline-offset-2"
+            onClick={() => { window.location.href = `${apiBase}/api/login?returnTo=/admin`; }}
+          >
+            Sign in with Replit instead
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Admin() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -244,32 +330,7 @@ export default function Admin() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1E2A5A] px-4">
-        <div className="w-full max-w-sm bg-[#FAF7F0] rounded-md border border-[#E2DBCD] p-8 shadow-xl text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#1E2A5A] mb-4">
-            <Mail className="w-5 h-5 text-[#D4AF37]" />
-          </div>
-          <h1
-            className="text-2xl text-[#1E2A5A] mb-2"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            BougieBams Admin
-          </h1>
-          <p className="text-sm text-[#5A6178] mb-6">
-            Sign in with your Replit account to access the admin panel.
-          </p>
-          <Button
-            className="w-full bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
-            onClick={() => {
-              window.location.href = `${API_BASE}/api/login?returnTo=/admin`;
-            }}
-          >
-            Sign in with Replit
-          </Button>
-        </div>
-      </div>
-    );
+    return <AdminLoginScreen apiBase={API_BASE} />;
   }
 
   const sidebar = (
@@ -441,7 +502,7 @@ export default function Admin() {
 
               <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
                 {loading && subscribers.length === 0 ? (
-                  <div className="py-16 text-center text-[#5A6178]">Loading…</div>
+                  <div className="py-16 text-center text-[#5A6178]">Loadingâ€¦</div>
                 ) : subscribers.length === 0 ? (
                   <div className="py-16 text-center text-[#5A6178]">
                     No subscribers yet. They'll appear here as people sign up.
@@ -466,7 +527,7 @@ export default function Admin() {
                             {sourceLabel(s.source)}
                           </TableCell>
                           <TableCell className="text-[#5A6178]">
-                            {s.discountCode ?? "—"}
+                            {s.discountCode ?? "â€”"}
                           </TableCell>
                           <TableCell className="text-right text-[#5A6178]">
                             {formatDate(s.createdAt)}
