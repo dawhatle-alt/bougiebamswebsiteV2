@@ -1,7 +1,31 @@
 const CT = "America/Chicago";
 
+// A bare calendar date ("YYYY-MM-DD") carries no time or zone. `new Date()` parses
+// it as UTC midnight, which rolls back to the previous day when rendered in CT
+// (UTC-5/-6) — the classic off-by-one. Anchoring it at noon UTC keeps it on the
+// same calendar day in any zone within ±11h of UTC. Full timestamps pass through
+// unchanged so the time formatters still convert instants correctly.
+function toDate(date: Date | string): Date {
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return new Date(`${date}T12:00:00Z`);
+  }
+  return new Date(date);
+}
+
+// Parse a bare "YYYY-MM-DD" into a *local* calendar date (local midnight) so that
+// local-time libraries like date-fns (format, isSameDay) render the exact day
+// stored, with no UTC-midnight off-by-one. Use this for local date-math/display;
+// use the CT formatters above when you need Central Time output.
+export function parseCalendarDate(date: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  return new Date(date);
+}
+
 export function formatDateCT(date: Date | string): string {
-  return new Date(date).toLocaleDateString("en-US", {
+  return toDate(date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -10,7 +34,7 @@ export function formatDateCT(date: Date | string): string {
 }
 
 export function formatDateShortCT(date: Date | string): string {
-  return new Date(date).toLocaleDateString("en-US", {
+  return toDate(date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -19,7 +43,7 @@ export function formatDateShortCT(date: Date | string): string {
 }
 
 export function formatDateFullCT(date: Date | string): string {
-  return new Date(date).toLocaleDateString("en-US", {
+  return toDate(date).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -29,7 +53,7 @@ export function formatDateFullCT(date: Date | string): string {
 }
 
 export function formatTimeCT(date: Date | string): string {
-  return new Date(date).toLocaleTimeString("en-US", {
+  return toDate(date).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,

@@ -11,7 +11,7 @@ import {
   subMonths,
   format,
 } from "date-fns";
-import { formatDateShortCT } from "@/lib/dateUtils";
+import { formatDateShortCT, parseCalendarDate } from "@/lib/dateUtils";
 import {
   Calendar,
   Users,
@@ -50,7 +50,7 @@ function getImageUrl(event: ApiEvent): string | null {
 }
 
 function DateStamp({ dateStr }: { dateStr: string }) {
-  const d = new Date(dateStr);
+  const d = parseCalendarDate(dateStr);
   const day = format(d, "d");
   const mon = format(d, "MMM").toUpperCase();
   return (
@@ -78,7 +78,7 @@ function CalendarView({ events }: { events: ApiEvent[] }) {
   const paddedDays: (Date | null)[] = [...Array(startDow).fill(null), ...days];
 
   const eventsOnDay = (day: Date) =>
-    events.filter((e) => isSameDay(new Date(e.date), day));
+    events.filter((e) => isSameDay(parseCalendarDate(e.date), day));
 
   return (
     <div className="rounded-2xl border border-[#E2DBCD] shadow-sm overflow-hidden bg-white">

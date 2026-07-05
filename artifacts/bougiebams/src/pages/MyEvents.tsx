@@ -2,7 +2,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { formatDateCT } from "@/lib/dateUtils";
+import { formatDateCT, parseCalendarDate } from "@/lib/dateUtils";
 import { Calendar, MapPin, LogIn, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -121,11 +121,11 @@ export default function MyEvents() {
   const now = new Date();
   const upcoming = registrations.filter(r => {
     const ev = eventsById.get(r.eventId);
-    return ev ? new Date(ev.date) >= now : true;
+    return ev ? parseCalendarDate(ev.date) >= now : true;
   });
   const past = registrations.filter(r => {
     const ev = eventsById.get(r.eventId);
-    return ev ? new Date(ev.date) < now : false;
+    return ev ? parseCalendarDate(ev.date) < now : false;
   });
 
   return (
