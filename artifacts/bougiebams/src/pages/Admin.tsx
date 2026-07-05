@@ -180,7 +180,10 @@ function AdminLoginScreen({ apiBase }: { apiBase: string }) {
       });
       const data = (await res.json()) as { success?: boolean; error?: string; useOidc?: boolean };
       if (data.useOidc) {
-        window.location.href = `${apiBase}/api/login?returnTo=/admin`;
+        setError(
+          "ADMIN_TOKEN is not configured on the server. Set the ADMIN_TOKEN and ADMIN_USER_IDS environment variables and redeploy.",
+        );
+        setLoading(false);
         return;
       }
       if (!res.ok) {
@@ -234,15 +237,6 @@ function AdminLoginScreen({ apiBase }: { apiBase: string }) {
           </Button>
         </form>
 
-        <div className="mt-4 pt-4 border-t border-[#E2DBCD] text-center">
-          <button
-            type="button"
-            className="text-xs text-[#5A6178] hover:text-[#1E2A5A] underline underline-offset-2"
-            onClick={() => { window.location.href = `${apiBase}/api/login?returnTo=/admin`; }}
-          >
-            Sign in with Replit instead
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -257,8 +251,16 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
 
-  const handleAuthError = useCallback(() => {
-    window.location.href = `${API_BASE}/api/login?returnTo=/admin`;
+  const handleAuthError = useCallback((status?: number) => {
+    if (status === 401) {
+      // Session expired or missing — reload so the token login screen shows.
+      window.location.href = "/admin";
+      return;
+    }
+    // 403 (or unknown): signed in but unauthorized, or the session became invalid.
+    setLoadError(
+      "Your admin session is no longer valid or this account isn't authorized. Sign out and back in, and make sure ADMIN_USER_IDS on the server includes your user ID.",
+    );
   }, []);
 
   const loadSubscribers = useCallback(async () => {
@@ -269,7 +271,7 @@ export default function Admin() {
         credentials: "include",
       });
       if (res.status === 401 || res.status === 403) {
-        handleAuthError();
+        handleAuthError(res.status);
         return;
       }
       if (!res.ok) throw new Error("Request failed");

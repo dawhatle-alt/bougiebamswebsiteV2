@@ -8,6 +8,7 @@ import {
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
+import { logger } from "../lib/logger";
 import {
   clearSession,
   getOidcConfig,
@@ -96,6 +97,11 @@ router.get("/auth/me", (req: Request, res: Response) => {
 });
 
 router.get("/login", async (req: Request, res: Response) => {
+  if (!process.env.REPL_ID) {
+    logger.warn("GET /login called but REPL_ID is not set — Replit OIDC is unavailable on this deployment");
+    res.redirect("/admin?auth_error=oidc_unavailable");
+    return;
+  }
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
   const returnTo = getSafeReturnTo(req.query.returnTo);
@@ -124,6 +130,10 @@ router.get("/login", async (req: Request, res: Response) => {
 });
 
 router.get("/callback", async (req: Request, res: Response) => {
+  if (!process.env.REPL_ID) {
+    res.redirect("/admin?auth_error=oidc_unavailable");
+    return;
+  }
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
@@ -191,18 +201,9 @@ router.get("/callback", async (req: Request, res: Response) => {
 });
 
 router.get("/logout", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const origin = getOrigin(req);
-
   const sid = getSessionId(req);
   await clearSession(res, sid);
-
-  const endSessionUrl = oidc.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
-    post_logout_redirect_uri: origin,
-  });
-
-  res.redirect(endSessionUrl.href);
+  res.redirect("/");
 });
 
 router.post("/mobile-auth/token-exchange", async (req: Request, res: Response) => {
