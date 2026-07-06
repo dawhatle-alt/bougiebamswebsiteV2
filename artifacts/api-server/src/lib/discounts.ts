@@ -1,4 +1,4 @@
-import { eq, and, sql, isNotNull } from "drizzle-orm";
+import { eq, and, sql, isNotNull, desc } from "drizzle-orm";
 import { db, discountCodesTable, subscribersTable, discountRedemptionsTable } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -126,6 +126,25 @@ export async function recordPendingRedemption(code: string, email: string, order
       // Never re-point a redemption that already consumed the code.
       setWhere: sql`${discountRedemptionsTable.paidAt} IS NULL`,
     });
+}
+
+/** All recorded redemptions, newest first — for the admin view. */
+export async function listRedemptions() {
+  await ensureRedemptionsTable();
+  return db.select().from(discountRedemptionsTable).orderBy(desc(discountRedemptionsTable.createdAt));
+}
+
+/**
+ * Removes a redemption record, reinstating the code for that email (used for
+ * end-to-end testing and customer-service resets). Returns false if not found.
+ */
+export async function deleteRedemption(id: number): Promise<boolean> {
+  await ensureRedemptionsTable();
+  const [row] = await db
+    .delete(discountRedemptionsTable)
+    .where(eq(discountRedemptionsTable.id, id))
+    .returning({ id: discountRedemptionsTable.id });
+  return !!row;
 }
 
 /** Stamps the redemption tied to this order as consumed. Safe no-op otherwise. */

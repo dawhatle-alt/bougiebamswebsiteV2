@@ -20,6 +20,7 @@ import { requireAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { listOrders, syncOrdersFromSquare } from "../lib/orders";
 import { sendCheckinReportEmail } from "../lib/email";
+import { listRedemptions, deleteRedemption } from "../lib/discounts";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 
 const router: IRouter = Router();
@@ -930,6 +931,46 @@ router.put("/admin/discount-codes/:id", requireAdmin, async (req, res): Promise<
     } else {
       res.status(500).json({ error: "Failed to update discount code" });
     }
+  }
+});
+
+// Redemptions: who has used which code. Deleting one reinstates the code for
+// that email (testing / customer-service resets).
+router.get("/admin/discount-redemptions", requireAdmin, async (_req, res): Promise<void> => {
+  try {
+    const rows = await listRedemptions();
+    res.json({
+      redemptions: rows.map((r) => ({
+        id: r.id,
+        code: r.code,
+        email: r.email,
+        orderId: r.orderId ?? null,
+        paidAt: r.paidAt ? r.paidAt.toISOString() : null,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to list discount redemptions");
+    res.status(500).json({ error: "Could not load redemptions." });
+  }
+});
+
+router.delete("/admin/discount-redemptions/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    const removed = await deleteRedemption(id);
+    if (!removed) {
+      res.status(404).json({ error: "Redemption not found" });
+      return;
+    }
+    res.sendStatus(204);
+  } catch (err) {
+    logger.error({ err, id }, "Failed to delete discount redemption");
+    res.status(500).json({ error: "Could not reset the redemption." });
   }
 });
 

@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, RefreshCw, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Check, X, RotateCcw, Search, Loader2 } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -19,6 +19,15 @@ interface DiscountCode {
   appliesTo: string;
   description: string | null;
   active: boolean;
+  createdAt: string;
+}
+
+interface Redemption {
+  id: number;
+  code: string;
+  email: string;
+  orderId: string | null;
+  paidAt: string | null;
   createdAt: string;
 }
 
@@ -43,6 +52,44 @@ export default function DiscountCodesManager({ onAuthError }: Props) {
   const [form, setForm] = useState({ ...BLANK });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [redemptions, setRedemptions] = useState<Redemption[]>([]);
+  const [redemptionsError, setRedemptionsError] = useState("");
+  const [redemptionQuery, setRedemptionQuery] = useState("");
+  const [resettingId, setResettingId] = useState<number | null>(null);
+
+  const loadRedemptions = useCallback(async () => {
+    setRedemptionsError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/discount-redemptions`, { credentials: "include" });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+      const data = (await res.json()) as { redemptions: Redemption[] };
+      setRedemptions(data.redemptions ?? []);
+    } catch {
+      setRedemptionsError("Could not load code usage.");
+    }
+  }, [onAuthError]);
+
+  useEffect(() => { void loadRedemptions(); }, [loadRedemptions]);
+
+  async function handleResetRedemption(r: Redemption) {
+    if (!window.confirm(`Reset ${r.code} for ${r.email}? They'll be able to use the code again.`)) return;
+    setResettingId(r.id);
+    setRedemptionsError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/discount-redemptions/${r.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+      setRedemptions((prev) => prev.filter((x) => x.id !== r.id));
+    } catch {
+      setRedemptionsError("Could not reset the redemption. Please try again.");
+    } finally {
+      setResettingId(null);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -343,6 +390,101 @@ export default function DiscountCodesManager({ onAuthError }: Props) {
             </TableBody>
           </Table>
         )}
+      </div>
+
+      {/* Code usage / redemptions */}
+      <div className="mt-10">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+          <div>
+            <h3 className="text-sm font-medium text-[#1E2A5A] uppercase tracking-wider">Code Usage</h3>
+            <p className="text-xs text-[#9A8F7E] mt-0.5">
+              Each row is a code used by an email. Reset one to let that email use the code again (e.g. for testing).
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9A8F7E]" />
+              <input
+                value={redemptionQuery}
+                onChange={(e) => setRedemptionQuery(e.target.value)}
+                placeholder="Search email or code…"
+                className="h-8 pl-8 pr-3 text-sm rounded-md border border-[#E2DBCD] bg-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 w-52"
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={() => void loadRedemptions()}>
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {redemptionsError && (
+          <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+            {redemptionsError}
+          </div>
+        )}
+
+        <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
+          {(() => {
+            const q = redemptionQuery.trim().toLowerCase();
+            const visible = q
+              ? redemptions.filter((r) => r.email.toLowerCase().includes(q) || r.code.toLowerCase().includes(q))
+              : redemptions;
+            if (visible.length === 0) {
+              return (
+                <div className="py-10 text-center text-sm text-[#9A8F7E]">
+                  {redemptions.length === 0
+                    ? "No codes have been used yet."
+                    : "No usage matches your search."}
+                </div>
+              );
+            }
+            return (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Reset</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visible.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-mono text-sm text-[#1E2A5A]">{r.code}</TableCell>
+                      <TableCell className="text-sm text-[#5A6178]">{r.email}</TableCell>
+                      <TableCell>
+                        {r.paidAt ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                            Used {new Date(r.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                            Checkout started
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void handleResetRedemption(r)}
+                          disabled={resettingId === r.id}
+                          className="h-8 px-2 text-[#5A6178] hover:text-[#1E2A5A]"
+                          title={`Allow ${r.email} to use ${r.code} again`}
+                        >
+                          {resettingId === r.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <RotateCcw className="w-3.5 h-3.5" />}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );
