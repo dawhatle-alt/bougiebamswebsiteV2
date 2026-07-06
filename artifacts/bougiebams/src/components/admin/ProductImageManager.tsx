@@ -84,7 +84,6 @@ export default function ProductImageManager({ onAuthError }: Props) {
         method: "PUT",
         headers: { "Content-Type": file.type || "image/jpeg" },
         body: file,
-        credentials: "include",
       });
       if (!putRes.ok) throw new Error("Upload failed — please try again.");
 

@@ -133,7 +133,6 @@ export default function BlogManager({ onAuthError }: BlogManagerProps) {
         method: "PUT",
         body: file,
         headers: { "Content-Type": file.type || "application/octet-stream" },
-        credentials: "include",
       });
       if (!put.ok) throw new Error("PUT failed");
       setForm((prev) => (prev ? { ...prev, imagePath: objectPath } : prev));

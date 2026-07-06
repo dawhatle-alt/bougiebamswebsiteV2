@@ -60,7 +60,6 @@ export default function HeroImagesManager({ onAuthError }: Props) {
           method: "PUT",
           headers: { "Content-Type": file.type || "image/jpeg" },
           body: file,
-          credentials: "include",
         });
         if (!putRes.ok) throw new Error("Upload failed.");
 
