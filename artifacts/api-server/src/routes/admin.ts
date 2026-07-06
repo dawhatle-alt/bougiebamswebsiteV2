@@ -73,6 +73,47 @@ async function readChatbotEnabled(): Promise<boolean> {
   return val == null ? true : val === "true";
 }
 
+interface CuratedItem {
+  title: string;
+  imagePath: string;
+  linkPath: string;
+}
+
+async function readCuratedCollections(): Promise<CuratedItem[]> {
+  await ensureSettingsTable();
+  const rows = await db
+    .select()
+    .from(siteSettingsTable)
+    .where(eq(siteSettingsTable.key, "curated_collections"));
+  const raw = rows[0]?.value;
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((x) => {
+      if (!x || typeof x !== "object") return [];
+      const o = x as Record<string, unknown>;
+      return [{
+        title: typeof o.title === "string" ? o.title : "",
+        imagePath: typeof o.imagePath === "string" ? o.imagePath : "",
+        linkPath: typeof o.linkPath === "string" ? o.linkPath : "",
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+// Resolve stored objectPaths to servable URLs (same convention as the gallery).
+function curatedToApi(items: CuratedItem[]) {
+  return items.map((i) => ({
+    title: i.title,
+    imagePath: i.imagePath,
+    imageUrl: i.imagePath ? `/api/storage${i.imagePath}` : "",
+    linkPath: i.linkPath,
+  }));
+}
+
 async function writeSetting(key: string, value: string): Promise<void> {
   await ensureSettingsTable();
   await db
@@ -461,6 +502,52 @@ router.put("/admin/chatbot", requireAdmin, async (req, res): Promise<void> => {
   } catch (err) {
     logger.error({ err }, "Failed to update chatbot setting");
     res.status(500).json({ error: "Could not save the chatbot setting." });
+  }
+});
+
+// Public: the "Curated Collections" cards on the homepage.
+router.get("/curated-collections", async (_req, res): Promise<void> => {
+  try {
+    res.json({ items: curatedToApi(await readCuratedCollections()) });
+  } catch (err) {
+    logger.error({ err }, "Failed to read curated collections");
+    res.json({ items: [] });
+  }
+});
+
+router.put("/admin/curated-collections", requireAdmin, async (req, res): Promise<void> => {
+  const body = req.body as { items?: unknown };
+  if (!Array.isArray(body.items)) {
+    res.status(400).json({ error: "items array is required" });
+    return;
+  }
+  if (body.items.length > 12) {
+    res.status(400).json({ error: "Too many collections (maximum 12)." });
+    return;
+  }
+  const items: CuratedItem[] = [];
+  for (const raw of body.items) {
+    if (!raw || typeof raw !== "object") {
+      res.status(400).json({ error: "Each item must be an object." });
+      return;
+    }
+    const o = raw as Record<string, unknown>;
+    if (typeof o.title !== "string" || typeof o.imagePath !== "string" || typeof o.linkPath !== "string") {
+      res.status(400).json({ error: "Each item needs title, imagePath and linkPath." });
+      return;
+    }
+    items.push({
+      title: o.title.slice(0, 120),
+      imagePath: o.imagePath.slice(0, 300),
+      linkPath: o.linkPath.slice(0, 300),
+    });
+  }
+  try {
+    await writeSetting("curated_collections", JSON.stringify(items));
+    res.json({ items: curatedToApi(items) });
+  } catch (err) {
+    logger.error({ err }, "Failed to save curated collections");
+    res.status(500).json({ error: "Could not save the collections." });
   }
 });
 

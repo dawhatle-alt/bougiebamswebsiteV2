@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
@@ -36,6 +36,33 @@ export default function Home() {
   }, [toast]);
 
   const bestsellers = products.filter(p => p.isBestseller).slice(0, 4);
+
+  // Curated Collections cards: admin-managed via /api/curated-collections, with
+  // the built-in set as the fallback when none are configured.
+  const defaultCollections = [
+    { title: "The Jade Collection", img: images.productJade, path: "/shop?category=Complete+Sets" },
+    { title: "The Rose Gold Set", img: images.productRosegold, path: "/shop?category=Complete+Sets" },
+    { title: "Accessories & Extras", img: images.heroTile3, path: "/shop?category=Tiles+%26+Accessories" },
+  ];
+  const [curated, setCurated] = useState<{ title: string; img: string; path: string }[] | null>(null);
+
+  useEffect(() => {
+    const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
+    let active = true;
+    fetch(`${base}/api/curated-collections`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data?.items) return;
+        const mapped = (data.items as { title: string; imageUrl: string; linkPath: string }[])
+          .filter((i) => i.imageUrl)
+          .map((i) => ({ title: i.title, img: i.imageUrl, path: i.linkPath || "/shop" }));
+        if (mapped.length > 0) setCurated(mapped);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const collections = curated ?? defaultCollections;
 
   const testimonials = [
     {
@@ -123,11 +150,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { title: "The Jade Collection", img: images.productJade, path: "/shop?category=Complete+Sets" },
-              { title: "The Rose Gold Set", img: images.productRosegold, path: "/shop?category=Complete+Sets" },
-              { title: "Accessories & Extras", img: images.heroTile3, path: "/shop?category=Tiles+%26+Accessories" }
-            ].map((collection, i) => (
+            {collections.map((collection, i) => (
               <motion.div 
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
