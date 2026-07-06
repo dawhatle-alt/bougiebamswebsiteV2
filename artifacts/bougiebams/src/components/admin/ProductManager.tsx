@@ -417,14 +417,14 @@ export default function ProductManager({ onAuthError }: Props) {
                     <TableCell className="text-center">
                       <button
                         onClick={() => void handleInStockToggle(p)}
-                        className={`w-10 h-5 rounded-full transition-colors relative ${
+                        className={`relative inline-flex items-center px-0.5 w-10 h-5 rounded-full transition-colors ${
                           p.inStock ? "bg-[#1E2A5A]" : "bg-[#D0CCBF]"
                         }`}
                         title={p.inStock ? "In stock — click to mark out of stock" : "Out of stock — click to mark in stock"}
                       >
                         <span
-                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
-                            p.inStock ? "translate-x-5" : "translate-x-0.5"
+                          className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
+                            p.inStock ? "translate-x-5" : "translate-x-0"
                           }`}
                         />
                       </button>
@@ -432,14 +432,14 @@ export default function ProductManager({ onAuthError }: Props) {
                     <TableCell className="text-center">
                       <button
                         onClick={() => void handlePublishedToggle(p)}
-                        className={`w-10 h-5 rounded-full transition-colors relative ${
+                        className={`relative inline-flex items-center px-0.5 w-10 h-5 rounded-full transition-colors ${
                           p.published ? "bg-emerald-500" : "bg-[#D0CCBF]"
                         }`}
                         title={p.published ? "Visible on site — click to hide" : "Hidden from site — click to show"}
                       >
                         <span
-                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
-                            p.published ? "translate-x-5" : "translate-x-0.5"
+                          className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
+                            p.published ? "translate-x-5" : "translate-x-0"
                           }`}
                         />
                       </button>
@@ -547,13 +547,13 @@ export default function ProductManager({ onAuthError }: Props) {
               <button
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, inStock: !f.inStock }))}
-                className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${
+                className={`relative inline-flex items-center px-0.5 w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
                   form.inStock ? "bg-[#1E2A5A]" : "bg-[#D0CCBF]"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
-                    form.inStock ? "translate-x-5" : "translate-x-0.5"
+                  className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
+                    form.inStock ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
