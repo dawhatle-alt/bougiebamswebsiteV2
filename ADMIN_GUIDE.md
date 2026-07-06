@@ -107,6 +107,7 @@ Create and manage promo codes customers enter in the cart.
 - **BOUGIE15** is the welcome-popup code (15% off). It creates itself automatically the first time someone uses it, and then appears here where you can manage it like any other code.
 - **Single-use per email**: when a customer applies a code they must enter the email they claimed it with. Once they complete a *paid* order with that code, the same code + same email combination is blocked from reuse. Abandoned checkouts don't burn the code, and a different email can still use a shared code like BOUGIE15.
 - The discount appears as a line item on the Square payment page and the customer's receipt.
+- **Code Usage panel** (below the codes table): one row per code + email pair, with a status badge — *Used [date]* means a paid order consumed the code (this is what blocks reuse); *Checkout started* means payment was never completed (doesn't block anything). Use the **search box** to find an email, and the **reset button (↺)** to remove a redemption so that email can use the code again — handy for test orders or helping a customer who was blocked by mistake.
 
 ## Favorites
 
