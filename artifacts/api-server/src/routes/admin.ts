@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { count, eq, sql, inArray, asc } from "drizzle-orm";
+import { count, eq, sql, inArray, asc, desc } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -426,6 +426,146 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
       createdAt: r.createdAt.toISOString(),
     })),
   });
+});
+
+// --- Dashboard -------------------------------------------------------------
+
+// Parses the events table's free-text date ("YYYY-MM-DD" preferred) to a local
+// timestamp; returns null when unparseable so bad rows are skipped, not crashed on.
+function eventDateMs(d: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime();
+  const t = Date.parse(d);
+  return Number.isNaN(t) ? null : t;
+}
+
+router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> => {
+  // Best-effort order sync so revenue numbers reflect Square, not just what the
+  // live capture paths happened to record.
+  try {
+    const client = getSquareClient();
+    if (client && isSquareLocationConfigured()) {
+      await syncOrdersFromSquare(client, getSquareLocationId());
+    }
+  } catch (err) {
+    logger.error({ err }, "Dashboard order sync failed — using locally recorded orders");
+  }
+
+  try {
+    const [orders, regs, latestSubs, prods, eventsRows, [subCount], [blogCount]] = await Promise.all([
+      listOrders(),
+      db
+        .select({
+          id: registrationsTable.id,
+          eventId: registrationsTable.eventId,
+          name: registrationsTable.name,
+          status: registrationsTable.status,
+          paymentSessionId: registrationsTable.paymentSessionId,
+          createdAt: registrationsTable.createdAt,
+        })
+        .from(registrationsTable),
+      db.select().from(subscribersTable).orderBy(desc(subscribersTable.createdAt)).limit(10),
+      db.select().from(productsTable),
+      db.select().from(eventsTable),
+      db.select({ count: count() }).from(subscribersTable),
+      db.select({ count: count() }).from(blogPostsTable),
+    ]);
+
+    // Revenue
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+    const sum = (rows: { totalCents: number }[]) => rows.reduce((s, o) => s + o.totalCents, 0);
+    const monthOrders = orders.filter((o) => o.createdAt.getTime() >= monthStart.getTime());
+    const weekOrders = orders.filter((o) => o.createdAt.getTime() >= weekAgo);
+
+    // Upcoming events with fill + collected
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const confirmedByEvent = new Map<number, { confirmed: number; paid: number }>();
+    for (const r of regs) {
+      if (r.status !== "confirmed") continue;
+      const e = confirmedByEvent.get(r.eventId) ?? { confirmed: 0, paid: 0 };
+      e.confirmed += 1;
+      if (r.paymentSessionId) e.paid += 1;
+      confirmedByEvent.set(r.eventId, e);
+    }
+    const upcomingEvents = eventsRows
+      .map((e) => ({ e, ms: eventDateMs(e.date) }))
+      .filter((x): x is { e: typeof x.e; ms: number } => x.ms !== null && x.ms >= todayStart.getTime())
+      .sort((a, b) => a.ms - b.ms)
+      .slice(0, 8)
+      .map(({ e }) => {
+        const c = confirmedByEvent.get(e.id) ?? { confirmed: 0, paid: 0 };
+        return {
+          id: e.id,
+          title: e.title,
+          date: e.date,
+          time: e.time,
+          totalSpots: e.totalSpots,
+          spotsLeft: e.spotsLeft,
+          priceCents: e.priceCents ?? 0,
+          published: e.published,
+          confirmedCount: c.confirmed,
+          collectedCents: c.paid * (e.priceCents ?? 0),
+        };
+      });
+
+    // Recent activity across orders, registrations, and subscribers
+    const eventTitleById = new Map(eventsRows.map((e) => [e.id, e.title]));
+    const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+    const activity = [
+      ...orders.slice(0, 10).map((o) => ({
+        type: "order" as const,
+        at: o.createdAt.toISOString(),
+        title: `Order ${money(o.totalCents)}`,
+        detail: o.buyerName ?? o.buyerEmail ?? "",
+      })),
+      ...[...regs]
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, 10)
+        .map((r) => ({
+          type: "registration" as const,
+          at: r.createdAt.toISOString(),
+          title: `Registration — ${eventTitleById.get(r.eventId) ?? "Event"}`,
+          detail: `${r.name}${r.status === "pending" ? " (pending)" : ""}`,
+        })),
+      ...latestSubs.map((s) => ({
+        type: "subscriber" as const,
+        at: s.createdAt.toISOString(),
+        title: "New subscriber",
+        detail: s.email,
+      })),
+    ]
+      .sort((a, b) => (a.at < b.at ? 1 : -1))
+      .slice(0, 12);
+
+    res.json({
+      revenue: {
+        totalCents: sum(orders),
+        monthCents: sum(monthOrders),
+        weekCents: sum(weekOrders),
+        totalOrders: orders.length,
+        weekOrders: weekOrders.length,
+      },
+      upcomingEvents,
+      activity,
+      alerts: {
+        pendingRegistrations: regs.filter((r) => r.status === "pending").length,
+        outOfStockVisible: prods.filter((p) => !p.inStock && p.published).length,
+      },
+      totals: {
+        subscribers: Number(subCount?.count ?? 0),
+        events: eventsRows.length,
+        products: prods.length,
+        blogPosts: Number(blogCount?.count ?? 0),
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to build dashboard");
+    res.status(500).json({ error: "Could not load dashboard." });
+  }
 });
 
 // --- Event check-in report -----------------------------------------------

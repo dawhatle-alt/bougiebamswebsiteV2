@@ -465,7 +465,7 @@ export default function Admin() {
 
         <main className="flex-1 px-5 py-7 max-w-5xl w-full">
           {view === "dashboard" ? (
-            <DashboardStats onAuthError={handleAuthError} />
+            <DashboardStats onAuthError={handleAuthError} onNavigate={setView} />
           ) : view === "blog" ? (
             <BlogManager onAuthError={handleAuthError} />
           ) : view === "products" ? (
