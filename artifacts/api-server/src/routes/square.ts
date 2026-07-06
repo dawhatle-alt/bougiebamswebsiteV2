@@ -113,7 +113,10 @@ router.post(
             referenceId: String(registration.id),
           },
           checkoutOptions: {
-            redirectUrl: `${redirectBase || origin}/events/confirmation`,
+            // Embed the registration id ourselves so the confirmation page can
+            // always resolve the order — Square does not reliably append
+            // referenceId/checkoutId (e.g. sandbox tests, Square Pay wallet).
+            redirectUrl: `${redirectBase || origin}/events/confirmation?reg=${registration.id}`,
             askForShippingAddress: false,
           },
           prePopulatedData: {

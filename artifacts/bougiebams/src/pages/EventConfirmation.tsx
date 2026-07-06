@@ -28,7 +28,10 @@ export default function EventConfirmation() {
   // Square appends reference_id (snake_case) in live redirects,
   // but the sandbox testing panel link uses the bare URL without params.
   // Also support checkoutId / checkout_id as a fallback lookup.
+  // `reg` is the registration id we embed in the redirect URL ourselves; the
+  // Square-appended referenceId variants are kept as fallbacks.
   const referenceId =
+    params.get("reg") ??
     params.get("referenceId") ??
     params.get("reference_id");
   const checkoutId =
