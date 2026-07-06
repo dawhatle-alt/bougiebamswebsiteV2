@@ -25,6 +25,7 @@ import MyEvents from "@/pages/MyEvents";
 import EventConfirmation from "@/pages/EventConfirmation";
 import Favorites from "@/pages/Favorites";
 import Contact from "@/pages/Contact";
+import CheckoutConfirmation from "@/pages/CheckoutConfirmation";
 import Admin from "@/pages/Admin";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
@@ -66,6 +67,7 @@ function AnimatedRoutes() {
           <Route path="/blog/:slug" component={BlogPost} />
           <Route path="/blog" component={Blog} />
           <Route path="/faq" component={Faq} />
+          <Route path="/checkout/confirmation" component={CheckoutConfirmation} />
           <Route path="/events/confirmation" component={EventConfirmation} />
           <Route path="/events/:id" component={EventDetail} />
           <Route path="/events" component={Events} />
