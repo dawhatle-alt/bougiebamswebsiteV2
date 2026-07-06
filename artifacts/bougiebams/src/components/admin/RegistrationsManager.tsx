@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Download, Loader2, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -23,6 +23,9 @@ interface Props {
   onAuthError: () => void;
 }
 
+type SortKey = "eventTitle" | "name" | "email" | "status" | "paid" | "createdAt";
+type SortDir = "asc" | "desc";
+
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -33,6 +36,9 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,9 +58,60 @@ export default function RegistrationsManager({ onAuthError }: Props) {
 
   useEffect(() => { void load(); }, [load]);
 
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const sorted = useMemo(() => {
+    const arr = [...registrations];
+    arr.sort((a, b) => {
+      let av: string | number;
+      let bv: string | number;
+      if (sortKey === "paid") {
+        av = a.paid ? 1 : 0;
+        bv = b.paid ? 1 : 0;
+      } else if (sortKey === "createdAt") {
+        // ISO timestamps sort chronologically as plain strings.
+        av = a.createdAt;
+        bv = b.createdAt;
+      } else {
+        av = (a[sortKey] ?? "").toString().toLowerCase();
+        bv = (b[sortKey] ?? "").toString().toLowerCase();
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [registrations, sortKey, sortDir]);
+
+  async function handleDelete(id: number) {
+    if (!window.confirm("Remove this registration? This cannot be undone.")) return;
+    setDeletingId(id);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/registrations/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+    } catch {
+      setError("Could not remove the registration. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   function handleExport() {
     const header = ["ID", "Event", "Name", "Email", "Status", "Paid", "Notes", "Date"];
-    const rows = registrations.map((r) => [
+    const rows = sorted.map((r) => [
       String(r.id),
       r.eventTitle,
       r.name,
@@ -76,6 +133,31 @@ export default function RegistrationsManager({ onAuthError }: Props) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  }
+
+  function SortHead({ label, col, align }: { label: string; col: SortKey; align?: "right" }) {
+    const active = sortKey === col;
+    return (
+      <TableHead className={align === "right" ? "text-right" : ""}>
+        <button
+          type="button"
+          onClick={() => toggleSort(col)}
+          className={`inline-flex items-center gap-1 hover:text-[#1E2A5A] transition-colors ${
+            align === "right" ? "flex-row-reverse" : ""
+          }`}
+          title={`Sort by ${label}`}
+        >
+          {label}
+          {active ? (
+            sortDir === "asc"
+              ? <ArrowUp className="w-3.5 h-3.5" />
+              : <ArrowDown className="w-3.5 h-3.5" />
+          ) : (
+            <ArrowUpDown className="w-3.5 h-3.5 opacity-40" />
+          )}
+        </button>
+      </TableHead>
+    );
   }
 
   return (
@@ -119,16 +201,17 @@ export default function RegistrationsManager({ onAuthError }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Paid</TableHead>
-                <TableHead className="text-right">Date</TableHead>
+                <SortHead label="Event" col="eventTitle" />
+                <SortHead label="Name" col="name" />
+                <SortHead label="Email" col="email" />
+                <SortHead label="Status" col="status" />
+                <SortHead label="Paid" col="paid" />
+                <SortHead label="Date" col="createdAt" align="right" />
+                <TableHead className="text-right w-[60px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {registrations.map((r) => (
+              {sorted.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium text-[#1E2A5A] max-w-[180px] truncate">
                     {r.eventTitle}
@@ -155,6 +238,20 @@ export default function RegistrationsManager({ onAuthError }: Props) {
                   </TableCell>
                   <TableCell className="text-right text-[#5A6178]">
                     {formatDate(r.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-[#9A8F7E] hover:text-red-600 hover:bg-red-50"
+                      onClick={() => void handleDelete(r.id)}
+                      disabled={deletingId === r.id}
+                      title="Remove registration"
+                    >
+                      {deletingId === r.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Trash2 className="w-4 h-4" />}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

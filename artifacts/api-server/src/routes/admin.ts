@@ -323,6 +323,23 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
   });
 });
 
+router.delete("/admin/registrations/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [row] = await db
+    .delete(registrationsTable)
+    .where(eq(registrationsTable.id, id))
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+  res.sendStatus(204);
+});
+
 router.get("/admin/product-images", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db.select().from(productImagesTable);
   const images: Record<string, string> = {};
