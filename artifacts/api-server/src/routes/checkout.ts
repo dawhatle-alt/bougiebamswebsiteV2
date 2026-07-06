@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAnyAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
-import { recordProductOrder } from "../lib/orders";
+import { recordProductOrder, isPaidOrder } from "../lib/orders";
 
 const router: IRouter = Router();
 
@@ -143,7 +143,7 @@ router.get("/checkout/summary", async (req: Request, res: Response): Promise<voi
     res.json({
       orderId: order.id ?? orderId,
       state: order.state ?? "UNKNOWN",
-      paid: order.state === "COMPLETED",
+      paid: isPaidOrder(order),
       currency: order.totalMoney?.currency ?? "USD",
       total: toCents(order.totalMoney),
       totalTax: toCents(order.totalTaxMoney),

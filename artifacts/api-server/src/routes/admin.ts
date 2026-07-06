@@ -18,7 +18,8 @@ import {
 import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
-import { listOrders } from "../lib/orders";
+import { listOrders, syncOrdersFromSquare } from "../lib/orders";
+import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 
 const router: IRouter = Router();
 
@@ -553,6 +554,17 @@ router.put("/admin/curated-collections", requireAdmin, async (req, res): Promise
 });
 
 router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
+  // Best-effort pull of recent orders straight from Square so the view is
+  // accurate even without the webhook or confirmation-page capture paths.
+  try {
+    const client = getSquareClient();
+    if (client && isSquareLocationConfigured()) {
+      await syncOrdersFromSquare(client, getSquareLocationId());
+    }
+  } catch (err) {
+    logger.error({ err }, "Square order sync failed — showing locally recorded orders");
+  }
+
   try {
     const rows = await listOrders();
     res.json({

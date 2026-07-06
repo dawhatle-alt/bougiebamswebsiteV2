@@ -40,6 +40,7 @@ interface SquareOrderLike {
   state?: string | null;
   referenceId?: string | null;
   totalMoney?: { amount?: bigint | number | null; currency?: string | null } | null;
+  tenders?: unknown[] | null;
   createdAt?: string | null;
   lineItems?: {
     name?: string | null;
@@ -83,22 +84,35 @@ function formatAddress(r: RecipientLike | null | undefined): string | null {
 const toCents = (m?: { amount?: bigint | number | null } | null): number =>
   m?.amount != null ? Number(m.amount) : 0;
 
+// Payment-link orders stay in state OPEN after payment (they only become
+// COMPLETED once the seller finishes fulfillment), so "paid" must be detected
+// from the tenders (payments) attached to the order, not the order state.
+export function isPaidOrder(order: SquareOrderLike): boolean {
+  if (order.state === "COMPLETED") return true;
+  return order.state === "OPEN" && (order.tenders?.length ?? 0) > 0;
+}
+
 export async function listOrders() {
   await ensureOrdersTable();
   return db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
 }
 
 /**
- * Persists a completed Square product order (skips event registrations, which
+ * Persists a paid Square product order (skips event registrations, which
  * carry a referenceId and are handled by the registrations flow) and emails the
  * order details to the shop owner exactly once. Safe to call from multiple
  * capture paths — the insert is keyed on the Square order id, and the email is
- * claimed via a conditional update before sending.
+ * claimed via a conditional update before sending. Pass notify=false for
+ * backfill/sync of older orders to record them without emailing.
  */
-export async function recordProductOrder(order: SquareOrderLike): Promise<void> {
+export async function recordProductOrder(
+  order: SquareOrderLike,
+  opts: { notify?: boolean } = {},
+): Promise<void> {
+  const notify = opts.notify ?? true;
   if (!order.id) return;
   if (order.referenceId) return; // event registration — not a product order
-  if (order.state !== "COMPLETED") return;
+  if (!isPaidOrder(order)) return;
 
   await ensureOrdersTable();
 
@@ -129,6 +143,8 @@ export async function recordProductOrder(order: SquareOrderLike): Promise<void> 
     })
     .onConflictDoNothing({ target: ordersTable.id });
 
+  if (!notify) return;
+
   // Claim the notification (notified_at flips exactly once) so concurrent
   // capture paths can't double-send. Reset the claim if the send fails so a
   // later capture retries.
@@ -158,5 +174,47 @@ export async function recordProductOrder(order: SquareOrderLike): Promise<void> 
       .set({ notifiedAt: null })
       .where(eq(ordersTable.id, order.id))
       .catch(() => {});
+  }
+}
+
+// Orders placed within this window still get the owner notification when they
+// are first seen via sync; anything older is backfilled silently.
+const NOTIFY_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+interface OrdersSearchClient {
+  orders: {
+    search(req: object): Promise<{ orders?: SquareOrderLike[] }>;
+  };
+}
+
+/**
+ * Pulls recent orders straight from Square and records any paid product orders
+ * that are missing locally. This makes the admin Orders view accurate even when
+ * the payment webhook isn't configured and the buyer never lands on the
+ * confirmation page with an order reference.
+ */
+export async function syncOrdersFromSquare(
+  client: OrdersSearchClient,
+  locationId: string,
+): Promise<void> {
+  if (!locationId) return;
+
+  const resp = await client.orders.search({
+    locationIds: [locationId],
+    limit: 100,
+    query: {
+      filter: { stateFilter: { states: ["OPEN", "COMPLETED"] } },
+      sort: { sortField: "CREATED_AT", sortOrder: "DESC" },
+    },
+  });
+
+  for (const order of resp.orders ?? []) {
+    const createdMs = order.createdAt ? Date.parse(order.createdAt) : 0;
+    const fresh = createdMs > 0 && Date.now() - createdMs < NOTIFY_WINDOW_MS;
+    try {
+      await recordProductOrder(order, { notify: fresh });
+    } catch (err) {
+      logger.error({ err, orderId: order.id }, "Failed to record order during Square sync");
+    }
   }
 }
