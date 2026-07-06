@@ -142,7 +142,7 @@ router.get("/callback", async (req: Request, res: Response) => {
   const expectedState = req.cookies?.state;
 
   if (!codeVerifier || !expectedState) {
-    logger.error({ hasCookies: !!req.cookies, keys: Object.keys(req.cookies ?? {}) }, "OAuth callback missing OIDC cookies â€” possible SameSite/cookie issue");
+    logger.error({ hasCookies: !!req.cookies, keys: Object.keys(req.cookies ?? {}) }, "OAuth callback missing OIDC cookies — possible SameSite/cookie issue");
     res.redirect("/?auth_error=session");
     return;
   }

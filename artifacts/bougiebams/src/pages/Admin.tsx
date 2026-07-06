@@ -102,7 +102,7 @@ function formatDate(value: string) {
 }
 
 function sourceLabel(source: string | null) {
-  if (!source) return "â€”";
+  if (!source) return "—";
   return source
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -193,7 +193,7 @@ function AdminLoginScreen({ apiBase }: { apiBase: string }) {
       }
       window.location.reload();
     } catch {
-      setError("Network error â€” please try again");
+      setError("Network error — please try again");
       setLoading(false);
     }
   }
@@ -504,7 +504,7 @@ export default function Admin() {
 
               <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
                 {loading && subscribers.length === 0 ? (
-                  <div className="py-16 text-center text-[#5A6178]">Loadingâ€¦</div>
+                  <div className="py-16 text-center text-[#5A6178]">Loading…</div>
                 ) : subscribers.length === 0 ? (
                   <div className="py-16 text-center text-[#5A6178]">
                     No subscribers yet. They'll appear here as people sign up.
@@ -529,7 +529,7 @@ export default function Admin() {
                             {sourceLabel(s.source)}
                           </TableCell>
                           <TableCell className="text-[#5A6178]">
-                            {s.discountCode ?? "â€”"}
+                            {s.discountCode ?? "—"}
                           </TableCell>
                           <TableCell className="text-right text-[#5A6178]">
                             {formatDate(s.createdAt)}
