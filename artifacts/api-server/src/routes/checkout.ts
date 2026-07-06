@@ -4,6 +4,7 @@ import { requireAnyAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 import { recordProductOrder, isPaidOrder } from "../lib/orders";
+import { resolveProductDiscount } from "../lib/discounts";
 
 const router: IRouter = Router();
 
@@ -60,7 +61,21 @@ router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Pr
 
   try {
     const origin = getWebOrigin(req);
-    const { items, email } = parsed.data;
+    const { items, email, discountCode } = parsed.data;
+
+    // Validate the code up front so the shopper hears "invalid code" instead of
+    // silently paying full price on Square's hosted page.
+    let discount: { code: string; percent: number } | null = null;
+    if (discountCode?.trim()) {
+      discount = await resolveProductDiscount(discountCode);
+      if (!discount) {
+        res.status(400).json({
+          error: "That discount code isn't valid. Double-check the code or remove it to continue.",
+        });
+        return;
+      }
+    }
+
     const idempotencyKey = `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const lineItems = items.map((item) => ({
@@ -77,6 +92,18 @@ router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Pr
       order: {
         locationId: getSquareLocationId(),
         lineItems,
+        ...(discount
+          ? {
+              discounts: [
+                {
+                  name: `${discount.code} (${discount.percent}% off)`,
+                  type: "FIXED_PERCENTAGE" as const,
+                  percentage: String(discount.percent),
+                  scope: "ORDER" as const,
+                },
+              ],
+            }
+          : {}),
       },
       checkoutOptions: {
         redirectUrl: `${origin}/checkout/confirmation`,

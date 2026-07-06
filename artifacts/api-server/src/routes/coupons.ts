@@ -43,7 +43,8 @@ router.get("/coupons/validate", async (req, res): Promise<void> => {
     .limit(1);
 
   if (subscriber) {
-    res.json({ valid: true, discountPercent: 10, message: "10% subscriber discount" });
+    // Matches the welcome offer advertised by the signup popup.
+    res.json({ valid: true, discountPercent: 15, message: "15% subscriber discount" });
     return;
   }
 
