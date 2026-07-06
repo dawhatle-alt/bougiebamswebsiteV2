@@ -116,7 +116,7 @@ export default function ProductDetail() {
               <img
                 src={galleryImages[selectedImage]}
                 alt={`${product.name} — view ${selectedImage + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </motion.div>
 

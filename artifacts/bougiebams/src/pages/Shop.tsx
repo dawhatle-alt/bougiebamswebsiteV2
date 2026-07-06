@@ -214,10 +214,10 @@ export default function Shop() {
           {selectedProduct && (
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="aspect-square md:aspect-auto bg-muted">
-                <img 
-                  src={selectedProduct.images[0]} 
+                <img
+                  src={selectedProduct.images[0]}
                   alt={selectedProduct.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div className="p-8 md:p-12 flex flex-col justify-center">
