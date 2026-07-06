@@ -5,6 +5,16 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM ?? process.env.FROM_EMAIL ?? "noreply@bougiebams.com";
 const CONTACT_EMAIL = process.env.OWNER_EMAIL ?? process.env.CONTACT_EMAIL ?? "hello@bougiebams.com";
 
+const WEB_ORIGIN = (process.env.PUBLIC_WEB_ORIGIN ?? "https://bougiebams.com").replace(/\/$/, "");
+const LOGO_URL = `${WEB_ORIGIN}/bougiebams-logo-transparent.png`;
+
+// Branded header for customer-facing emails. Uses the width attribute (respected
+// by most email clients) alongside inline styles, since email CSS support is spotty.
+const logoHeader = `
+      <div style="text-align:center;padding:8px 0 16px">
+        <img src="${LOGO_URL}" alt="BougieBams" width="180" style="width:180px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none" />
+      </div>`;
+
 function getClient(): Resend | null {
   if (!RESEND_API_KEY) {
     logger.warn("RESEND_API_KEY is not set — email delivery is disabled");
@@ -66,7 +76,7 @@ export async function sendRegistrationConfirmationEmail(opts: {
     to: [registrantEmail],
     replyTo: CONTACT_EMAIL,
     subject: `You're registered for ${eventTitle}!`,
-    html: `
+    html: `${logoHeader}
       <h2>You're registered! 🎉</h2>
       <p>Hi ${registrantName},</p>
       <p>Your spot is confirmed for <strong>${eventTitle}</strong>.</p>
@@ -115,7 +125,7 @@ export async function sendReminderEmail(opts: {
     to: [registrantEmail],
     replyTo: CONTACT_EMAIL,
     subject: `Reminder: ${eventTitle} is ${timeLabel} away!`,
-    html: `
+    html: `${logoHeader}
       <h2>See you soon! 🀄</h2>
       <p>Hi ${registrantName},</p>
       <p>Just a reminder — <strong>${eventTitle}</strong> is coming up in <strong>${timeLabel}</strong>.</p>
