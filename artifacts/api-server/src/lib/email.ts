@@ -99,7 +99,11 @@ export async function sendRegistrationConfirmationEmail(opts: {
   }
 }
 
-const ORDER_NOTIFY_EMAIL = process.env.ORDER_NOTIFY_EMAIL ?? "patsy@bougiebams.com";
+// Comma-separated list; ORDER_NOTIFY_EMAIL overrides the default recipients.
+const ORDER_NOTIFY_EMAILS = (process.env.ORDER_NOTIFY_EMAIL ?? "patsy@bougiebams.com,darrell@bougiebams.com")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 export async function sendOrderNotificationEmail(opts: {
   orderId: string;
@@ -129,7 +133,7 @@ export async function sendOrderNotificationEmail(opts: {
 
   const { error } = await client.emails.send({
     from: FROM_EMAIL,
-    to: [ORDER_NOTIFY_EMAIL],
+    to: ORDER_NOTIFY_EMAILS,
     ...(buyerEmail ? { replyTo: buyerEmail } : {}),
     subject: `New order ${money(totalCents)} — ${buyerName || buyerEmail || "Online store"}`,
     html: `${logoHeader}
@@ -150,7 +154,7 @@ export async function sendOrderNotificationEmail(opts: {
     logger.error({ error, orderId }, "Failed to send order notification email");
     throw new Error("Order notification email failed");
   }
-  logger.info({ to: ORDER_NOTIFY_EMAIL, orderId }, "Order notification email sent");
+  logger.info({ to: ORDER_NOTIFY_EMAILS, orderId }, "Order notification email sent");
 }
 
 export async function sendCheckinReportEmail(opts: {
