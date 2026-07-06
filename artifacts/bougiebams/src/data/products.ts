@@ -37,6 +37,7 @@ export interface Product {
   isNew?: boolean;
   isBestseller?: boolean;
   sku?: string;
+  buildYourSet?: boolean;
 }
 
 export interface ApiProduct {
@@ -48,6 +49,7 @@ export interface ApiProduct {
   category: string;
   inStock: boolean;
   imagePath?: string | null;
+  buildYourSet?: boolean;
 }
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -283,5 +285,7 @@ export function mergeProduct(api: ApiProduct): Product {
     reviewCount: meta?.reviewCount ?? 0,
     isNew: meta?.isNew,
     isBestseller: meta?.isBestseller,
+    // Default to included when the API omits it (e.g. older cached responses).
+    buildYourSet: api.buildYourSet ?? true,
   };
 }

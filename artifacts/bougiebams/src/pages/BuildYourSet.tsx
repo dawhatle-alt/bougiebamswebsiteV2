@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
@@ -19,26 +19,13 @@ export default function BuildYourSet() {
 
   const [selected, setSelected] = useState<Record<string, Product>>({});
 
-  // Admin-curated inclusion list. Empty = show all products (non-breaking default).
-  const [includedIds, setIncludedIds] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
-    let active = true;
-    fetch(`${base}/api/build-your-set`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (active && data?.productIds) setIncludedIds(new Set(data.productIds as string[])); })
-      .catch(() => {});
-    return () => { active = false; };
-  }, []);
-
+  // Only products whose per-product "Build Set" toggle is on (defaults to on).
   const grouped = useMemo(() => {
     return SHOP_CATEGORIES.map((cat) => ({
       ...cat,
-      items: products.filter(
-        (p) => p.category === cat.name && (includedIds.size === 0 || includedIds.has(p.id)),
-      ),
+      items: products.filter((p) => p.category === cat.name && p.buildYourSet !== false),
     })).filter((g) => g.items.length > 0);
-  }, [products, includedIds]);
+  }, [products]);
 
   const selectedItems = Object.values(selected);
   const total = selectedItems.reduce((sum, p) => sum + p.price, 0);

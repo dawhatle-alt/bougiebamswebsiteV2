@@ -114,23 +114,6 @@ function curatedToApi(items: CuratedItem[]) {
   }));
 }
 
-async function readBuildYourSetIds(): Promise<string[]> {
-  await ensureSettingsTable();
-  const rows = await db
-    .select()
-    .from(siteSettingsTable)
-    .where(eq(siteSettingsTable.key, "build_your_set_products"));
-  const raw = rows[0]?.value;
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((x): x is string => typeof x === "string");
-  } catch {
-    return [];
-  }
-}
-
 async function writeSetting(key: string, value: string): Promise<void> {
   await ensureSettingsTable();
   await db
@@ -565,38 +548,6 @@ router.put("/admin/curated-collections", requireAdmin, async (req, res): Promise
   } catch (err) {
     logger.error({ err }, "Failed to save curated collections");
     res.status(500).json({ error: "Could not save the collections." });
-  }
-});
-
-// Public: which products appear in the "Build Your Set" section. An empty list
-// means "show all" so the section is never accidentally emptied.
-router.get("/build-your-set", async (_req, res): Promise<void> => {
-  try {
-    res.json({ productIds: await readBuildYourSetIds() });
-  } catch (err) {
-    logger.error({ err }, "Failed to read build-your-set products");
-    res.json({ productIds: [] });
-  }
-});
-
-router.put("/admin/build-your-set", requireAdmin, async (req, res): Promise<void> => {
-  const body = req.body as { productIds?: unknown };
-  if (!Array.isArray(body.productIds) || !body.productIds.every((x) => typeof x === "string")) {
-    res.status(400).json({ error: "productIds must be an array of strings." });
-    return;
-  }
-  if (body.productIds.length > 500) {
-    res.status(400).json({ error: "Too many products." });
-    return;
-  }
-  try {
-    // De-dupe while preserving order.
-    const unique = Array.from(new Set(body.productIds));
-    await writeSetting("build_your_set_products", JSON.stringify(unique));
-    res.json({ productIds: await readBuildYourSetIds() });
-  } catch (err) {
-    logger.error({ err }, "Failed to save build-your-set products");
-    res.status(500).json({ error: "Could not save the selection." });
   }
 });
 

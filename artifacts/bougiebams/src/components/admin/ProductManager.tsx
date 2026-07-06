@@ -39,6 +39,7 @@ interface ApiProduct {
   category: string;
   inStock: boolean;
   published: boolean;
+  buildYourSet: boolean;
   imagePath?: string | null;
 }
 
@@ -245,6 +246,25 @@ export default function ProductManager({ onAuthError }: Props) {
     }
   }
 
+  async function handleBuildYourSetToggle(p: ApiProduct) {
+    const updated = { ...p, buildYourSet: !p.buildYourSet };
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? updated : x)));
+    try {
+      const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(p.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ buildYourSet: !p.buildYourSet }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) {
+        setProducts((prev) => prev.map((x) => (x.id === p.id ? p : x)));
+      }
+    } catch {
+      setProducts((prev) => prev.map((x) => (x.id === p.id ? p : x)));
+    }
+  }
+
   async function handleUpload(file: File, sku: string, productId: string) {
     setUploading(sku);
     setUploadError(null);
@@ -364,6 +384,7 @@ export default function ProductManager({ onAuthError }: Props) {
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-center">In Stock</TableHead>
                 <TableHead className="text-center">Visible</TableHead>
+                <TableHead className="text-center">Build Set</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -440,6 +461,21 @@ export default function ProductManager({ onAuthError }: Props) {
                         <span
                           className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
                             p.published ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <button
+                        onClick={() => void handleBuildYourSetToggle(p)}
+                        className={`relative inline-flex items-center px-0.5 w-10 h-5 rounded-full transition-colors ${
+                          p.buildYourSet ? "bg-emerald-500" : "bg-[#D0CCBF]"
+                        }`}
+                        title={p.buildYourSet ? "Shown in Build Your Set — click to exclude" : "Excluded from Build Your Set — click to include"}
+                      >
+                        <span
+                          className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
+                            p.buildYourSet ? "translate-x-5" : "translate-x-0"
                           }`}
                         />
                       </button>

@@ -27,7 +27,6 @@ import {
   Megaphone,
   MessageCircle,
   LayoutGrid,
-  Wand2,
   Menu,
   X,
 } from "lucide-react";
@@ -44,7 +43,6 @@ import GalleryManager from "@/components/admin/GalleryManager";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import ChatbotManager from "@/components/admin/ChatbotManager";
 import CuratedCollectionsManager from "@/components/admin/CuratedCollectionsManager";
-import BuildYourSetManager from "@/components/admin/BuildYourSetManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -62,8 +60,7 @@ type AdminView =
   | "gallery"
   | "announcement"
   | "chatbot"
-  | "curated"
-  | "buildset";
+  | "curated";
 
 interface Subscriber {
   id: number;
@@ -147,7 +144,6 @@ const NAV_GROUPS = [
     label: "Shop",
     items: [
       { key: "products" as AdminView, label: "Products", icon: Package },
-      { key: "buildset" as AdminView, label: "Build Your Set", icon: Wand2 },
       { key: "discounts" as AdminView, label: "Discount Codes", icon: Tag },
       { key: "favorites" as AdminView, label: "Favorites", icon: Heart },
     ],
@@ -179,7 +175,6 @@ const VIEW_LABELS: Record<AdminView, string> = {
   announcement: "Announcement Bar",
   chatbot: "Chat Assistant",
   curated: "Curated Collections",
-  buildset: "Build Your Set",
 };
 
 function AdminLoginScreen({ apiBase }: { apiBase: string }) {
@@ -490,8 +485,6 @@ export default function Admin() {
             <ChatbotManager onAuthError={handleAuthError} />
           ) : view === "curated" ? (
             <CuratedCollectionsManager onAuthError={handleAuthError} />
-          ) : view === "buildset" ? (
-            <BuildYourSetManager onAuthError={handleAuthError} />
           ) : (
             <>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
