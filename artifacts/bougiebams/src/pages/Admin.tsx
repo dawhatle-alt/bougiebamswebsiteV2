@@ -25,6 +25,7 @@ import {
   Heart,
   Camera,
   Megaphone,
+  MessageCircle,
   Menu,
   X,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import LessonsManager from "@/components/admin/LessonsManager";
 import FavoritesManager from "@/components/admin/FavoritesManager";
 import GalleryManager from "@/components/admin/GalleryManager";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
+import ChatbotManager from "@/components/admin/ChatbotManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -54,7 +56,8 @@ type AdminView =
   | "lessons"
   | "favorites"
   | "gallery"
-  | "announcement";
+  | "announcement"
+  | "chatbot";
 
 interface Subscriber {
   id: number;
@@ -148,6 +151,7 @@ const NAV_GROUPS = [
       { key: "hero" as AdminView, label: "Homepage Images", icon: Image },
       { key: "gallery" as AdminView, label: "Event Gallery", icon: Camera },
       { key: "announcement" as AdminView, label: "Announcement Bar", icon: Megaphone },
+      { key: "chatbot" as AdminView, label: "Chat Assistant", icon: MessageCircle },
     ],
   },
 ];
@@ -165,6 +169,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   favorites: "Favorites",
   gallery: "Event Gallery",
   announcement: "Announcement Bar",
+  chatbot: "Chat Assistant",
 };
 
 function AdminLoginScreen({ apiBase }: { apiBase: string }) {
@@ -471,6 +476,8 @@ export default function Admin() {
             <GalleryManager onAuthError={handleAuthError} />
           ) : view === "announcement" ? (
             <AnnouncementManager onAuthError={handleAuthError} />
+          ) : view === "chatbot" ? (
+            <ChatbotManager onAuthError={handleAuthError} />
           ) : (
             <>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">

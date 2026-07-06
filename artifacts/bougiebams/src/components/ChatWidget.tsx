@@ -108,6 +108,8 @@ export default function ChatWidget() {
     },
   ]);
   const [streaming, setStreaming] = useState(false);
+  // null = not yet known (render nothing to avoid a flash); fails open on error.
+  const [enabled, setEnabled] = useState<boolean | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -122,6 +124,15 @@ export default function ChatWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE}/api/chatbot`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (active) setEnabled(data ? !!data.enabled : true); })
+      .catch(() => { if (active) setEnabled(true); });
+    return () => { active = false; };
+  }, []);
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -228,6 +239,9 @@ export default function ChatWidget() {
       sendMessage();
     }
   };
+
+  // Hidden while the setting loads, and when the admin has turned the bot off.
+  if (!enabled) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">

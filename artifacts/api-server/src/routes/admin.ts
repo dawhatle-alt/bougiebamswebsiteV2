@@ -62,6 +62,17 @@ async function readAnnouncement(): Promise<{ enabled: boolean; text: string }> {
   };
 }
 
+async function readChatbotEnabled(): Promise<boolean> {
+  await ensureSettingsTable();
+  const rows = await db
+    .select()
+    .from(siteSettingsTable)
+    .where(eq(siteSettingsTable.key, "chatbot_enabled"));
+  const val = rows[0]?.value;
+  // Default ON so the assistant stays available unless explicitly disabled.
+  return val == null ? true : val === "true";
+}
+
 async function writeSetting(key: string, value: string): Promise<void> {
   await ensureSettingsTable();
   await db
@@ -425,6 +436,31 @@ router.put("/admin/announcement", requireAdmin, async (req, res): Promise<void> 
   } catch (err) {
     logger.error({ err }, "Failed to update announcement setting");
     res.status(500).json({ error: "Could not save the announcement." });
+  }
+});
+
+// Public: whether the chat assistant should be shown. Fails open (enabled).
+router.get("/chatbot", async (_req, res): Promise<void> => {
+  try {
+    res.json({ enabled: await readChatbotEnabled() });
+  } catch (err) {
+    logger.error({ err }, "Failed to read chatbot setting");
+    res.json({ enabled: true });
+  }
+});
+
+router.put("/admin/chatbot", requireAdmin, async (req, res): Promise<void> => {
+  const { enabled } = req.body as { enabled?: unknown };
+  if (typeof enabled !== "boolean") {
+    res.status(400).json({ error: "enabled (boolean) is required" });
+    return;
+  }
+  try {
+    await writeSetting("chatbot_enabled", String(enabled));
+    res.json({ enabled: await readChatbotEnabled() });
+  } catch (err) {
+    logger.error({ err }, "Failed to update chatbot setting");
+    res.status(500).json({ error: "Could not save the chatbot setting." });
   }
 });
 
