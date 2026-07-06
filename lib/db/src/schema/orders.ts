@@ -5,6 +5,7 @@ import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 // inserts idempotent across both capture paths.
 export const ordersTable = pgTable("orders", {
   id: text("id").primaryKey(),
+  kind: text("kind").notNull().default("product"), // "product" | "event"
   totalCents: integer("total_cents").notNull().default(0),
   currency: text("currency").notNull().default("USD"),
   buyerName: text("buyer_name"),

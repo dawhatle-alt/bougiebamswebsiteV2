@@ -519,7 +519,8 @@ router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> =>
     const eventTitleById = new Map(eventsRows.map((e) => [e.id, e.title]));
     const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
     const activity = [
-      ...orders.slice(0, 10).map((o) => ({
+      // Event payments are covered by the registration entries below.
+      ...orders.filter((o) => o.kind === "product").slice(0, 10).map((o) => ({
         type: "order" as const,
         at: o.createdAt.toISOString(),
         title: `Order ${money(o.totalCents)}`,
@@ -806,6 +807,7 @@ router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
     res.json({
       orders: rows.map((r) => ({
         id: r.id,
+        kind: r.kind,
         totalCents: r.totalCents,
         currency: r.currency,
         buyerName: r.buyerName ?? null,

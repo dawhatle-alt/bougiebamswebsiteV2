@@ -120,7 +120,7 @@ export default function DashboardStats({ onAuthError, onNavigate }: Props) {
 
   const revenueCards = [
     { label: "Total Revenue", value: money(revenue.totalCents), sub: `${revenue.totalOrders} order${revenue.totalOrders === 1 ? "" : "s"} all time`, icon: DollarSign },
-    { label: "This Month", value: money(revenue.monthCents), sub: "product sales", icon: TrendingUp },
+    { label: "This Month", value: money(revenue.monthCents), sub: "products & events", icon: TrendingUp },
     { label: "This Week", value: money(revenue.weekCents), sub: `${revenue.weekOrders} order${revenue.weekOrders === 1 ? "" : "s"} in 7 days`, icon: Receipt },
   ];
 

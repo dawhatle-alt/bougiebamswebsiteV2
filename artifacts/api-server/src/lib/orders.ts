@@ -1,5 +1,5 @@
 import { sql, eq, and, isNull, desc } from "drizzle-orm";
-import { db, ordersTable } from "@workspace/db";
+import { db, ordersTable, registrationsTable } from "@workspace/db";
 import { logger } from "./logger";
 import { sendOrderNotificationEmail } from "./email";
 import { markRedemptionPaid } from "./discounts";
@@ -15,6 +15,7 @@ function ensureOrdersTable(): Promise<void> {
       .execute(sql`
         CREATE TABLE IF NOT EXISTS orders (
           id text PRIMARY KEY,
+          kind text NOT NULL DEFAULT 'product',
           total_cents integer NOT NULL DEFAULT 0,
           currency text NOT NULL DEFAULT 'USD',
           buyer_name text,
@@ -27,6 +28,8 @@ function ensureOrdersTable(): Promise<void> {
           created_at timestamptz NOT NULL DEFAULT now()
         )
       `)
+      // Tables created before the kind column existed need it added in place.
+      .then(() => db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'product'`))
       .then(() => undefined)
       .catch((err) => {
         ordersTableReady = null;
@@ -99,28 +102,50 @@ export async function listOrders() {
 }
 
 /**
- * Persists a paid Square product order (skips event registrations, which
- * carry a referenceId and are handled by the registrations flow) and emails the
- * order details to the shop owner exactly once. Safe to call from multiple
- * capture paths — the insert is keyed on the Square order id, and the email is
- * claimed via a conditional update before sending. Pass notify=false for
- * backfill/sync of older orders to record them without emailing.
+ * Persists a paid Square order — product purchases and event registration
+ * payments alike (events carry a referenceId pointing at the registration and
+ * are tagged kind="event"). Product orders email the shop owner exactly once;
+ * event payments don't (the registrations flow owns those emails). Safe to call
+ * from multiple capture paths — the insert is keyed on the Square order id, and
+ * the email is claimed via a conditional update before sending. Pass
+ * notify=false for backfill/sync of older orders to record them silently.
  */
-export async function recordProductOrder(
+export async function recordSquareOrder(
   order: SquareOrderLike,
   opts: { notify?: boolean } = {},
 ): Promise<void> {
-  const notify = opts.notify ?? true;
   if (!order.id) return;
-  if (order.referenceId) return; // event registration — not a product order
   if (!isPaidOrder(order)) return;
 
   await ensureOrdersTable();
+
+  const isEvent = !!order.referenceId;
+  const notify = (opts.notify ?? true) && !isEvent;
 
   const recipient =
     order.fulfillments?.map(
       (f) => f.shipmentDetails?.recipient ?? f.deliveryDetails?.recipient ?? f.pickupDetails?.recipient,
     ).find(Boolean) ?? null;
+
+  let buyerName = recipient?.displayName ?? null;
+  let buyerEmail = recipient?.emailAddress ?? null;
+
+  // Event checkouts don't collect a shipping recipient — pull the buyer's
+  // details from the registration the order references.
+  if (isEvent) {
+    const regId = parseInt(order.referenceId!, 10);
+    if (!Number.isNaN(regId)) {
+      const [reg] = await db
+        .select({ name: registrationsTable.name, email: registrationsTable.email })
+        .from(registrationsTable)
+        .where(eq(registrationsTable.id, regId))
+        .limit(1);
+      if (reg) {
+        buyerName = buyerName ?? reg.name;
+        buyerEmail = buyerEmail ?? reg.email;
+      }
+    }
+  }
 
   const items = (order.lineItems ?? []).map((li) => ({
     name: li.name ?? "Item",
@@ -132,10 +157,11 @@ export async function recordProductOrder(
     .insert(ordersTable)
     .values({
       id: order.id,
+      kind: isEvent ? "event" : "product",
       totalCents: toCents(order.totalMoney),
       currency: order.totalMoney?.currency ?? "USD",
-      buyerName: recipient?.displayName ?? null,
-      buyerEmail: recipient?.emailAddress ?? null,
+      buyerName,
+      buyerEmail,
       buyerPhone: recipient?.phoneNumber ?? null,
       shippingAddress: formatAddress(recipient),
       items: JSON.stringify(items),
@@ -170,8 +196,8 @@ export async function recordProductOrder(
       orderId: order.id,
       totalCents: toCents(order.totalMoney),
       currency: order.totalMoney?.currency ?? "USD",
-      buyerName: recipient?.displayName ?? null,
-      buyerEmail: recipient?.emailAddress ?? null,
+      buyerName,
+      buyerEmail,
       buyerPhone: recipient?.phoneNumber ?? null,
       shippingAddress: formatAddress(recipient),
       items,
@@ -221,7 +247,7 @@ export async function syncOrdersFromSquare(
     const createdMs = order.createdAt ? Date.parse(order.createdAt) : 0;
     const fresh = createdMs > 0 && Date.now() - createdMs < NOTIFY_WINDOW_MS;
     try {
-      await recordProductOrder(order, { notify: fresh });
+      await recordSquareOrder(order, { notify: fresh });
     } catch (err) {
       logger.error({ err, orderId: order.id }, "Failed to record order during Square sync");
     }

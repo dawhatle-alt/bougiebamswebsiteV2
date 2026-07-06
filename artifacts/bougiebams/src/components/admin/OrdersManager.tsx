@@ -16,6 +16,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  kind: string; // "product" | "event"
   totalCents: number;
   currency: string;
   buyerName: string | null;
@@ -52,6 +53,7 @@ export default function OrdersManager({ onAuthError }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [kindFilter, setKindFilter] = useState<"all" | "product" | "event">("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,11 +74,13 @@ export default function OrdersManager({ onAuthError }: Props) {
   useEffect(() => { void load(); }, [load]);
 
   const filtered = useMemo(() => {
+    const byKind = kindFilter === "all" ? orders : orders.filter((o) => o.kind === kindFilter);
     const q = query.trim().toLowerCase();
-    if (!q) return orders;
-    return orders.filter((o) => {
+    if (!q) return byKind;
+    return byKind.filter((o) => {
       const haystack = [
         o.id,
+        o.kind,
         o.buyerName ?? "",
         o.buyerEmail ?? "",
         o.buyerPhone ?? "",
@@ -87,15 +91,19 @@ export default function OrdersManager({ onAuthError }: Props) {
       ].join(" ").toLowerCase();
       return haystack.includes(q);
     });
-  }, [orders, query]);
+  }, [orders, query, kindFilter]);
 
   const grandTotal = useMemo(() => orders.reduce((s, o) => s + o.totalCents, 0), [orders]);
   const filteredTotal = useMemo(() => filtered.reduce((s, o) => s + o.totalCents, 0), [filtered]);
+  const productOrders = useMemo(() => orders.filter((o) => o.kind === "product"), [orders]);
+  const eventOrders = useMemo(() => orders.filter((o) => o.kind === "event"), [orders]);
+  const sum = (rows: Order[]) => rows.reduce((s, o) => s + o.totalCents, 0);
 
   function handleExport() {
-    const header = ["Order ID", "Date", "Name", "Email", "Phone", "Shipping Address", "Items", "Amount"];
+    const header = ["Order ID", "Type", "Date", "Name", "Email", "Phone", "Shipping Address", "Items", "Amount"];
     const rows = filtered.map((o) => [
       o.id,
+      o.kind === "event" ? "Event" : "Product",
       formatDate(o.createdAt),
       o.buyerName ?? "",
       o.buyerEmail ?? "",
@@ -120,16 +128,23 @@ export default function OrdersManager({ onAuthError }: Props) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
         <div className="rounded-md border border-[#E2DBCD] bg-white px-5 py-4">
-          <div className="text-xs uppercase tracking-wider text-[#9A8F7E] mb-1">Orders</div>
-          <div className="text-2xl font-medium text-[#1E2A5A]">{orders.length}</div>
+          <div className="text-xs uppercase tracking-wider text-[#9A8F7E] mb-1">Product Orders</div>
+          <div className="text-2xl font-medium text-[#1E2A5A]">{money(sum(productOrders))}</div>
+          <div className="text-xs text-[#9A8F7E] mt-0.5">{productOrders.length} order{productOrders.length === 1 ? "" : "s"}</div>
+        </div>
+        <div className="rounded-md border border-[#E2DBCD] bg-white px-5 py-4">
+          <div className="text-xs uppercase tracking-wider text-[#9A8F7E] mb-1">Event Payments</div>
+          <div className="text-2xl font-medium text-[#1E2A5A]">{money(sum(eventOrders))}</div>
+          <div className="text-xs text-[#9A8F7E] mt-0.5">{eventOrders.length} payment{eventOrders.length === 1 ? "" : "s"}</div>
         </div>
         <div className="rounded-md border border-[#E2DBCD] bg-white px-5 py-4">
           <div className="text-xs uppercase tracking-wider text-[#9A8F7E] mb-1">Running Total</div>
           <div className="text-2xl font-medium text-[#1E2A5A]">{money(grandTotal)}</div>
+          <div className="text-xs text-[#9A8F7E] mt-0.5">{orders.length} total</div>
         </div>
-        {query.trim() && (
+        {(query.trim() || kindFilter !== "all") && (
           <div className="rounded-md border border-[#D4AF37]/50 bg-[#FDF9EE] px-5 py-4">
             <div className="text-xs uppercase tracking-wider text-[#9A8F7E] mb-1">Filtered Total ({filtered.length})</div>
             <div className="text-2xl font-medium text-[#1E2A5A]">{money(filteredTotal)}</div>
@@ -138,6 +153,21 @@ export default function OrdersManager({ onAuthError }: Props) {
       </div>
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-center gap-1 rounded-md border border-[#E2DBCD] bg-white p-1">
+          {([["all", "All"], ["product", "Products"], ["event", "Events"]] as const).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setKindFilter(value)}
+              className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                kindFilter === value
+                  ? "bg-[#1E2A5A] text-white"
+                  : "text-[#5A6178] hover:bg-[#FAF7F0]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9A8F7E]" />
           <Input
@@ -189,6 +219,7 @@ export default function OrdersManager({ onAuthError }: Props) {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Ship To</TableHead>
                 <TableHead>Items</TableHead>
@@ -205,6 +236,17 @@ export default function OrdersManager({ onAuthError }: Props) {
                       <div className="text-[10px] text-[#C5BBAC] font-mono mt-1" title={o.id}>
                         {o.id.slice(0, 10)}…
                       </div>
+                    </TableCell>
+                    <TableCell className="align-top">
+                      {o.kind === "event" ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#FDF9EE] text-[#8A6D1A] border border-[#D4AF37]/40">
+                          Event
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#EEF1FA] text-[#1E2A5A] border border-[#1E2A5A]/20">
+                          Product
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="align-top">
                       <div className="font-medium text-[#1E2A5A]">{o.buyerName ?? "—"}</div>

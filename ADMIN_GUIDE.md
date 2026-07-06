@@ -76,11 +76,12 @@ Video lessons for the Learn page. Each lesson has a title, category, a YouTube/V
 
 ## Orders
 
-Every completed product purchase, synced from Square.
+Every completed payment, synced from Square — both **product purchases** and **event registration payments**, each tagged with its type.
 
-- **Summary cards**: order count, **Running Total** of all sales, and — when searching — a filtered total.
-- **Table**: date, customer (name/email/phone), full shipping address, items, and amount.
-- **Search** filters across everything: name, email, address, items, amount, date, order ID.
+- **Filter tabs**: All / Products / Events.
+- **Summary cards**: Product Orders total, Event Payments total, the overall **Running Total**, and — when filtering or searching — a filtered total.
+- **Table**: date, type badge, customer (name/email/phone), full shipping address (products only), items, and amount.
+- **Search** filters across everything: name, email, address, items, amount, date, type, order ID.
 - **Export CSV** downloads whatever the current search shows.
 - Opening this page (or hitting Refresh) pulls the latest orders straight from Square, so it's always current even if a notification was missed.
 - **Behind the scenes**: each new order also triggers an email to **patsy@bougiebams.com** with the items, total, customer contact info, and ship-to address. Square collects the shipping address during checkout.

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAnyAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
-import { recordProductOrder, isPaidOrder } from "../lib/orders";
+import { recordSquareOrder, isPaidOrder } from "../lib/orders";
 import { resolveProductDiscount, hasRedeemed, recordPendingRedemption } from "../lib/discounts";
 
 const router: IRouter = Router();
@@ -180,7 +180,7 @@ router.get("/checkout/summary", async (req: Request, res: Response): Promise<voi
     // Capture the order (and owner notification) here too, so orders are
     // recorded even when the Square webhook isn't configured. Idempotent.
     try {
-      await recordProductOrder(order);
+      await recordSquareOrder(order);
     } catch (err) {
       logger.error({ err, orderId }, "Failed to record product order from summary lookup");
     }
