@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -337,6 +337,17 @@ router.delete("/admin/registrations/:id", requireAdmin, async (req, res): Promis
     res.status(404).json({ error: "Registration not found" });
     return;
   }
+
+  // A spot is consumed only once a registration reaches "confirmed" (paid events
+  // after payment clears, free events immediately). Restore the spot on delete for
+  // those, capped at the event's total capacity so counts never exceed totalSpots.
+  if (row.status === "confirmed") {
+    await db
+      .update(eventsTable)
+      .set({ spotsLeft: sql`LEAST(${eventsTable.totalSpots}, ${eventsTable.spotsLeft} + 1)` })
+      .where(eq(eventsTable.id, row.eventId));
+  }
+
   res.sendStatus(204);
 });
 
