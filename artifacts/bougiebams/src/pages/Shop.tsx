@@ -225,7 +225,14 @@ export default function Shop() {
                   {selectedProduct.category}
                 </span>
                 <h2 className="font-serif text-4xl mb-4">{selectedProduct.name}</h2>
-                <span className="text-2xl mb-6">${selectedProduct.price}</span>
+                <div className="flex items-center gap-3 mb-6 flex-wrap">
+                  <span className="text-2xl">${selectedProduct.price}</span>
+                  {selectedProduct.shippingIncluded && (
+                    <span className="text-xs font-semibold tracking-wider uppercase bg-primary/10 text-primary px-3 py-1 rounded-full">
+                      Shipping included
+                    </span>
+                  )}
+                </div>
                 <p className="text-muted-foreground font-serif text-lg leading-relaxed mb-8">
                   {selectedProduct.description}
                 </p>

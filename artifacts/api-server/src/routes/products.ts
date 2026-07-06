@@ -39,6 +39,7 @@ router.get("/products", async (req, res): Promise<void> => {
     featured: r.featured,
     published: r.published,
     buildYourSet: r.buildYourSet,
+    shippingIncluded: r.shippingIncluded,
     affiliateUrl: r.affiliateUrl ?? null,
   }));
   res.json(ListProductsResponse.parse({ products }));
@@ -61,6 +62,7 @@ router.get("/products/featured", async (_req, res): Promise<void> => {
     featured: r.featured,
     published: r.published,
     buildYourSet: r.buildYourSet,
+    shippingIncluded: r.shippingIncluded,
     affiliateUrl: r.affiliateUrl ?? null,
   }));
   res.json(ListProductsResponse.parse({ products }));
@@ -97,6 +99,7 @@ router.get("/products/:id", async (req, res): Promise<void> => {
         featured: row.featured,
         published: row.published,
         buildYourSet: row.buildYourSet,
+        shippingIncluded: row.shippingIncluded,
         affiliateUrl: row.affiliateUrl ?? null,
       },
     }),
@@ -123,6 +126,7 @@ router.get("/admin/products", requireAdmin, async (req, res): Promise<void> => {
     featured: r.featured,
     published: r.published,
     buildYourSet: r.buildYourSet,
+    shippingIncluded: r.shippingIncluded,
     affiliateUrl: r.affiliateUrl ?? null,
   }));
   res.json(ListProductsResponse.parse({ products }));
@@ -146,6 +150,7 @@ router.post("/products", requireAdmin, async (req, res): Promise<void> => {
       price: String(parsed.data.price),
       category: parsed.data.category,
       inStock: parsed.data.inStock,
+      shippingIncluded: parsed.data.shippingIncluded ?? false,
     })
     .returning();
 
@@ -163,6 +168,7 @@ router.post("/products", requireAdmin, async (req, res): Promise<void> => {
         featured: row.featured,
         published: row.published,
         buildYourSet: row.buildYourSet,
+        shippingIncluded: row.shippingIncluded,
         affiliateUrl: row.affiliateUrl ?? null,
       },
     }),
@@ -190,6 +196,7 @@ router.patch("/products/:id", requireAdmin, async (req, res): Promise<void> => {
   if (parsed.data.inStock !== undefined) updateData.inStock = parsed.data.inStock;
   if (parsed.data.published !== undefined) updateData.published = parsed.data.published;
   if (parsed.data.buildYourSet !== undefined) updateData.buildYourSet = parsed.data.buildYourSet;
+  if (parsed.data.shippingIncluded !== undefined) updateData.shippingIncluded = parsed.data.shippingIncluded;
 
   const [row] = await db
     .update(productsTable)
@@ -216,6 +223,7 @@ router.patch("/products/:id", requireAdmin, async (req, res): Promise<void> => {
         featured: row.featured,
         published: row.published,
         buildYourSet: row.buildYourSet,
+        shippingIncluded: row.shippingIncluded,
         affiliateUrl: row.affiliateUrl ?? null,
       },
     }),

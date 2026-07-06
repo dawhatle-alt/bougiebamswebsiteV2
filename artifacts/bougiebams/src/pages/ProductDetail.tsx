@@ -148,8 +148,13 @@ export default function ProductDetail() {
             >
               <h1 className="font-serif text-4xl md:text-5xl mb-4">{product.name}</h1>
 
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-6 flex-wrap">
                 <span className="text-2xl">${product.price}</span>
+                {product.shippingIncluded && (
+                  <span className="text-xs font-semibold tracking-wider uppercase bg-primary/10 text-primary px-3 py-1 rounded-full">
+                    Shipping included
+                  </span>
+                )}
                 <div className="flex items-center text-primary">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-current' : ''}`} />
@@ -249,7 +254,9 @@ export default function ProductDetail() {
                 </div>
                 <div className="flex justify-between py-3 border-b border-border">
                   <span>Shipping</span>
-                  <span>Free shipping over $150</span>
+                  <span className={product.shippingIncluded ? "text-primary font-medium" : undefined}>
+                    {product.shippingIncluded ? "Included in the price" : "Free shipping over $150"}
+                  </span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-border">
                   <span>Returns</span>

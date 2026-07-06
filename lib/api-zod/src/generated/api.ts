@@ -37,6 +37,7 @@ export const ListProductsResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
+  "shippingIncluded": zod.boolean().optional(),
   "affiliateUrl": zod.string().nullish()
 }))
 })
@@ -51,7 +52,8 @@ export const CreateProductBody = zod.object({
   "description": zod.string(),
   "price": zod.number(),
   "category": zod.string(),
-  "inStock": zod.boolean()
+  "inStock": zod.boolean(),
+  "shippingIncluded": zod.boolean().optional()
 })
 
 export const CreateProductResponse = zod.object({
@@ -67,6 +69,7 @@ export const CreateProductResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
+  "shippingIncluded": zod.boolean().optional(),
   "affiliateUrl": zod.string().nullish()
 })
 })
@@ -88,6 +91,7 @@ export const ListFeaturedProductsResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
+  "shippingIncluded": zod.boolean().optional(),
   "affiliateUrl": zod.string().nullish()
 }))
 })
@@ -113,6 +117,7 @@ export const GetProductResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
+  "shippingIncluded": zod.boolean().optional(),
   "affiliateUrl": zod.string().nullish()
 })
 })
@@ -132,7 +137,8 @@ export const UpdateProductBody = zod.object({
   "category": zod.string().optional(),
   "inStock": zod.boolean().optional(),
   "published": zod.boolean().optional(),
-  "buildYourSet": zod.boolean().optional()
+  "buildYourSet": zod.boolean().optional(),
+  "shippingIncluded": zod.boolean().optional()
 })
 
 export const UpdateProductResponse = zod.object({
@@ -148,6 +154,7 @@ export const UpdateProductResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
+  "shippingIncluded": zod.boolean().optional(),
   "affiliateUrl": zod.string().nullish()
 })
 })

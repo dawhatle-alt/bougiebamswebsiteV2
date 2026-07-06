@@ -40,6 +40,7 @@ interface ApiProduct {
   inStock: boolean;
   published: boolean;
   buildYourSet: boolean;
+  shippingIncluded: boolean;
   imagePath?: string | null;
 }
 
@@ -50,6 +51,7 @@ interface ProductForm {
   price: string;
   category: string;
   inStock: boolean;
+  shippingIncluded: boolean;
 }
 
 const EMPTY_FORM: ProductForm = {
@@ -59,6 +61,7 @@ const EMPTY_FORM: ProductForm = {
   price: "",
   category: CATEGORIES[0],
   inStock: true,
+  shippingIncluded: false,
 };
 
 interface Props {
@@ -125,6 +128,7 @@ export default function ProductManager({ onAuthError }: Props) {
       price: String(p.price),
       category: p.category,
       inStock: p.inStock,
+      shippingIncluded: p.shippingIncluded,
     });
     setFormError("");
     setModalOpen(true);
@@ -150,6 +154,7 @@ export default function ProductManager({ onAuthError }: Props) {
             price: priceNum,
             category: form.category,
             inStock: form.inStock,
+            shippingIncluded: form.shippingIncluded,
           }),
         });
         if (res.status === 401 || res.status === 403) { onAuthError(); return; }
@@ -171,6 +176,7 @@ export default function ProductManager({ onAuthError }: Props) {
             price: priceNum,
             category: form.category,
             inStock: form.inStock,
+            shippingIncluded: form.shippingIncluded,
           }),
         });
         if (res.status === 401 || res.status === 403) { onAuthError(); return; }
@@ -594,6 +600,22 @@ export default function ProductManager({ onAuthError }: Props) {
                 />
               </button>
               <span className="text-sm text-[#5A6178]">{form.inStock ? "In stock" : "Out of stock"}</span>
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, shippingIncluded: !f.shippingIncluded }))}
+                className={`relative inline-flex items-center px-0.5 w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  form.shippingIncluded ? "bg-emerald-500" : "bg-[#D0CCBF]"
+                }`}
+              >
+                <span
+                  className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
+                    form.shippingIncluded ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <span className="text-sm text-[#5A6178]">
+                {form.shippingIncluded ? "Shipping included in price" : "Standard shipping"}
+              </span>
             </div>
 
             {formError && (

@@ -38,6 +38,7 @@ export interface Product {
   isBestseller?: boolean;
   sku?: string;
   buildYourSet?: boolean;
+  shippingIncluded?: boolean;
 }
 
 export interface ApiProduct {
@@ -50,6 +51,7 @@ export interface ApiProduct {
   inStock: boolean;
   imagePath?: string | null;
   buildYourSet?: boolean;
+  shippingIncluded?: boolean;
 }
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -287,5 +289,6 @@ export function mergeProduct(api: ApiProduct): Product {
     isBestseller: meta?.isBestseller,
     // Default to included when the API omits it (e.g. older cached responses).
     buildYourSet: api.buildYourSet ?? true,
+    shippingIncluded: api.shippingIncluded ?? false,
   };
 }
