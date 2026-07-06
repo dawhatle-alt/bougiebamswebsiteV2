@@ -73,13 +73,20 @@ export default function EventDetail() {
   const fmtCalDate = (d: Date) =>
     d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 
+  // An unparseable date/time makes .toISOString() throw "Invalid time value";
+  // this gate lets callers (and the render below) skip calendar links safely.
+  const hasCalendarDate = (): boolean =>
+    !!event && !Number.isNaN(parseEventDateTime(event.date, event.time).getTime());
+
   const googleCalUrl = () => {
+    if (!hasCalendarDate()) return "";
     const start = fmtCalDate(parseEventDateTime(event!.date, event!.time));
     const end = fmtCalDate(new Date(parseEventDateTime(event!.date, event!.time).getTime() + 2 * 3600000));
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event!.title)}&dates=${start}/${end}&details=${encodeURIComponent(event!.description || "")}&location=${encodeURIComponent(event!.location)}`;
   };
 
   const downloadIcs = () => {
+    if (!hasCalendarDate()) return;
     const start = fmtCalDate(parseEventDateTime(event!.date, event!.time));
     const end = fmtCalDate(new Date(parseEventDateTime(event!.date, event!.time).getTime() + 2 * 3600000));
     const ics = [
@@ -204,17 +211,19 @@ export default function EventDetail() {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
                   <div>
-                    <div className="font-medium text-foreground">{formatDateCT(event.date)}</div>
+                    <div className="font-medium text-foreground">{formatDateCT(event.date) || event.date}</div>
                     <div className="text-sm">{event.time} CT</div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <a href={googleCalUrl()} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline font-medium">
-                        + Google Calendar
-                      </a>
-                      <span className="text-border">·</span>
-                      <button onClick={downloadIcs} className="text-xs text-primary hover:underline font-medium">
-                        + Apple / .ics
-                      </button>
-                    </div>
+                    {hasCalendarDate() && (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <a href={googleCalUrl()} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline font-medium">
+                          + Google Calendar
+                        </a>
+                        <span className="text-border">·</span>
+                        <button onClick={downloadIcs} className="text-xs text-primary hover:underline font-medium">
+                          + Apple / .ics
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 

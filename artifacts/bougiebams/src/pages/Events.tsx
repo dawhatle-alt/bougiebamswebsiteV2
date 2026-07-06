@@ -51,8 +51,11 @@ function getImageUrl(event: ApiEvent): string | null {
 
 function DateStamp({ dateStr }: { dateStr: string }) {
   const d = parseCalendarDate(dateStr);
-  const day = format(d, "d");
-  const mon = format(d, "MMM").toUpperCase();
+  const valid = !Number.isNaN(d.getTime());
+  // date-fns format() throws "Invalid time value" on an unparseable date, so
+  // fall back to a placeholder instead of crashing the whole events list.
+  const day = valid ? format(d, "d") : "–";
+  const mon = valid ? format(d, "MMM").toUpperCase() : "TBD";
   return (
     <div
       className="flex flex-col items-center justify-center w-14 h-14 rounded-xl shadow-md shrink-0"
@@ -78,7 +81,10 @@ function CalendarView({ events }: { events: ApiEvent[] }) {
   const paddedDays: (Date | null)[] = [...Array(startDow).fill(null), ...days];
 
   const eventsOnDay = (day: Date) =>
-    events.filter((e) => isSameDay(parseCalendarDate(e.date), day));
+    events.filter((e) => {
+      const d = parseCalendarDate(e.date);
+      return !Number.isNaN(d.getTime()) && isSameDay(d, day);
+    });
 
   return (
     <div className="rounded-2xl border border-[#E2DBCD] shadow-sm overflow-hidden bg-white">

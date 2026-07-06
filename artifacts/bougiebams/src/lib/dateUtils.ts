@@ -24,8 +24,17 @@ export function parseCalendarDate(date: string): Date {
   return new Date(date);
 }
 
+// A Date is "invalid" when its time value is NaN (e.g. new Date("test")). Callers
+// use this to avoid passing bad dates to formatters/date-fns, which throw
+// "Invalid time value" — a single bad event date should never crash the page.
+export function isValidDate(d: Date): boolean {
+  return !Number.isNaN(d.getTime());
+}
+
 export function formatDateCT(date: Date | string): string {
-  return toDate(date).toLocaleDateString("en-US", {
+  const d = toDate(date);
+  if (!isValidDate(d)) return "";
+  return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -34,7 +43,9 @@ export function formatDateCT(date: Date | string): string {
 }
 
 export function formatDateShortCT(date: Date | string): string {
-  return toDate(date).toLocaleDateString("en-US", {
+  const d = toDate(date);
+  if (!isValidDate(d)) return "";
+  return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -43,7 +54,9 @@ export function formatDateShortCT(date: Date | string): string {
 }
 
 export function formatDateFullCT(date: Date | string): string {
-  return toDate(date).toLocaleDateString("en-US", {
+  const d = toDate(date);
+  if (!isValidDate(d)) return "";
+  return d.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -53,7 +66,9 @@ export function formatDateFullCT(date: Date | string): string {
 }
 
 export function formatTimeCT(date: Date | string): string {
-  return toDate(date).toLocaleTimeString("en-US", {
+  const d = toDate(date);
+  if (!isValidDate(d)) return "";
+  return d.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
