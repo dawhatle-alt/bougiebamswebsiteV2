@@ -27,7 +27,9 @@ export function HeroShuffleGrid() {
     fetch(`${API_BASE}/api/hero-images`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { images: { id: number; objectPath: string }[] } | null) => {
-        if (data?.images && data.images.length >= 6) {
+        // Use the admin-uploaded photos as soon as any exist — the grid repeats
+        // them to fill all 12 tiles. Bundled defaults only show when none are set.
+        if (data?.images && data.images.length > 0) {
           const urls = data.images.map((img) => `${API_BASE}/api/storage${img.objectPath}`);
           const repeated = Array.from({ length: 12 }, (_, i) => urls[i % urls.length]);
           setImageUrls(repeated);

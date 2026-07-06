@@ -140,8 +140,8 @@ export default function HeroImagesManager({ onAuthError }: Props) {
           <h2 className="text-lg font-medium text-[#1E2A5A]">Homepage Background Images</h2>
           <p className="text-sm text-[#5A6178] mt-0.5">
             {images.length === 0
-              ? "No custom images — homepage uses default photos. Upload images to override."
-              : `${images.length} image${images.length !== 1 ? "s" : ""} · drag to reorder`}
+              ? "No custom images — the homepage shows its built-in default photos until you upload at least one."
+              : `${images.length} image${images.length !== 1 ? "s" : ""} · drag to reorder · the homepage repeats these to fill its 12-tile grid`}
           </p>
         </div>
         <div className="flex items-center gap-2">

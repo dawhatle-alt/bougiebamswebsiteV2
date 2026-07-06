@@ -363,6 +363,8 @@ router.delete("/admin/events/:id", requireAdmin, async (req, res): Promise<void>
 
 router.get("/hero-images", async (_req, res): Promise<void> => {
   const rows = await db.select().from(heroImagesTable).orderBy(heroImagesTable.position);
+  // Admin changes must show up on the very next page load — never cache the list.
+  res.setHeader("Cache-Control", "no-store");
   res.json({ images: rows.map((r) => ({ id: r.id, objectPath: r.objectPath, position: r.position })) });
 });
 
@@ -743,6 +745,7 @@ router.put("/admin/chatbot", requireAdmin, async (req, res): Promise<void> => {
 // Public: the "Curated Collections" cards on the homepage.
 router.get("/curated-collections", async (_req, res): Promise<void> => {
   try {
+    res.setHeader("Cache-Control", "no-store");
     res.json({ items: curatedToApi(await readCuratedCollections()) });
   } catch (err) {
     logger.error({ err }, "Failed to read curated collections");
