@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAnyAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
+import { recordProductOrder } from "../lib/orders";
 
 const router: IRouter = Router();
 
@@ -126,6 +127,14 @@ router.get("/checkout/summary", async (req: Request, res: Response): Promise<voi
     if (!order) {
       res.status(404).json({ error: "Order not found." });
       return;
+    }
+
+    // Capture the order (and owner notification) here too, so orders are
+    // recorded even when the Square webhook isn't configured. Idempotent.
+    try {
+      await recordProductOrder(order);
+    } catch (err) {
+      logger.error({ err, orderId }, "Failed to record product order from summary lookup");
     }
 
     const toCents = (m?: { amount?: bigint | number | null } | null): number =>

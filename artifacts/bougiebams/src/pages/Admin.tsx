@@ -27,6 +27,7 @@ import {
   Megaphone,
   MessageCircle,
   LayoutGrid,
+  Receipt,
   Menu,
   X,
 } from "lucide-react";
@@ -43,6 +44,7 @@ import GalleryManager from "@/components/admin/GalleryManager";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import ChatbotManager from "@/components/admin/ChatbotManager";
 import CuratedCollectionsManager from "@/components/admin/CuratedCollectionsManager";
+import OrdersManager from "@/components/admin/OrdersManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -60,7 +62,8 @@ type AdminView =
   | "gallery"
   | "announcement"
   | "chatbot"
-  | "curated";
+  | "curated"
+  | "orders";
 
 interface Subscriber {
   id: number;
@@ -143,6 +146,7 @@ const NAV_GROUPS = [
   {
     label: "Shop",
     items: [
+      { key: "orders" as AdminView, label: "Orders", icon: Receipt },
       { key: "products" as AdminView, label: "Products", icon: Package },
       { key: "discounts" as AdminView, label: "Discount Codes", icon: Tag },
       { key: "favorites" as AdminView, label: "Favorites", icon: Heart },
@@ -175,6 +179,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   announcement: "Announcement Bar",
   chatbot: "Chat Assistant",
   curated: "Curated Collections",
+  orders: "Orders",
 };
 
 function AdminLoginScreen({ apiBase }: { apiBase: string }) {
@@ -485,6 +490,8 @@ export default function Admin() {
             <ChatbotManager onAuthError={handleAuthError} />
           ) : view === "curated" ? (
             <CuratedCollectionsManager onAuthError={handleAuthError} />
+          ) : view === "orders" ? (
+            <OrdersManager onAuthError={handleAuthError} />
           ) : (
             <>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">

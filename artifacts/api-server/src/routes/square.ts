@@ -6,6 +6,7 @@ import { logger } from "../lib/logger";
 import { requireAnyAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured, isSandboxMode } from "../lib/square";
+import { recordProductOrder } from "../lib/orders";
 
 const router: IRouter = Router();
 
@@ -298,6 +299,9 @@ router.post(
               await confirmRegistration(registrationId, payment.id ?? null, reg.eventId);
             }
           }
+        } else if (orderRes.order) {
+          // No referenceId → a product order. Persist it and notify the owner.
+          await recordProductOrder(orderRes.order);
         }
       } catch (err) {
         logger.error({ err }, "Error processing Square payment webhook");

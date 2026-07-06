@@ -99,6 +99,60 @@ export async function sendRegistrationConfirmationEmail(opts: {
   }
 }
 
+const ORDER_NOTIFY_EMAIL = process.env.ORDER_NOTIFY_EMAIL ?? "patsy@bougiebams.com";
+
+export async function sendOrderNotificationEmail(opts: {
+  orderId: string;
+  totalCents: number;
+  currency: string;
+  buyerName: string | null;
+  buyerEmail: string | null;
+  buyerPhone: string | null;
+  shippingAddress: string | null;
+  items: { name: string; quantity: string; amountCents: number }[];
+}): Promise<void> {
+  const client = getClient();
+  if (!client) return;
+
+  const { orderId, totalCents, currency, buyerName, buyerEmail, buyerPhone, shippingAddress, items } = opts;
+  const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const itemRowsHtml = items
+    .map(
+      (i) =>
+        `<tr><td style="padding:4px 12px 4px 0">${esc(i.name)} × ${esc(i.quantity)}</td><td style="padding:4px 0;text-align:right"><strong>${money(i.amountCents)}</strong></td></tr>`,
+    )
+    .join("");
+  const itemsText = items.map((i) => `- ${i.name} × ${i.quantity} — ${money(i.amountCents)}`).join("\n");
+  const addressHtml = shippingAddress ? esc(shippingAddress).replace(/\n/g, "<br/>") : "Not provided";
+
+  const { error } = await client.emails.send({
+    from: FROM_EMAIL,
+    to: [ORDER_NOTIFY_EMAIL],
+    ...(buyerEmail ? { replyTo: buyerEmail } : {}),
+    subject: `New order ${money(totalCents)} — ${buyerName || buyerEmail || "Online store"}`,
+    html: `${logoHeader}
+      <h2>New order received 🎉</h2>
+      <table style="border-collapse:collapse;margin:16px 0;min-width:320px">${itemRowsHtml}
+        <tr><td style="padding:8px 12px 4px 0;border-top:1px solid #ddd"><strong>Total</strong></td><td style="padding:8px 0 4px;text-align:right;border-top:1px solid #ddd"><strong>${money(totalCents)} ${currency}</strong></td></tr>
+      </table>
+      <h3 style="margin-bottom:4px">Customer</h3>
+      <p style="margin:4px 0">${esc(buyerName ?? "—")}<br/>${esc(buyerEmail ?? "—")}<br/>${esc(buyerPhone ?? "—")}</p>
+      <h3 style="margin-bottom:4px">Ship to</h3>
+      <p style="margin:4px 0">${addressHtml}</p>
+      <p style="color:#888;font-size:12px;margin-top:16px">Square order: ${esc(orderId)}</p>
+    `,
+    text: `New order received\n\n${itemsText}\nTotal: ${money(totalCents)} ${currency}\n\nCustomer:\n${buyerName ?? "—"}\n${buyerEmail ?? "—"}\n${buyerPhone ?? "—"}\n\nShip to:\n${shippingAddress ?? "Not provided"}\n\nSquare order: ${orderId}`,
+  });
+
+  if (error) {
+    logger.error({ error, orderId }, "Failed to send order notification email");
+    throw new Error("Order notification email failed");
+  }
+  logger.info({ to: ORDER_NOTIFY_EMAIL, orderId }, "Order notification email sent");
+}
+
 export async function sendReminderEmail(opts: {
   registrantName: string;
   registrantEmail: string;

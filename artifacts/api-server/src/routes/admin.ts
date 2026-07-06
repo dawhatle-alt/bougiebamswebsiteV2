@@ -18,6 +18,7 @@ import {
 import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
+import { listOrders } from "../lib/orders";
 
 const router: IRouter = Router();
 
@@ -548,6 +549,28 @@ router.put("/admin/curated-collections", requireAdmin, async (req, res): Promise
   } catch (err) {
     logger.error({ err }, "Failed to save curated collections");
     res.status(500).json({ error: "Could not save the collections." });
+  }
+});
+
+router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
+  try {
+    const rows = await listOrders();
+    res.json({
+      orders: rows.map((r) => ({
+        id: r.id,
+        totalCents: r.totalCents,
+        currency: r.currency,
+        buyerName: r.buyerName ?? null,
+        buyerEmail: r.buyerEmail ?? null,
+        buyerPhone: r.buyerPhone ?? null,
+        shippingAddress: r.shippingAddress ?? null,
+        items: r.items ?? "[]",
+        createdAt: r.createdAt.toISOString(),
+      })),
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to list orders");
+    res.status(500).json({ error: "Could not load orders." });
   }
 });
 
