@@ -5,7 +5,7 @@ import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAnyAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
-import { getSquareClient, getSquareLocationId, isSandboxMode } from "../lib/square";
+import { getSquareClient, getSquareLocationId, isSquareLocationConfigured, isSandboxMode } from "../lib/square";
 
 const router: IRouter = Router();
 
@@ -34,6 +34,20 @@ router.post(
     if (!client) {
       res.status(503).json({
         error: "Payment processing is not yet available. Contact hello@bougiebams.com to register.",
+      });
+      return;
+    }
+
+    if (!isSquareLocationConfigured()) {
+      logger.error(
+        {
+          SQUARE_LOCATION_ID: JSON.stringify(process.env.SQUARE_LOCATION_ID ?? null),
+          SQUARE_ENVIRONMENT: process.env.SQUARE_ENVIRONMENT ?? "(unset → sandbox)",
+        },
+        "Registration checkout blocked: SQUARE_LOCATION_ID is missing or still set to the placeholder value",
+      );
+      res.status(503).json({
+        error: "Payment processing is not fully configured yet. Contact hello@bougiebams.com to register.",
       });
       return;
     }

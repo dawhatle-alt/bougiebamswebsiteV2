@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
 import { requireAnyAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
-import { getSquareClient, getSquareLocationId } from "../lib/square";
+import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 
 const router: IRouter = Router();
 
@@ -39,6 +39,20 @@ router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Pr
   if (!client) {
     res.status(503).json({
       error: "Online checkout is not yet available. Please contact us at hello@bougiebams.com to place your order.",
+    });
+    return;
+  }
+
+  if (!isSquareLocationConfigured()) {
+    logger.error(
+      {
+        SQUARE_LOCATION_ID: JSON.stringify(process.env.SQUARE_LOCATION_ID ?? null),
+        SQUARE_ENVIRONMENT: process.env.SQUARE_ENVIRONMENT ?? "(unset → sandbox)",
+      },
+      "Checkout blocked: SQUARE_LOCATION_ID is missing or still set to the placeholder value",
+    );
+    res.status(503).json({
+      error: "Online checkout is not fully configured yet. Please contact us at hello@bougiebams.com to place your order.",
     });
     return;
   }

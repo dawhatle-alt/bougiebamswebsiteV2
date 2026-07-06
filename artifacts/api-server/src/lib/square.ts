@@ -15,7 +15,15 @@ export function getSquareClient() {
 }
 
 export function getSquareLocationId(): string {
-  return process.env.SQUARE_LOCATION_ID ?? "";
+  return (process.env.SQUARE_LOCATION_ID ?? "").trim();
+}
+
+// True only when a real location ID is configured — i.e. not empty and not left
+// as the literal placeholder name (a common env-setup mistake that Square rejects
+// with "Invalid location id: SQUARE_LOCATION_ID").
+export function isSquareLocationConfigured(): boolean {
+  const id = getSquareLocationId();
+  return id.length > 0 && id !== "SQUARE_LOCATION_ID";
 }
 
 export function isSandboxMode(): boolean {
