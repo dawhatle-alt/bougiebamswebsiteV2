@@ -153,6 +153,72 @@ export async function sendOrderNotificationEmail(opts: {
   logger.info({ to: ORDER_NOTIFY_EMAIL, orderId }, "Order notification email sent");
 }
 
+export async function sendCheckinReportEmail(opts: {
+  to: string;
+  eventTitle: string;
+  eventDate: string;
+  eventTime: string;
+  eventLocation: string;
+  participants: { name: string; email: string; status: string; paid: boolean }[];
+  csv: string;
+  csvFilename: string;
+}): Promise<void> {
+  const client = getClient();
+  if (!client) throw new Error("Email delivery is not configured (RESEND_API_KEY missing)");
+
+  const { to, eventTitle, eventDate, eventTime, eventLocation, participants, csv, csvFilename } = opts;
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const rowsHtml = participants
+    .map(
+      (p, i) =>
+        `<tr>
+          <td style="padding:4px 10px;border-bottom:1px solid #eee">${i + 1}</td>
+          <td style="padding:4px 10px;border-bottom:1px solid #eee"><strong>${esc(p.name)}</strong></td>
+          <td style="padding:4px 10px;border-bottom:1px solid #eee">${esc(p.email)}</td>
+          <td style="padding:4px 10px;border-bottom:1px solid #eee">${esc(p.status)}</td>
+          <td style="padding:4px 10px;border-bottom:1px solid #eee">${p.paid ? "Paid" : "Free"}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const { error } = await client.emails.send({
+    from: FROM_EMAIL,
+    to: [to],
+    replyTo: CONTACT_EMAIL,
+    subject: `Check-in list: ${eventTitle} (${participants.length} registered)`,
+    html: `${logoHeader}
+      <h2>Check-in list — ${esc(eventTitle)}</h2>
+      <p style="margin:4px 0;color:#555">${esc(eventDate)} · ${esc(eventTime)}<br/>${esc(eventLocation)}</p>
+      <p><strong>${participants.length}</strong> registered participant${participants.length === 1 ? "" : "s"}. A CSV with a check-in column is attached.</p>
+      <table style="border-collapse:collapse;margin:16px 0;font-size:14px">
+        <tr>
+          <th style="padding:4px 10px;text-align:left;border-bottom:2px solid #1E2A5A">#</th>
+          <th style="padding:4px 10px;text-align:left;border-bottom:2px solid #1E2A5A">Name</th>
+          <th style="padding:4px 10px;text-align:left;border-bottom:2px solid #1E2A5A">Email</th>
+          <th style="padding:4px 10px;text-align:left;border-bottom:2px solid #1E2A5A">Status</th>
+          <th style="padding:4px 10px;text-align:left;border-bottom:2px solid #1E2A5A">Paid</th>
+        </tr>
+        ${rowsHtml}
+      </table>
+    `,
+    text: `Check-in list — ${eventTitle}\n${eventDate} · ${eventTime}\n${eventLocation}\n\n${participants.length} registered.\n\n${participants.map((p, i) => `${i + 1}. ${p.name} <${p.email}> — ${p.status}${p.paid ? " (paid)" : ""}`).join("\n")}`,
+    attachments: [
+      {
+        filename: csvFilename,
+        content: Buffer.from(csv, "utf8"),
+        contentType: "text/csv",
+      },
+    ],
+  });
+
+  if (error) {
+    logger.error({ error, to, eventTitle }, "Failed to send check-in report email");
+    throw new Error("Check-in report email failed");
+  }
+  logger.info({ to, eventTitle, count: participants.length }, "Check-in report email sent");
+}
+
 export async function sendReminderEmail(opts: {
   registrantName: string;
   registrantEmail: string;

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Download, Loader2, RefreshCw, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Download, Loader2, RefreshCw, Trash2, ArrowUp, ArrowDown, ArrowUpDown, ClipboardList, Mail } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -39,6 +40,11 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [emailTo, setEmailTo] = useState("patsy@bougiebams.com");
+  const [downloading, setDownloading] = useState(false);
+  const [emailing, setEmailing] = useState(false);
+  const [sentMsg, setSentMsg] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,6 +96,72 @@ export default function RegistrationsManager({ onAuthError }: Props) {
     return arr;
   }, [registrations, sortKey, sortDir]);
 
+  const events = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const r of registrations) {
+      if (!map.has(r.eventId)) map.set(r.eventId, r.eventTitle);
+    }
+    return Array.from(map, ([id, title]) => ({ id, title }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [registrations]);
+
+  const visible = useMemo(
+    () => (eventFilter === "all" ? sorted : sorted.filter((r) => String(r.eventId) === eventFilter)),
+    [sorted, eventFilter],
+  );
+
+  async function handleDownloadReport() {
+    if (eventFilter === "all") return;
+    setDownloading(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/events/${eventFilter}/checkin-report`, {
+        credentials: "include",
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+      const blob = await res.blob();
+      const title = events.find((e) => String(e.id) === eventFilter)?.title ?? "event";
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "event";
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `checkin-${slug}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Could not download the check-in report.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  async function handleEmailReport() {
+    if (eventFilter === "all" || !emailTo.trim()) return;
+    setEmailing(true);
+    setError("");
+    setSentMsg("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/events/${eventFilter}/checkin-report/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ to: emailTo.trim() }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      const data = (await res.json().catch(() => ({}))) as { error?: string; to?: string };
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setSentMsg(`Check-in report emailed to ${data.to ?? emailTo.trim()}.`);
+      setTimeout(() => setSentMsg(""), 5000);
+    } catch (err) {
+      setError(err instanceof Error && err.message !== "Failed" ? err.message : "Could not email the report. Please try again.");
+    } finally {
+      setEmailing(false);
+    }
+  }
+
   async function handleDelete(id: number) {
     if (!window.confirm("Remove this registration? This cannot be undone.")) return;
     setDeletingId(id);
@@ -111,7 +183,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
 
   function handleExport() {
     const header = ["ID", "Event", "Name", "Email", "Status", "Paid", "Notes", "Date"];
-    const rows = sorted.map((r) => [
+    const rows = visible.map((r) => [
       String(r.id),
       r.eventTitle,
       r.name,
@@ -164,7 +236,10 @@ export default function RegistrationsManager({ onAuthError }: Props) {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="text-[#1E2A5A] text-lg font-medium">
-          {registrations.length} {registrations.length === 1 ? "registration" : "registrations"}
+          {visible.length} {visible.length === 1 ? "registration" : "registrations"}
+          {eventFilter !== "all" && registrations.length !== visible.length && (
+            <span className="text-sm text-[#9A8F7E] font-normal ml-1">of {registrations.length}</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={load} disabled={loading}>
@@ -182,6 +257,58 @@ export default function RegistrationsManager({ onAuthError }: Props) {
         </div>
       </div>
 
+      <div className="mb-6 rounded-md border border-[#E2DBCD] bg-white p-4 flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="w-4 h-4 text-[#D4AF37]" />
+          <span className="text-sm font-medium text-[#1E2A5A]">Check-in report</span>
+        </div>
+        <select
+          value={eventFilter}
+          onChange={(e) => setEventFilter(e.target.value)}
+          className="h-9 rounded-md border border-[#E2DBCD] bg-white px-3 text-sm text-[#1E2A5A] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 min-w-[200px]"
+        >
+          <option value="all">All events…</option>
+          {events.map((e) => (
+            <option key={e.id} value={String(e.id)}>{e.title}</option>
+          ))}
+        </select>
+        {eventFilter !== "all" && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => void handleDownloadReport()} disabled={downloading}>
+              {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+              Download CSV
+            </Button>
+            <div className="flex items-center gap-2">
+              <Input
+                type="email"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+                placeholder="patsy@bougiebams.com"
+                className="h-9 w-56"
+              />
+              <Button
+                size="sm"
+                onClick={() => void handleEmailReport()}
+                disabled={emailing || !emailTo.trim()}
+                className="bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
+              >
+                {emailing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                Email Report
+              </Button>
+            </div>
+          </>
+        )}
+        {eventFilter === "all" && (
+          <span className="text-xs text-[#9A8F7E]">Pick an event to download or email its participant list.</span>
+        )}
+      </div>
+
+      {sentMsg && (
+        <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          {sentMsg}
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -193,9 +320,11 @@ export default function RegistrationsManager({ onAuthError }: Props) {
           <div className="py-16 flex items-center justify-center">
             <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
           </div>
-        ) : registrations.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="py-16 text-center text-[#5A6178]">
-            No registrations yet. They'll appear here as guests sign up for events.
+            {registrations.length === 0
+              ? "No registrations yet. They'll appear here as guests sign up for events."
+              : "No registrations for this event yet."}
           </div>
         ) : (
           <Table>
@@ -211,7 +340,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((r) => (
+              {visible.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium text-[#1E2A5A] max-w-[180px] truncate">
                     {r.eventTitle}

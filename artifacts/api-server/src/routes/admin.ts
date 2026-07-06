@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { count, eq, sql, inArray } from "drizzle-orm";
+import { count, eq, sql, inArray, asc } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -19,6 +19,7 @@ import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { listOrders, syncOrdersFromSquare } from "../lib/orders";
+import { sendCheckinReportEmail } from "../lib/email";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 
 const router: IRouter = Router();
@@ -425,6 +426,97 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
       createdAt: r.createdAt.toISOString(),
     })),
   });
+});
+
+// --- Event check-in report -----------------------------------------------
+
+async function buildCheckinReport(eventId: number) {
+  const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId)).limit(1);
+  if (!event) return null;
+
+  const regs = await db
+    .select()
+    .from(registrationsTable)
+    .where(eq(registrationsTable.eventId, eventId))
+    .orderBy(asc(registrationsTable.name));
+
+  const participants = regs.map((r) => ({
+    name: r.name,
+    email: r.email,
+    status: r.status,
+    paid: !!r.paymentSessionId,
+    notes: r.notes ?? "",
+    registered: r.createdAt.toISOString().slice(0, 10),
+  }));
+
+  const csvEscape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  const header = ["#", "Name", "Email", "Status", "Paid", "Notes", "Registered", "Checked In"];
+  const rows = participants.map((p, i) => [
+    String(i + 1),
+    p.name,
+    p.email,
+    p.status,
+    p.paid ? "Yes" : "No",
+    p.notes,
+    p.registered,
+    "", // blank column to tick off at the door
+  ]);
+  const csv = [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+
+  const slug = event.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "event";
+  const csvFilename = `checkin-${slug}.csv`;
+
+  return { event, participants, csv, csvFilename };
+}
+
+router.get("/admin/events/:id/checkin-report", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const report = await buildCheckinReport(id);
+  if (!report) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${report.csvFilename}"`);
+  res.send(report.csv);
+});
+
+router.post("/admin/events/:id/checkin-report/email", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const { to } = req.body as { to?: unknown };
+  if (typeof to !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) {
+    res.status(400).json({ error: "A valid recipient email address is required." });
+    return;
+  }
+  const report = await buildCheckinReport(id);
+  if (!report) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+  try {
+    await sendCheckinReportEmail({
+      to: to.trim(),
+      eventTitle: report.event.title,
+      eventDate: report.event.date,
+      eventTime: report.event.time,
+      eventLocation: report.event.location,
+      participants: report.participants,
+      csv: report.csv,
+      csvFilename: report.csvFilename,
+    });
+    res.json({ sent: true, to: to.trim(), count: report.participants.length });
+  } catch (err) {
+    logger.error({ err, eventId: id }, "Failed to email check-in report");
+    res.status(500).json({ error: "Could not send the report email." });
+  }
 });
 
 router.delete("/admin/registrations/:id", requireAdmin, async (req, res): Promise<void> => {
