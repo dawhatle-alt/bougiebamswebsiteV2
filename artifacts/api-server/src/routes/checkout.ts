@@ -4,7 +4,7 @@ import { requireAnyAuth } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 import { recordProductOrder, isPaidOrder } from "../lib/orders";
-import { resolveProductDiscount } from "../lib/discounts";
+import { resolveProductDiscount, hasRedeemed, recordPendingRedemption } from "../lib/discounts";
 
 const router: IRouter = Router();
 
@@ -67,10 +67,20 @@ router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Pr
     // silently paying full price on Square's hosted page.
     let discount: { code: string; percent: number } | null = null;
     if (discountCode?.trim()) {
+      if (!email?.trim()) {
+        res.status(400).json({ error: "Enter the email you used to claim your offer to apply the code." });
+        return;
+      }
       discount = await resolveProductDiscount(discountCode);
       if (!discount) {
         res.status(400).json({
           error: "That discount code isn't valid. Double-check the code or remove it to continue.",
+        });
+        return;
+      }
+      if (await hasRedeemed(discount.code, email)) {
+        res.status(400).json({
+          error: "This discount code has already been used with that email address.",
         });
         return;
       }
@@ -115,6 +125,17 @@ router.post("/checkout", requireAnyAuth, async (req: Request, res: Response): Pr
     const url = response.paymentLink?.url;
     if (!url) {
       throw new Error("Square did not return a checkout URL");
+    }
+
+    // Tie the discount to the Square order; it's marked consumed when the order
+    // is captured as paid (abandoned checkouts don't burn the code).
+    const linkOrderId = response.paymentLink?.orderId;
+    if (discount && email && linkOrderId) {
+      try {
+        await recordPendingRedemption(discount.code, email, linkOrderId);
+      } catch (err) {
+        logger.error({ err, code: discount.code }, "Failed to record pending discount redemption");
+      }
     }
 
     res.json({ url });

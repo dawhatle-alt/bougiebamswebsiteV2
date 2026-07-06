@@ -136,6 +136,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    if (discountCode.trim() && !discountEmail.trim()) {
+      setCheckoutError("Enter the email you used to claim your offer to apply the code.");
+      return;
+    }
+
     setCheckoutLoading(true);
     setCheckoutError(null);
     try {

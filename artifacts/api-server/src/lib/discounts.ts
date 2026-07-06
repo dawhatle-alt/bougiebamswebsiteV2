@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
-import { db, discountCodesTable, subscribersTable } from "@workspace/db";
+import { eq, and, sql, isNotNull } from "drizzle-orm";
+import { db, discountCodesTable, subscribersTable, discountRedemptionsTable } from "@workspace/db";
 import { logger } from "./logger";
 
 // The welcome popup's built-in code and the offer it advertises (15% off).
@@ -61,4 +61,78 @@ export async function resolveProductDiscount(raw: string): Promise<ResolvedDisco
   if (subscriber) return { code, percent: WELCOME_PERCENT };
 
   return null;
+}
+
+// --- Single-use-per-email enforcement ---------------------------------------
+// Migrations are applied manually in this project, so lazily create the table
+// on first use (same pattern as site_settings/orders).
+let redemptionsTableReady: Promise<void> | null = null;
+
+function ensureRedemptionsTable(): Promise<void> {
+  if (!redemptionsTableReady) {
+    redemptionsTableReady = db
+      .execute(sql`
+        CREATE TABLE IF NOT EXISTS discount_redemptions (
+          id serial PRIMARY KEY,
+          code text NOT NULL,
+          email text NOT NULL,
+          order_id text,
+          paid_at timestamptz,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          CONSTRAINT discount_redemptions_code_email UNIQUE (code, email)
+        )
+      `)
+      .then(() => undefined)
+      .catch((err) => {
+        redemptionsTableReady = null;
+        throw err;
+      });
+  }
+  return redemptionsTableReady;
+}
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+/** True when this code has already been used on a PAID order by this email. */
+export async function hasRedeemed(code: string, email: string): Promise<boolean> {
+  await ensureRedemptionsTable();
+  const [row] = await db
+    .select({ id: discountRedemptionsTable.id })
+    .from(discountRedemptionsTable)
+    .where(
+      and(
+        eq(discountRedemptionsTable.code, code.trim().toUpperCase()),
+        eq(discountRedemptionsTable.email, normalizeEmail(email)),
+        isNotNull(discountRedemptionsTable.paidAt),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
+
+/**
+ * Records that a checkout was started with this code/email, linked to the Square
+ * order so the redemption can be marked paid on capture. Re-running (retry after
+ * an abandoned checkout) just points the pair at the newest order.
+ */
+export async function recordPendingRedemption(code: string, email: string, orderId: string): Promise<void> {
+  await ensureRedemptionsTable();
+  await db
+    .insert(discountRedemptionsTable)
+    .values({ code: code.trim().toUpperCase(), email: normalizeEmail(email), orderId })
+    .onConflictDoUpdate({
+      target: [discountRedemptionsTable.code, discountRedemptionsTable.email],
+      set: { orderId },
+      // Never re-point a redemption that already consumed the code.
+      setWhere: sql`${discountRedemptionsTable.paidAt} IS NULL`,
+    });
+}
+
+/** Stamps the redemption tied to this order as consumed. Safe no-op otherwise. */
+export async function markRedemptionPaid(orderId: string): Promise<void> {
+  await ensureRedemptionsTable();
+  await db
+    .update(discountRedemptionsTable)
+    .set({ paidAt: new Date() })
+    .where(and(eq(discountRedemptionsTable.orderId, orderId), sql`${discountRedemptionsTable.paidAt} IS NULL`));
 }

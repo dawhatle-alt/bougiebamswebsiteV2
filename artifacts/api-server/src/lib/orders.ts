@@ -2,6 +2,7 @@ import { sql, eq, and, isNull, desc } from "drizzle-orm";
 import { db, ordersTable } from "@workspace/db";
 import { logger } from "./logger";
 import { sendOrderNotificationEmail } from "./email";
+import { markRedemptionPaid } from "./discounts";
 
 // Migrations are applied manually in this project (drizzle-kit push doesn't run
 // on deploy), so lazily create the table on first use — same pattern as
@@ -142,6 +143,14 @@ export async function recordProductOrder(
       ...(order.createdAt ? { createdAt: new Date(order.createdAt) } : {}),
     })
     .onConflictDoNothing({ target: ordersTable.id });
+
+  // If this order used a discount code, stamp the redemption as consumed so the
+  // code can't be reused by the same email.
+  try {
+    await markRedemptionPaid(order.id);
+  } catch (err) {
+    logger.error({ err, orderId: order.id }, "Failed to mark discount redemption as paid");
+  }
 
   if (!notify) return;
 
