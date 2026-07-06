@@ -13,3 +13,4 @@ export * from "./conversations";
 export * from "./messages";
 export * from "./lessons";
 export * from "./event_gallery";
+export * from "./site_settings";

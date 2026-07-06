@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { count, eq, sql } from "drizzle-orm";
+import { count, eq, sql, inArray } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -13,12 +13,62 @@ import {
   registrationsTable,
   heroImagesTable,
   discountCodesTable,
+  siteSettingsTable,
 } from "@workspace/db";
 import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+// --- Site settings (announcement bar) ---------------------------------------
+// Migrations here are applied manually (drizzle-kit push), which doesn't run on
+// deploy, so lazily create the table on first use. CREATE TABLE IF NOT EXISTS is
+// idempotent and safe to run per serverless instance.
+const ANNOUNCEMENT_DEFAULT_TEXT = "Complimentary shipping on all orders over $150";
+let settingsTableReady: Promise<void> | null = null;
+
+function ensureSettingsTable(): Promise<void> {
+  if (!settingsTableReady) {
+    settingsTableReady = db
+      .execute(sql`
+        CREATE TABLE IF NOT EXISTS site_settings (
+          key text PRIMARY KEY,
+          value text,
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `)
+      .then(() => undefined)
+      .catch((err) => {
+        settingsTableReady = null;
+        throw err;
+      });
+  }
+  return settingsTableReady;
+}
+
+async function readAnnouncement(): Promise<{ enabled: boolean; text: string }> {
+  await ensureSettingsTable();
+  const rows = await db
+    .select()
+    .from(siteSettingsTable)
+    .where(inArray(siteSettingsTable.key, ["announcement_enabled", "announcement_text"]));
+  const map = new Map(rows.map((r) => [r.key, r.value]));
+  const enabledRaw = map.get("announcement_enabled");
+  return {
+    // Default ON with the original copy so behavior is unchanged until edited.
+    enabled: enabledRaw == null ? true : enabledRaw === "true",
+    text: map.get("announcement_text") ?? ANNOUNCEMENT_DEFAULT_TEXT,
+  };
+}
+
+async function writeSetting(key: string, value: string): Promise<void> {
+  await ensureSettingsTable();
+  await db
+    .insert(siteSettingsTable)
+    .values({ key, value })
+    .onConflictDoUpdate({ target: siteSettingsTable.key, set: { value, updatedAt: new Date() } });
+}
 
 const workspaceRoot = process.cwd().endsWith(path.join("artifacts", "api-server"))
   ? path.resolve(process.cwd(), "../..")
@@ -349,6 +399,33 @@ router.delete("/admin/registrations/:id", requireAdmin, async (req, res): Promis
   }
 
   res.sendStatus(204);
+});
+
+// Public: the announcement bar shown site-wide. Fails soft (returns disabled)
+// so a settings/DB hiccup never breaks page rendering.
+router.get("/announcement", async (_req, res): Promise<void> => {
+  try {
+    res.json(await readAnnouncement());
+  } catch (err) {
+    logger.error({ err }, "Failed to read announcement setting");
+    res.json({ enabled: false, text: "" });
+  }
+});
+
+router.put("/admin/announcement", requireAdmin, async (req, res): Promise<void> => {
+  const { enabled, text } = req.body as { enabled?: unknown; text?: unknown };
+  if (typeof enabled !== "boolean" || typeof text !== "string") {
+    res.status(400).json({ error: "enabled (boolean) and text (string) are required" });
+    return;
+  }
+  try {
+    await writeSetting("announcement_enabled", String(enabled));
+    await writeSetting("announcement_text", text);
+    res.json(await readAnnouncement());
+  } catch (err) {
+    logger.error({ err }, "Failed to update announcement setting");
+    res.status(500).json({ error: "Could not save the announcement." });
+  }
 });
 
 router.get("/admin/product-images", requireAdmin, async (_req, res): Promise<void> => {

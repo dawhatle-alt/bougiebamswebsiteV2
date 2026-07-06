@@ -24,6 +24,7 @@ import {
   GraduationCap,
   Heart,
   Camera,
+  Megaphone,
   Menu,
   X,
 } from "lucide-react";
@@ -37,6 +38,7 @@ import DiscountCodesManager from "@/components/admin/DiscountCodesManager";
 import LessonsManager from "@/components/admin/LessonsManager";
 import FavoritesManager from "@/components/admin/FavoritesManager";
 import GalleryManager from "@/components/admin/GalleryManager";
+import AnnouncementManager from "@/components/admin/AnnouncementManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -51,7 +53,8 @@ type AdminView =
   | "discounts"
   | "lessons"
   | "favorites"
-  | "gallery";
+  | "gallery"
+  | "announcement";
 
 interface Subscriber {
   id: number;
@@ -144,6 +147,7 @@ const NAV_GROUPS = [
     items: [
       { key: "hero" as AdminView, label: "Homepage Images", icon: Image },
       { key: "gallery" as AdminView, label: "Event Gallery", icon: Camera },
+      { key: "announcement" as AdminView, label: "Announcement Bar", icon: Megaphone },
     ],
   },
 ];
@@ -160,6 +164,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   lessons: "Education",
   favorites: "Favorites",
   gallery: "Event Gallery",
+  announcement: "Announcement Bar",
 };
 
 function AdminLoginScreen({ apiBase }: { apiBase: string }) {
@@ -464,6 +469,8 @@ export default function Admin() {
             <FavoritesManager onAuthError={handleAuthError} />
           ) : view === "gallery" ? (
             <GalleryManager onAuthError={handleAuthError} />
+          ) : view === "announcement" ? (
+            <AnnouncementManager onAuthError={handleAuthError} />
           ) : (
             <>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">

@@ -63,6 +63,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
+  const [announcement, setAnnouncement] = useState<{ enabled: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE}/api/announcement`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (active && data) setAnnouncement(data as { enabled: boolean; text: string }); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const shopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const aboutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -324,9 +334,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <div className="fixed top-0 inset-x-0 z-50">
-        {!announcementDismissed && (
+        {announcement?.enabled && announcement.text.trim() && !announcementDismissed && (
           <div className="relative bg-primary text-primary-foreground text-center text-[11px] md:text-xs tracking-[0.2em] uppercase py-1.5 px-10 font-medium leading-tight">
-            Complimentary shipping on all orders over $150
+            {announcement.text}
             <button
               onClick={() => setAnnouncementDismissed(true)}
               className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
