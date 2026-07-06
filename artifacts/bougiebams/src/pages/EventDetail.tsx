@@ -2,6 +2,7 @@ import { useParams, useLocation } from "wouter";
 import { formatDateCT } from "@/lib/dateUtils";
 import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink, Share2, Check } from "lucide-react";
 import { useGetEvent } from "@workspace/api-client-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ export default function EventDetail() {
     query: { enabled: !!eventId }
   });
   const event = eventData?.event;
+  usePageTitle(event?.title, event ? `${event.date} · ${event.location}` : undefined);
 
   const { user, isAuthenticated, login } = useAuth();
   const { user: shopperUser, isAuthenticated: shopperAuthenticated, accessToken } = useSupabaseAuth();

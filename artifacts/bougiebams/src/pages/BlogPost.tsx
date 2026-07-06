@@ -2,12 +2,14 @@ import { Link, useRoute } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { useBlogPost } from "@/hooks/useBlogPosts";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { blogImageUrl, formatBlogDate } from "@/data/blog";
 
 export default function BlogPost() {
   const [, params] = useRoute("/blog/:slug");
   const slug = params?.slug ?? "";
   const { post, loading, error } = useBlogPost(slug);
+  usePageTitle(post?.title);
 
   return (
     <div className="pt-32 pb-24 min-h-screen bg-background">

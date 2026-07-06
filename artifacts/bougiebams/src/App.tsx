@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { setPageMeta } from "@/hooks/usePageTitle";
 import { AnimatePresence, motion } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -91,6 +93,44 @@ function MarketingRouter() {
   );
 }
 
+// Titles for static routes. Detail pages (/shop/:id, /events/:id, /blog/:slug)
+// set their own once their data loads, so dynamic prefixes are skipped here.
+const ROUTE_TITLES: Record<string, string | null> = {
+  "/": null, // site-wide default
+  "/shop": "Shop Mahjong Sets & Accessories",
+  "/build": "Build Your Set",
+  "/build-your-set": "Build Your Set",
+  "/about": "About Us",
+  "/founder": "Our Founder",
+  "/learn": "Learn Mahjong",
+  "/blog": "Blog",
+  "/faq": "FAQ",
+  "/events": "Mahjong Events & Game Nights",
+  "/events/confirmation": "Registration Confirmation",
+  "/my-events": "My Events",
+  "/account": "My Account",
+  "/favorites": "Favorites — Mahjong Accessories & Winner Brags",
+  "/contact": "Contact Us",
+  "/checkout/confirmation": "Order Confirmation",
+  "/login": "Sign In",
+  "/signup": "Create Account",
+  "/reset-password": "Reset Password",
+  "/admin": "Admin",
+};
+const DYNAMIC_TITLE_PREFIXES = ["/shop/", "/events/", "/blog/"];
+
+function RouteTitles() {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (location in ROUTE_TITLES) {
+      setPageMeta(ROUTE_TITLES[location]);
+    } else if (!DYNAMIC_TITLE_PREFIXES.some((p) => location.startsWith(p))) {
+      setPageMeta(null);
+    }
+  }, [location]);
+  return null;
+}
+
 function Router() {
   return (
     <Switch>
@@ -111,6 +151,7 @@ function App() {
           <CartProvider>
             <WishlistProvider>
               <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <RouteTitles />
                 <Router />
               </WouterRouter>
               <Toaster />

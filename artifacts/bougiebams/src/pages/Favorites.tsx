@@ -48,10 +48,6 @@ export default function Favorites() {
   const imageMap = useFavoriteImages();
   const customProducts = useCustomProducts();
 
-  useEffect(() => {
-    document.title = "BougieBams Favorites | Mahjong Accessories & Winner Brags";
-  }, []);
-
   const allProducts: FavoriteProduct[] = useMemo(() => {
     const statics = FAVORITES.map((p) =>
       imageMap[p.id] ? { ...p, image: imageMap[p.id] } : p

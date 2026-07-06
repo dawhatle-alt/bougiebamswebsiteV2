@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const { products, loading, error } = useProducts();
   const product = products.find(p => p.id === id);
+  usePageTitle(product?.name, product?.description?.slice(0, 160));
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
