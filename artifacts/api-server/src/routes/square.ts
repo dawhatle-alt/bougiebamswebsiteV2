@@ -202,7 +202,9 @@ async function confirmRegistration(registrationId: number, paymentId: string | n
 }
 
 router.post(
-  "/webhooks/square",
+  // Both paths accepted — the Square webhook subscription was configured with
+  // /api/square/webhook, while this route historically lived at /api/webhooks/square.
+  ["/webhooks/square", "/square/webhook"],
   async (req: Request & { rawBody?: Buffer }, res: Response): Promise<void> => {
     const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     const notificationUrl = process.env.SQUARE_WEBHOOK_URL;
