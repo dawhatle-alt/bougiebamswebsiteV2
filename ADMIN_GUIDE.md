@@ -114,6 +114,9 @@ Create and manage promo codes customers enter in the cart.
 
 Curated third-party product recommendations for the Favorites page — each with a name, category, description, image, and **affiliate link**.
 
+- **Add Product** (top-right button) opens the form for a new item: name, category, description, affiliate URL, and an image upload. New items appear on the public Favorites page immediately.
+- Two tabs: **Catalog Products** — the built-in list, where you can upload/replace each item's photo; **Custom Products** — everything you've added yourself, with edit and delete on each card.
+
 ---
 
 # Site

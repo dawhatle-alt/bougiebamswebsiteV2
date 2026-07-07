@@ -265,10 +265,20 @@ export default function FavoritesManager({ onAuthError }: Props) {
           <h2 className="text-xl font-medium text-[#1E2A5A]">Favorites Manager</h2>
           <p className="text-sm text-[#5A6178] mt-0.5">Upload photos for existing products or add new custom items.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button
+            size="sm"
+            className="bg-[#1E2A5A] text-white hover:bg-[#172248]"
+            onClick={() => { setTab("custom"); openAdd(); }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -379,17 +389,6 @@ export default function FavoritesManager({ onAuthError }: Props) {
         </>
       ) : (
         <>
-          <div className="flex justify-end mb-4">
-            <Button
-              size="sm"
-              className="bg-[#1E2A5A] text-white hover:bg-[#172248]"
-              onClick={openAdd}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Custom Product
-            </Button>
-          </div>
-
           {showForm && (
             <div className="mb-6 bg-white border border-[#E2DBCD] rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
