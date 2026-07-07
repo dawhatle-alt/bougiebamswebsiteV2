@@ -99,6 +99,7 @@ The shop catalog. Each row has three quick toggles:
 - **Edit** (pencil icon) opens the full form: name, description, price, category, in-stock, and **"Shipping included in price"** — turning that on shows a gold *Shipping included* badge next to the price on the product page and quick view (instead of the standard "Free shipping over $150" note).
 - **Upload/replace product images** via the image button on each row.
 - Deleting a product removes it permanently.
+- **Categories manage themselves**: a category appears in the shop menu and shop-page filters only while it has at least one *visible* product. Hide or delete everything in a category and its section disappears everywhere; add a product to a new category and the section shows up automatically.
 
 ## Discount Codes
 

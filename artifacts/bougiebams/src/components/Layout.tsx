@@ -98,14 +98,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth();
   const { user: shopperUser, isAuthenticated: shopperAuthenticated, isLoading: shopperLoading, accessToken, signOut: shopperSignOut } = useSupabaseAuth();
 
-  const shopGroups = useMemo(
-    () =>
-      SHOP_CATEGORIES.map((cat) => ({
-        ...cat,
-        items: products.filter((p) => p.category === cat.name).slice(0, 6),
-      })),
-    [products],
-  );
+  const shopGroups = useMemo(() => {
+    const groups = SHOP_CATEGORIES.map((cat) => ({
+      ...cat,
+      items: products.filter((p) => p.category === cat.name).slice(0, 6),
+    }));
+    // Hide categories with no visible products so empty sections never show in
+    // the shop menu. While products are still loading (all groups empty), keep
+    // the full list so the menu isn't blank for a moment.
+    const withProducts = groups.filter((g) => g.items.length > 0);
+    return withProducts.length > 0 ? withProducts : groups;
+  }, [products]);
   const { items, totalItems, subtotal, isOpen, setIsOpen, updateQuantity, removeItem, addItem } = useCart();
   const {
     items: wishItems,
@@ -745,7 +748,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/shop" className="font-sans text-base text-muted-foreground hover:text-primary transition-colors">
                   Shop All
                 </Link>
-                {SHOP_CATEGORIES.map((cat) => (
+                {shopGroups.map((cat) => (
                   <Link
                     key={cat.name}
                     href={`/shop?category=${encodeURIComponent(cat.name)}`}
