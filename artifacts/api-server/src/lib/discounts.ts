@@ -82,6 +82,9 @@ function ensureRedemptionsTable(): Promise<void> {
           CONSTRAINT discount_redemptions_code_email UNIQUE (code, email)
         )
       `)
+      // Deny-all via Supabase's public REST API; the server's direct Postgres
+      // connection is the table owner and is unaffected.
+      .then(() => db.execute(sql`ALTER TABLE discount_redemptions ENABLE ROW LEVEL SECURITY`))
       .then(() => undefined)
       .catch((err) => {
         redemptionsTableReady = null;

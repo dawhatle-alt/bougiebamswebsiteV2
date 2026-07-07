@@ -37,6 +37,9 @@ function ensureOrdersTable(): Promise<void> {
             ADD COLUMN IF NOT EXISTS discount_cents integer NOT NULL DEFAULT 0
         `),
       )
+      // Deny-all via Supabase's public REST API; the server's direct Postgres
+      // connection is the table owner and is unaffected.
+      .then(() => db.execute(sql`ALTER TABLE orders ENABLE ROW LEVEL SECURITY`))
       .then(() => undefined)
       .catch((err) => {
         ordersTableReady = null;

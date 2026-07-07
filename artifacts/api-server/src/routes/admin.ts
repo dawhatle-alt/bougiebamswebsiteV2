@@ -42,6 +42,9 @@ function ensureSettingsTable(): Promise<void> {
           updated_at timestamptz NOT NULL DEFAULT now()
         )
       `)
+      // Deny-all via Supabase's public REST API; the server's direct Postgres
+      // connection is the table owner and is unaffected.
+      .then(() => db.execute(sql`ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY`))
       .then(() => undefined)
       .catch((err) => {
         settingsTableReady = null;
