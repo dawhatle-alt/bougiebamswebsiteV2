@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { SHOP_CATEGORIES } from "@/data/categories";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -28,7 +29,9 @@ import { productMeta } from "@/data/products";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-const CATEGORIES = ["Tiles", "Mats", "Storage", "Accessories"];
+// Single source of truth: the same categories the storefront navigation shows.
+// Assigning a product to one of these is what places it in that shop section.
+const CATEGORIES = SHOP_CATEGORIES.map((c) => c.name);
 
 interface ApiProduct {
   id: string;
