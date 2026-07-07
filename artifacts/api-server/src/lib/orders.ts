@@ -28,8 +28,15 @@ function ensureOrdersTable(): Promise<void> {
           created_at timestamptz NOT NULL DEFAULT now()
         )
       `)
-      // Tables created before the kind column existed need it added in place.
-      .then(() => db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'product'`))
+      // Tables created before these columns existed need them added in place.
+      .then(() =>
+        db.execute(sql`
+          ALTER TABLE orders
+            ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'product',
+            ADD COLUMN IF NOT EXISTS discount_code text,
+            ADD COLUMN IF NOT EXISTS discount_cents integer NOT NULL DEFAULT 0
+        `),
+      )
       .then(() => undefined)
       .catch((err) => {
         ordersTableReady = null;
@@ -44,6 +51,8 @@ interface SquareOrderLike {
   state?: string | null;
   referenceId?: string | null;
   totalMoney?: { amount?: bigint | number | null; currency?: string | null } | null;
+  totalDiscountMoney?: { amount?: bigint | number | null } | null;
+  discounts?: { name?: string | null }[] | null;
   tenders?: unknown[] | null;
   createdAt?: string | null;
   lineItems?: {
@@ -153,6 +162,12 @@ export async function recordSquareOrder(
     amountCents: toCents(li.totalMoney ?? li.grossSalesMoney),
   }));
 
+  // Checkout names order-level discounts "CODE (NN% off)"; the code is the part
+  // before the parenthetical. totalDiscountMoney is the dollars Square took off.
+  const discountName = order.discounts?.map((d) => d.name).find(Boolean) ?? null;
+  const discountCode = discountName ? discountName.split(" (")[0].trim() || null : null;
+  const discountCents = toCents(order.totalDiscountMoney);
+
   await db
     .insert(ordersTable)
     .values({
@@ -160,6 +175,8 @@ export async function recordSquareOrder(
       kind: isEvent ? "event" : "product",
       totalCents: toCents(order.totalMoney),
       currency: order.totalMoney?.currency ?? "USD",
+      discountCode,
+      discountCents,
       buyerName,
       buyerEmail,
       buyerPhone: recipient?.phoneNumber ?? null,
@@ -168,7 +185,12 @@ export async function recordSquareOrder(
       state: order.state ?? "COMPLETED",
       ...(order.createdAt ? { createdAt: new Date(order.createdAt) } : {}),
     })
-    .onConflictDoNothing({ target: ordersTable.id });
+    // Refresh just the discount fields on re-capture so orders recorded before
+    // these columns existed get backfilled by the next Square sync.
+    .onConflictDoUpdate({
+      target: ordersTable.id,
+      set: { discountCode, discountCents },
+    });
 
   // If this order used a discount code, stamp the redemption as consumed so the
   // code can't be reused by the same email.
@@ -196,6 +218,8 @@ export async function recordSquareOrder(
       orderId: order.id,
       totalCents: toCents(order.totalMoney),
       currency: order.totalMoney?.currency ?? "USD",
+      discountCode,
+      discountCents,
       buyerName,
       buyerEmail,
       buyerPhone: recipient?.phoneNumber ?? null,

@@ -7,6 +7,8 @@ export const ordersTable = pgTable("orders", {
   id: text("id").primaryKey(),
   kind: text("kind").notNull().default("product"), // "product" | "event"
   totalCents: integer("total_cents").notNull().default(0),
+  discountCode: text("discount_code"), // e.g. "BOUGIE15" when a code was applied
+  discountCents: integer("discount_cents").notNull().default(0),
   currency: text("currency").notNull().default("USD"),
   buyerName: text("buyer_name"),
   buyerEmail: text("buyer_email"),

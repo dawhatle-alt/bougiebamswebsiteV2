@@ -109,6 +109,8 @@ export async function sendOrderNotificationEmail(opts: {
   orderId: string;
   totalCents: number;
   currency: string;
+  discountCode?: string | null;
+  discountCents?: number;
   buyerName: string | null;
   buyerEmail: string | null;
   buyerPhone: string | null;
@@ -118,7 +120,7 @@ export async function sendOrderNotificationEmail(opts: {
   const client = getClient();
   if (!client) return;
 
-  const { orderId, totalCents, currency, buyerName, buyerEmail, buyerPhone, shippingAddress, items } = opts;
+  const { orderId, totalCents, currency, discountCode, discountCents, buyerName, buyerEmail, buyerPhone, shippingAddress, items } = opts;
   const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -130,6 +132,10 @@ export async function sendOrderNotificationEmail(opts: {
     .join("");
   const itemsText = items.map((i) => `- ${i.name} × ${i.quantity} — ${money(i.amountCents)}`).join("\n");
   const addressHtml = shippingAddress ? esc(shippingAddress).replace(/\n/g, "<br/>") : "Not provided";
+  const discountRowHtml = discountCode
+    ? `<tr><td style="padding:4px 12px 4px 0;color:#8A6D1A">Discount (${esc(discountCode)})</td><td style="padding:4px 0;text-align:right;color:#8A6D1A"><strong>−${money(discountCents ?? 0)}</strong></td></tr>`
+    : "";
+  const discountText = discountCode ? `Discount (${discountCode}): −${money(discountCents ?? 0)}\n` : "";
 
   const { error } = await client.emails.send({
     from: FROM_EMAIL,
@@ -138,7 +144,7 @@ export async function sendOrderNotificationEmail(opts: {
     subject: `New order ${money(totalCents)} — ${buyerName || buyerEmail || "Online store"}`,
     html: `${logoHeader}
       <h2>New order received 🎉</h2>
-      <table style="border-collapse:collapse;margin:16px 0;min-width:320px">${itemRowsHtml}
+      <table style="border-collapse:collapse;margin:16px 0;min-width:320px">${itemRowsHtml}${discountRowHtml}
         <tr><td style="padding:8px 12px 4px 0;border-top:1px solid #ddd"><strong>Total</strong></td><td style="padding:8px 0 4px;text-align:right;border-top:1px solid #ddd"><strong>${money(totalCents)} ${currency}</strong></td></tr>
       </table>
       <h3 style="margin-bottom:4px">Customer</h3>
@@ -147,7 +153,7 @@ export async function sendOrderNotificationEmail(opts: {
       <p style="margin:4px 0">${addressHtml}</p>
       <p style="color:#888;font-size:12px;margin-top:16px">Square order: ${esc(orderId)}</p>
     `,
-    text: `New order received\n\n${itemsText}\nTotal: ${money(totalCents)} ${currency}\n\nCustomer:\n${buyerName ?? "—"}\n${buyerEmail ?? "—"}\n${buyerPhone ?? "—"}\n\nShip to:\n${shippingAddress ?? "Not provided"}\n\nSquare order: ${orderId}`,
+    text: `New order received\n\n${itemsText}\n${discountText}Total: ${money(totalCents)} ${currency}\n\nCustomer:\n${buyerName ?? "—"}\n${buyerEmail ?? "—"}\n${buyerPhone ?? "—"}\n\nShip to:\n${shippingAddress ?? "Not provided"}\n\nSquare order: ${orderId}`,
   });
 
   if (error) {

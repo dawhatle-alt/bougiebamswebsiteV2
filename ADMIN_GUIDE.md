@@ -80,7 +80,7 @@ Every completed payment, synced from Square — both **product purchases** and *
 
 - **Filter tabs**: All / Products / Events.
 - **Summary cards**: Product Orders total, Event Payments total, the overall **Running Total**, and — when filtering or searching — a filtered total.
-- **Table**: date, type badge, customer (name/email/phone), full shipping address (products only), items, and amount.
+- **Table**: date, type badge, customer (name/email/phone), full shipping address (products only), items, and amount — with the **discount code and amount saved** shown under the total when one was used.
 - **Search** filters across everything: name, email, address, items, amount, date, type, order ID.
 - **Export CSV** downloads whatever the current search shows.
 - Opening this page (or hitting Refresh) pulls the latest orders straight from Square, so it's always current even if a notification was missed.

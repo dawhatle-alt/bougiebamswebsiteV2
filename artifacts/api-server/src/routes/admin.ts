@@ -809,6 +809,8 @@ router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
         id: r.id,
         kind: r.kind,
         totalCents: r.totalCents,
+        discountCode: r.discountCode ?? null,
+        discountCents: r.discountCents,
         currency: r.currency,
         buyerName: r.buyerName ?? null,
         buyerEmail: r.buyerEmail ?? null,

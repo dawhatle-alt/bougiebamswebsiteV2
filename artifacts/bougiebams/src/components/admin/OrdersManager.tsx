@@ -18,6 +18,8 @@ interface Order {
   id: string;
   kind: string; // "product" | "event"
   totalCents: number;
+  discountCode: string | null;
+  discountCents: number;
   currency: string;
   buyerName: string | null;
   buyerEmail: string | null;
@@ -81,6 +83,7 @@ export default function OrdersManager({ onAuthError }: Props) {
       const haystack = [
         o.id,
         o.kind,
+        o.discountCode ?? "",
         o.buyerName ?? "",
         o.buyerEmail ?? "",
         o.buyerPhone ?? "",
@@ -100,7 +103,7 @@ export default function OrdersManager({ onAuthError }: Props) {
   const sum = (rows: Order[]) => rows.reduce((s, o) => s + o.totalCents, 0);
 
   function handleExport() {
-    const header = ["Order ID", "Type", "Date", "Name", "Email", "Phone", "Shipping Address", "Items", "Amount"];
+    const header = ["Order ID", "Type", "Date", "Name", "Email", "Phone", "Shipping Address", "Items", "Discount Code", "Discount", "Amount"];
     const rows = filtered.map((o) => [
       o.id,
       o.kind === "event" ? "Event" : "Product",
@@ -110,6 +113,8 @@ export default function OrdersManager({ onAuthError }: Props) {
       o.buyerPhone ?? "",
       (o.shippingAddress ?? "").replace(/\n/g, ", "),
       parseItems(o.items).map((i) => `${i.name} x${i.quantity}`).join("; "),
+      o.discountCode ?? "",
+      o.discountCents > 0 ? money(o.discountCents) : "",
       money(o.totalCents),
     ]);
     const csv = [header, ...rows]
@@ -267,6 +272,12 @@ export default function OrdersManager({ onAuthError }: Props) {
                     </TableCell>
                     <TableCell className="text-right align-top font-medium text-[#1E2A5A] whitespace-nowrap">
                       {money(o.totalCents)}
+                      {o.discountCode && (
+                        <div className="text-[11px] font-normal text-[#8A6D1A] mt-0.5" title="Discount code used">
+                          {o.discountCode}
+                          {o.discountCents > 0 && <> −{money(o.discountCents)}</>}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
