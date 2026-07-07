@@ -234,12 +234,12 @@ router.post(
           const { WebhooksHelper } = require("square");
           const body = req.rawBody.toString("utf8");
           const signature = req.headers["x-square-hmacsha256-signature"] as string;
-          const isValid = WebhooksHelper.isValidWebhookEventSignature(
-            body,
-            signature,
-            sigKey,
+          const isValid = await WebhooksHelper.verifySignature({
+            requestBody: body,
+            signatureHeader: signature,
+            signatureKey: sigKey,
             notificationUrl,
-          );
+          });
           if (!isValid) {
             logger.warn("Square webhook signature verification failed — rejecting");
             res.status(400).json({ error: "Invalid webhook signature" });
