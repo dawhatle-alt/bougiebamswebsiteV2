@@ -24,6 +24,17 @@ export const ListProductsQueryParams = zod.object({
   "category": zod.coerce.string().optional().describe('Filter by product category')
 })
 
+// Per-product detail-page tab content (Product Details / Care / Shipping & Returns).
+const ProductTabSchema = zod.object({
+  "enabled": zod.boolean(),
+  "content": zod.string()
+})
+const ProductTabsSchema = zod.object({
+  "details": ProductTabSchema.optional(),
+  "care": ProductTabSchema.optional(),
+  "shipping": ProductTabSchema.optional()
+}).nullish()
+
 export const ListProductsResponse = zod.object({
   "products": zod.array(zod.object({
   "id": zod.string(),
@@ -38,6 +49,7 @@ export const ListProductsResponse = zod.object({
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
+  "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish()
 }))
 })
@@ -53,7 +65,8 @@ export const CreateProductBody = zod.object({
   "price": zod.number(),
   "category": zod.string(),
   "inStock": zod.boolean(),
-  "shippingIncluded": zod.boolean().optional()
+  "shippingIncluded": zod.boolean().optional(),
+  "tabs": ProductTabsSchema.optional()
 })
 
 export const CreateProductResponse = zod.object({
@@ -70,6 +83,7 @@ export const CreateProductResponse = zod.object({
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
+  "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish()
 })
 })
@@ -92,6 +106,7 @@ export const ListFeaturedProductsResponse = zod.object({
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
+  "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish()
 }))
 })
@@ -118,6 +133,7 @@ export const GetProductResponse = zod.object({
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
+  "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish()
 })
 })
@@ -138,7 +154,8 @@ export const UpdateProductBody = zod.object({
   "inStock": zod.boolean().optional(),
   "published": zod.boolean().optional(),
   "buildYourSet": zod.boolean().optional(),
-  "shippingIncluded": zod.boolean().optional()
+  "shippingIncluded": zod.boolean().optional(),
+  "tabs": ProductTabsSchema.optional()
 })
 
 export const UpdateProductResponse = zod.object({
@@ -155,6 +172,7 @@ export const UpdateProductResponse = zod.object({
   "published": zod.boolean(),
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
+  "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish()
 })
 })

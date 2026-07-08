@@ -96,7 +96,8 @@ The shop catalog. Each row has three quick toggles:
 | **Visible** | Off = product is hidden from the shop entirely |
 | **Build Set** | Off = product doesn't appear as an option in Build Your Set |
 
-- **Edit** (pencil icon) opens the full form: name, description, price, category, in-stock, and **"Shipping included in price"** — turning that on shows a gold *Shipping included* badge next to the price on the product page and quick view (instead of the standard "Free shipping over $150" note).
+- **Edit** (pencil icon) opens the full form: name, description, price, category, in-stock, and **"Shipping included in price"** — turning that on shows a gold *Shipping included* badge next to the price on the product page and quick view.
+- **Detail Page Tabs** (in the edit form): each product has three optional tabs on its page — *Product Details*, *Care Instructions*, and *Shipping & Returns*. Write your own content for each (line breaks are kept), and use the small toggle to hide a tab. A tab that is switched off **or left empty** doesn't appear; if all three are empty, the whole tab section is hidden. New products start with all three empty.
 - **Upload/replace product images** via the image button on each row.
 - Deleting a product removes it permanently.
 - **Categories manage themselves**: a category appears in the shop menu and shop-page filters only while it has at least one *visible* product. Hide or delete everything in a category and its section disappears everywhere; add a product to a new category and the section shows up automatically.

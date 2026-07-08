@@ -24,6 +24,17 @@ const {
   productRackStorageRoll,
 } = images;
 
+export interface ProductTab {
+  enabled: boolean;
+  content: string;
+}
+
+export interface ProductTabs {
+  details?: ProductTab;
+  care?: ProductTab;
+  shipping?: ProductTab;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -39,6 +50,7 @@ export interface Product {
   sku?: string;
   buildYourSet?: boolean;
   shippingIncluded?: boolean;
+  tabs?: ProductTabs | null;
 }
 
 export interface ApiProduct {
@@ -52,6 +64,7 @@ export interface ApiProduct {
   imagePath?: string | null;
   buildYourSet?: boolean;
   shippingIncluded?: boolean;
+  tabs?: ProductTabs | null;
 }
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -290,5 +303,6 @@ export function mergeProduct(api: ApiProduct): Product {
     // Default to included when the API omits it (e.g. older cached responses).
     buildYourSet: api.buildYourSet ?? true,
     shippingIncluded: api.shippingIncluded ?? false,
+    tabs: api.tabs ?? null,
   };
 }

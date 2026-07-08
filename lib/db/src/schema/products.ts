@@ -1,6 +1,20 @@
-import { pgTable, text, serial, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+
+// Per-product content for the detail-page tabs. A missing tab (or missing
+// column value) means "enabled but no content yet" — the storefront hides
+// tabs with no content.
+export interface ProductTab {
+  enabled: boolean;
+  content: string;
+}
+
+export interface ProductTabs {
+  details?: ProductTab;
+  care?: ProductTab;
+  shipping?: ProductTab;
+}
 
 export const productsTable = pgTable("products", {
   id: text("id").primaryKey(),
@@ -15,6 +29,7 @@ export const productsTable = pgTable("products", {
   published: boolean("published").notNull().default(true),
   buildYourSet: boolean("build_your_set").notNull().default(true),
   shippingIncluded: boolean("shipping_included").notNull().default(false),
+  tabs: jsonb("tabs").$type<ProductTabs>(),
   affiliateUrl: text("affiliate_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -10,22 +10,13 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, Heart, Minus, Plus, Star, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const VARIANTS: Record<string, { label: string; options: string[] }[]> = {
-  "Complete Sets": [
-    { label: "Finish", options: ["High Gloss", "Matte", "Satin"] },
-    { label: "Case Color", options: ["Ivory", "Midnight Navy", "Blush"] },
-  ],
-  "Tiles & Accessories": [
-    { label: "Color", options: ["Blush", "Navy", "Ivory", "Sage"] },
-  ],
-  "Gift Sets": [
-    { label: "Ribbon Color", options: ["Gold", "Navy", "Blush"] },
-  ],
-  "Apparel & Lifestyle": [
-    { label: "Size", options: ["XS", "S", "M", "L", "XL"] },
-    { label: "Color", options: ["Cream", "Navy", "Blush"] },
-  ],
-};
+// The three detail-page tabs. Content is per-product, managed from the admin
+// panel; a tab with no content (or toggled off) is hidden.
+const TAB_DEFS = [
+  { key: "details" as const, label: "Product Details" },
+  { key: "care" as const, label: "Care Instructions" },
+  { key: "shipping" as const, label: "Shipping & Returns" },
+];
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -34,7 +25,6 @@ export default function ProductDetail() {
   usePageTitle(product?.name, product?.description?.slice(0, 160));
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const { addItem } = useCart();
   const { toggle, isSaved } = useWishlist();
   const { toast } = useToast();
@@ -79,11 +69,14 @@ export default function ProductDetail() {
     ? product.images
     : [...product.images, ...relatedProducts.slice(0, 3).map(p => p.images[0])].filter(Boolean);
 
-  const variantOptions = VARIANTS[product.category] ?? [];
-
-  const handleVariantSelect = (label: string, option: string) => {
-    setSelectedVariants(prev => ({ ...prev, [label]: option }));
-  };
+  const visibleTabs = TAB_DEFS.map((def) => {
+    const tab = product.tabs?.[def.key];
+    return {
+      ...def,
+      content: (tab?.content ?? "").trim(),
+      enabled: tab?.enabled ?? true,
+    };
+  }).filter((t) => t.enabled && t.content.length > 0);
 
   return (
     <div className="pt-32 pb-24 min-h-screen bg-background">
@@ -170,32 +163,6 @@ export default function ProductDetail() {
               </p>
 
               <div className="space-y-6 mb-10">
-                {variantOptions.map(({ label, options }) => (
-                  <div key={label}>
-                    <div className="flex items-baseline gap-2 mb-3">
-                      <h4 className="text-sm font-semibold tracking-widest uppercase">{label}</h4>
-                      {selectedVariants[label] && (
-                        <span className="text-sm text-muted-foreground font-serif italic">{selectedVariants[label]}</span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {options.map(option => (
-                        <button
-                          key={option}
-                          onClick={() => handleVariantSelect(label, option)}
-                          className={`px-4 py-2 text-sm border transition-all duration-200 rounded-sm ${
-                            selectedVariants[label] === option
-                              ? "border-primary bg-primary/5 text-primary font-medium"
-                              : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
                 <div>
                   <h4 className="text-sm font-semibold tracking-widest uppercase mb-3">Quantity</h4>
                   <div className="flex items-center w-32 border border-border">
@@ -254,73 +221,37 @@ export default function ProductDetail() {
                     {product.inStock ? "In Stock — Ready to Ship" : "Sold Out"}
                   </span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-border">
-                  <span>Shipping</span>
-                  <span className={product.shippingIncluded ? "text-primary font-medium" : undefined}>
-                    {product.shippingIncluded ? "Included in the price" : "Free shipping over $150"}
-                  </span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-border">
-                  <span>Returns</span>
-                  <span>30-day easy returns</span>
-                </div>
               </div>
             </motion.div>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto mb-24">
-          <Tabs defaultValue="details" className="w-full">
-            <TabsList className="w-full border-b border-border rounded-none h-auto p-0 bg-transparent justify-start gap-8">
-              <TabsTrigger
-                value="details"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 pb-4 text-lg font-serif"
-              >
-                Product Details
-              </TabsTrigger>
-              <TabsTrigger
-                value="care"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 pb-4 text-lg font-serif"
-              >
-                Care Instructions
-              </TabsTrigger>
-              <TabsTrigger
-                value="shipping"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 pb-4 text-lg font-serif"
-              >
-                Shipping & Returns
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="details" className="py-8 font-serif text-lg leading-relaxed text-muted-foreground">
-              <p className="mb-4">
-                Designed for the modern player, this collection blends traditional craftsmanship with a contemporary aesthetic. Each piece is carefully selected and finished by hand to ensure the highest quality.
-              </p>
-              <ul className="list-disc pl-6 space-y-2 mt-6">
-                <li>Premium scratch-resistant acrylic construction</li>
-                <li>Hand-painted engraved details</li>
-                <li>Included: Luxury velvet storage case</li>
-                <li>Dimensions: Standard tournament size</li>
-              </ul>
-            </TabsContent>
-            <TabsContent value="care" className="py-8 font-serif text-lg leading-relaxed text-muted-foreground">
-              <p>To maintain the pristine condition of your BougieBams products:</p>
-              <ul className="list-disc pl-6 space-y-2 mt-6">
-                <li>Wipe clean with a soft, dry microfiber cloth.</li>
-                <li>Avoid exposure to direct sunlight for extended periods.</li>
-                <li>Do not use harsh chemical cleaners or abrasive sponges.</li>
-                <li>Store in the provided protective case when not in use.</li>
-              </ul>
-            </TabsContent>
-            <TabsContent value="shipping" className="py-8 font-serif text-lg leading-relaxed text-muted-foreground">
-              <p className="mb-4">
-                We offer complimentary standard shipping on all orders over $150 within the contiguous United States.
-              </p>
-              <p>
-                If you are not entirely satisfied with your purchase, we accept returns within 30 days of delivery. Items must be in their original condition and packaging. A small restocking fee may apply.
-              </p>
-            </TabsContent>
-          </Tabs>
-        </div>
+        {visibleTabs.length > 0 && (
+          <div className="max-w-4xl mx-auto mb-24">
+            <Tabs key={product.id} defaultValue={visibleTabs[0].key} className="w-full">
+              <TabsList className="w-full border-b border-border rounded-none h-auto p-0 bg-transparent justify-start gap-8">
+                {visibleTabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.key}
+                    value={tab.key}
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 pb-4 text-lg font-serif"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {visibleTabs.map((tab) => (
+                <TabsContent
+                  key={tab.key}
+                  value={tab.key}
+                  className="py-8 font-serif text-lg leading-relaxed text-muted-foreground whitespace-pre-line"
+                >
+                  {tab.content}
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+        )}
 
         {relatedProducts.length > 0 && (
           <div>

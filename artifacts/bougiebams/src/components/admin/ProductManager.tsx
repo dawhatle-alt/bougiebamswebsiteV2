@@ -33,6 +33,23 @@ const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 // Assigning a product to one of these is what places it in that shop section.
 const CATEGORIES = SHOP_CATEGORIES.map((c) => c.name);
 
+interface ProductTab {
+  enabled: boolean;
+  content: string;
+}
+
+interface ProductTabs {
+  details?: ProductTab;
+  care?: ProductTab;
+  shipping?: ProductTab;
+}
+
+const TAB_DEFS: { key: keyof ProductTabs; label: string }[] = [
+  { key: "details", label: "Product Details" },
+  { key: "care", label: "Care Instructions" },
+  { key: "shipping", label: "Shipping & Returns" },
+];
+
 interface ApiProduct {
   id: string;
   sku: string;
@@ -45,6 +62,7 @@ interface ApiProduct {
   buildYourSet: boolean;
   shippingIncluded: boolean;
   imagePath?: string | null;
+  tabs?: ProductTabs | null;
 }
 
 interface ProductForm {
@@ -55,6 +73,15 @@ interface ProductForm {
   category: string;
   inStock: boolean;
   shippingIncluded: boolean;
+  tabs: Record<keyof ProductTabs, ProductTab>;
+}
+
+function normalizeTabs(tabs?: ProductTabs | null): Record<keyof ProductTabs, ProductTab> {
+  return {
+    details: { enabled: tabs?.details?.enabled ?? true, content: tabs?.details?.content ?? "" },
+    care: { enabled: tabs?.care?.enabled ?? true, content: tabs?.care?.content ?? "" },
+    shipping: { enabled: tabs?.shipping?.enabled ?? true, content: tabs?.shipping?.content ?? "" },
+  };
 }
 
 const EMPTY_FORM: ProductForm = {
@@ -65,6 +92,7 @@ const EMPTY_FORM: ProductForm = {
   category: CATEGORIES[0],
   inStock: true,
   shippingIncluded: false,
+  tabs: normalizeTabs(null),
 };
 
 interface Props {
@@ -132,6 +160,7 @@ export default function ProductManager({ onAuthError }: Props) {
       category: p.category,
       inStock: p.inStock,
       shippingIncluded: p.shippingIncluded,
+      tabs: normalizeTabs(p.tabs),
     });
     setFormError("");
     setModalOpen(true);
@@ -158,6 +187,7 @@ export default function ProductManager({ onAuthError }: Props) {
             category: form.category,
             inStock: form.inStock,
             shippingIncluded: form.shippingIncluded,
+            tabs: form.tabs,
           }),
         });
         if (res.status === 401 || res.status === 403) { onAuthError(); return; }
@@ -180,6 +210,7 @@ export default function ProductManager({ onAuthError }: Props) {
             category: form.category,
             inStock: form.inStock,
             shippingIncluded: form.shippingIncluded,
+            tabs: form.tabs,
           }),
         });
         if (res.status === 401 || res.status === 403) { onAuthError(); return; }
@@ -619,6 +650,57 @@ export default function ProductManager({ onAuthError }: Props) {
               <span className="text-sm text-[#5A6178]">
                 {form.shippingIncluded ? "Shipping included in price" : "Standard shipping"}
               </span>
+            </div>
+
+            <div className="border-t border-[#E2DBCD] pt-4 space-y-4">
+              <div>
+                <p className="text-xs font-medium text-[#5A6178] uppercase tracking-wider">Detail Page Tabs</p>
+                <p className="text-xs text-[#9A8F7E] mt-0.5">
+                  Shown as tabs below the product. A tab that is switched off or left empty is hidden.
+                </p>
+              </div>
+              {TAB_DEFS.map(({ key, label }) => (
+                <div key={key}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          tabs: { ...f.tabs, [key]: { ...f.tabs[key], enabled: !f.tabs[key].enabled } },
+                        }))
+                      }
+                      className={`relative inline-flex items-center px-0.5 w-8 h-4 rounded-full transition-colors flex-shrink-0 ${
+                        form.tabs[key].enabled ? "bg-emerald-500" : "bg-[#D0CCBF]"
+                      }`}
+                      aria-label={`${label} tab ${form.tabs[key].enabled ? "enabled" : "disabled"}`}
+                    >
+                      <span
+                        className={`w-3 h-3 rounded-full bg-white transition-transform shadow-sm ${
+                          form.tabs[key].enabled ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <span className="text-xs font-medium text-[#5A6178] uppercase tracking-wider">{label}</span>
+                    {!form.tabs[key].enabled && (
+                      <span className="text-[10px] text-[#9A8F7E] uppercase tracking-wider">Hidden</span>
+                    )}
+                  </div>
+                  <textarea
+                    className="w-full border border-[#E2DBCD] rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1E2A5A] resize-y disabled:opacity-50 disabled:bg-[#FAF7F0]"
+                    rows={3}
+                    value={form.tabs[key].content}
+                    disabled={!form.tabs[key].enabled}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        tabs: { ...f.tabs, [key]: { ...f.tabs[key], content: e.target.value } },
+                      }))
+                    }
+                    placeholder={`${label} content — line breaks are kept. Leave empty to hide this tab.`}
+                  />
+                </div>
+              ))}
             </div>
 
             {formError && (
