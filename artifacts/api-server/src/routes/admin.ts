@@ -490,24 +490,27 @@ router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> =>
   logger.info("dashboard: sync dispatched, querying");
 
   try {
-    const [orders, regs, latestSubs, prods, eventsRows, [subCount], [blogCount]] = await Promise.all([
-      listOrders(),
-      db
-        .select({
-          id: registrationsTable.id,
-          eventId: registrationsTable.eventId,
-          name: registrationsTable.name,
-          status: registrationsTable.status,
-          paymentSessionId: registrationsTable.paymentSessionId,
-          createdAt: registrationsTable.createdAt,
-        })
-        .from(registrationsTable),
-      db.select().from(subscribersTable).orderBy(desc(subscribersTable.createdAt)).limit(10),
-      db.select().from(productsTable),
-      db.select().from(eventsTable),
-      db.select({ count: count() }).from(subscribersTable),
-      db.select({ count: count() }).from(blogPostsTable),
-    ]);
+    // Sequential on purpose: with one pooled connection per instance,
+    // Promise.all pipelines concurrent queries onto a single wire, and
+    // pipelined queries stall indefinitely behind Supavisor's transaction-mode
+    // pooler (observed as 30s dashboard timeouts with healthy single-query
+    // routes). Seven sequential selects complete in well under a second.
+    const orders = await listOrders();
+    const regs = await db
+      .select({
+        id: registrationsTable.id,
+        eventId: registrationsTable.eventId,
+        name: registrationsTable.name,
+        status: registrationsTable.status,
+        paymentSessionId: registrationsTable.paymentSessionId,
+        createdAt: registrationsTable.createdAt,
+      })
+      .from(registrationsTable);
+    const latestSubs = await db.select().from(subscribersTable).orderBy(desc(subscribersTable.createdAt)).limit(10);
+    const prods = await db.select().from(productsTable);
+    const eventsRows = await db.select().from(eventsTable);
+    const [subCount] = await db.select({ count: count() }).from(subscribersTable);
+    const [blogCount] = await db.select({ count: count() }).from(blogPostsTable);
     logger.info("dashboard: queries done");
 
     // Revenue

@@ -114,11 +114,11 @@ router.put(
   async (req: Request, res: Response): Promise<void> => {
     const { order } = req.body as { order?: { id: number; sortOrder: number }[] };
     if (!Array.isArray(order)) { res.status(400).json({ error: "order array required" }); return; }
-    await Promise.all(
-      order.map(({ id, sortOrder }) =>
-        db.update(eventGalleryTable).set({ sortOrder }).where(eq(eventGalleryTable.id, id))
-      )
-    );
+    // Sequential on purpose — concurrent queries pipelined onto one pooled
+    // connection stall behind the transaction-mode pooler (see admin dashboard).
+    for (const { id, sortOrder } of order) {
+      await db.update(eventGalleryTable).set({ sortOrder }).where(eq(eventGalleryTable.id, id));
+    }
     res.json({ success: true });
   }
 );
