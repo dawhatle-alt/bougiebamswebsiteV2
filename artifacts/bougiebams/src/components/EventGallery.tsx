@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { parseCalendarDate } from "@/lib/dateUtils";
 import { useListEvents } from "@workspace/api-client-react";
+import { ImageAutoSlider } from "@/components/ui/image-auto-slider";
 
 const BASE = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
 
@@ -576,10 +577,12 @@ export default function EventGallery() {
             </motion.div>
           )}
 
-          {/* ── Photo grid ── */}
+          {/* All Moments: infinite auto-scrolling strip; album view: browsable grid */}
+          {album === "all" ? (
+            <ImageAutoSlider photos={photos} onPhotoClick={(i) => setLightboxIndex(i)} />
+          ) : (
           <div key={String(album)} className="columns-2 md:columns-3 lg:columns-4 gap-3">
             {visiblePhotos.map((photo, i) => {
-              const chip = album === "all" ? albumTitleFor(photo.eventId) : null;
               return (
                 <motion.div
                   key={photo.id}
@@ -597,21 +600,11 @@ export default function EventGallery() {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
-                  {(photo.caption || chip) && (
-                    <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-start gap-1.5">
-                      {chip && (
-                        <span
-                          className="rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em]"
-                          style={{ backgroundColor: GOLD, color: NAVY }}
-                        >
-                          {chip}
-                        </span>
-                      )}
-                      {photo.caption && (
-                        <p className="text-white text-xs font-medium leading-snug line-clamp-2">
-                          {photo.caption}
-                        </p>
-                      )}
+                  {photo.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                      <p className="text-white text-xs font-medium leading-snug line-clamp-2">
+                        {photo.caption}
+                      </p>
                     </div>
                   )}
                   <div className="absolute inset-0 ring-2 ring-primary/0 group-hover:ring-primary/30 transition-all duration-300 rounded-xl pointer-events-none" />
@@ -619,6 +612,7 @@ export default function EventGallery() {
               );
             })}
           </div>
+          )}
 
           {/* ── Next-event tie-in ── */}
           {currentAlbum && nextEvent && (
