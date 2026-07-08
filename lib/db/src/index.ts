@@ -16,7 +16,12 @@ const needsSSL =
 const client = postgres(connectionString, {
   ssl: needsSSL ? { rejectUnauthorized: false } : false,
   prepare: false,
-  max: 2,
+  // One connection per serverless instance: Vercel scales by spawning
+  // instances, and the Supabase pooler caps concurrent clients (pool_size 15
+  // in session mode) — two connections per instance halves how many
+  // instances fit before EMAXCONNSESSION errors. postgres.js queues
+  // concurrent queries on the single connection.
+  max: 1,
   idle_timeout: 10,
   connect_timeout: 5,
 });

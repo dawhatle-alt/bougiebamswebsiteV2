@@ -28,6 +28,10 @@ router.get("/storage/{*splat}", async (req, res): Promise<void> => {
     try {
       const objectPath = `/${splat}`;
       const { publicUrl } = await objectStorage.getObjectEntityFile(objectPath);
+      // The object path → public URL mapping is immutable, so let Vercel's CDN
+      // serve repeat image loads without invoking the function (or the DB) at
+      // all — a gallery page fans out to one request per photo otherwise.
+      res.set("Cache-Control", "public, max-age=3600, s-maxage=86400");
       // Redirect to Supabase public URL — avoids proxying bandwidth through the API server
       res.redirect(302, publicUrl);
     } catch (err) {
