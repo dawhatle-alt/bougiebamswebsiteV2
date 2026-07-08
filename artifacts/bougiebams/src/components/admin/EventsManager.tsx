@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ImagePlus, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { ImagePlus, Pencil, Plus, RefreshCw, Trash2, X, Archive, ArchiveRestore, Loader2 } from "lucide-react";
 import { ApiEvent, EventCategory } from "@/data/events";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -97,6 +97,8 @@ export default function EventsManager({ onAuthError }: Props) {
   const [events, setEvents] = useState<ApiEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivingId, setArchivingId] = useState<number | null>(null);
 
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -131,6 +133,29 @@ export default function EventsManager({ onAuthError }: Props) {
   }, [onAuthError]);
 
   useEffect(() => { void loadEvents(); }, [loadEvents]);
+
+  const visibleEvents = events.filter((e) => (showArchived ? true : !e.archived));
+  const archivedCount = events.filter((e) => e.archived).length;
+
+  async function toggleArchive(e: ApiEvent) {
+    setArchivingId(e.id);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/events/${e.id}`, {
+        method: "PUT",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ archived: !e.archived }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+      const { event } = await res.json() as { event: ApiEvent };
+      setEvents((prev) => prev.map((x) => (x.id === event.id ? event : x)));
+    } catch {
+      setLoadError("Could not update the event's archived state. Please try again.");
+    } finally {
+      setArchivingId(null);
+    }
+  }
 
   function field<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => f ? { ...f, [key]: value } : f);
@@ -426,7 +451,18 @@ export default function EventsManager({ onAuthError }: Props) {
         <div>
           <h2 className="text-lg font-medium text-[#1E2A5A]">Events</h2>
           <p className="text-sm text-[#5A6178] mt-0.5">
-            {events.length} {events.length === 1 ? "event" : "events"} total
+            {visibleEvents.length} {visibleEvents.length === 1 ? "event" : "events"}
+            {archivedCount > 0 && (
+              <label className="ml-3 inline-flex items-center gap-1.5 cursor-pointer text-[#5A6178]">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="rounded border-[#E2DBCD]"
+                />
+                Show archived ({archivedCount})
+              </label>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -465,9 +501,11 @@ export default function EventsManager({ onAuthError }: Props) {
       <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
         {loading && events.length === 0 ? (
           <div className="py-16 text-center text-[#5A6178]">Loading…</div>
-        ) : events.length === 0 ? (
+        ) : visibleEvents.length === 0 ? (
           <div className="py-16 text-center text-[#5A6178]">
-            No events yet. Click <strong>New Event</strong> to create your first one.
+            {events.length === 0
+              ? <>No events yet. Click <strong>New Event</strong> to create your first one.</>
+              : <>All events are archived — tick <strong>Show archived</strong> to see them.</>}
           </div>
         ) : (
           <Table>
@@ -483,22 +521,40 @@ export default function EventsManager({ onAuthError }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {events.map((e) => (
-                <TableRow key={e.id}>
+              {visibleEvents.map((e) => (
+                <TableRow key={e.id} className={e.archived ? "opacity-60" : undefined}>
                   <TableCell className="font-medium text-[#1E2A5A] max-w-[200px] truncate">{e.title}</TableCell>
                   <TableCell className="text-[#5A6178] whitespace-nowrap">{e.date}</TableCell>
                   <TableCell className="text-[#5A6178]">{e.category}</TableCell>
                   <TableCell className="text-[#5A6178]">{formatPrice(e)}</TableCell>
                   <TableCell className="text-[#5A6178]">{e.spotsLeft}/{e.totalSpots}</TableCell>
                   <TableCell>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.published ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {e.published ? "Live" : "Draft"}
-                    </span>
+                    {e.archived ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[#EFEAE0] text-[#9A8F7E]">Archived</span>
+                    ) : (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.published ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                        {e.published ? "Live" : "Draft"}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button size="sm" variant="ghost" onClick={() => setForm(eventToForm(e))} className="h-8 w-8 p-0">
                         <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => void toggleArchive(e)}
+                        disabled={archivingId === e.id}
+                        className="h-8 w-8 p-0 text-[#9A8F7E] hover:text-[#1E2A5A]"
+                        title={e.archived ? "Unarchive — bring back to the list and public site" : "Archive — hide from the public site and this list"}
+                      >
+                        {archivingId === e.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : e.archived
+                            ? <ArchiveRestore className="w-3.5 h-3.5" />
+                            : <Archive className="w-3.5 h-3.5" />}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setDeleteId(e.id)} className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50">
                         <Trash2 className="w-3.5 h-3.5" />

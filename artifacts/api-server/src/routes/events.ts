@@ -38,7 +38,7 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
 
 router.get("/events", async (req, res): Promise<void> => {
   const { category, upcoming, past, featured } = req.query;
-  const conditions: SQL[] = [eq(eventsTable.published, true)];
+  const conditions: SQL[] = [eq(eventsTable.published, true), eq(eventsTable.archived, false)];
 
   if (category && typeof category === "string") {
     conditions.push(eq(eventsTable.category, category));

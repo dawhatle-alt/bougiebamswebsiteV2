@@ -16,6 +16,8 @@ async function runReminderCheck(): Promise<void> {
         and(
           isNotNull(eventsTable.reminderHoursBefore),
           isNull(eventsTable.reminderSentAt),
+          // Archived events must not send reminders.
+          eq(eventsTable.archived, false),
         ),
       );
 

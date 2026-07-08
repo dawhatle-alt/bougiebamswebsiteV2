@@ -42,7 +42,7 @@ Everyone who joined the mailing list (mostly via the 15%-off welcome popup).
 Every event signup, across all events.
 
 - **Sort any column** by clicking its header (Event, Name, Email, Status, Paid, Date).
-- **Status**: `confirmed` = attending (paid, or a free event); `pending` = started paid checkout but payment never completed.
+- **Status**: `confirmed` = attending (paid, or a free event); `pending` = started paid checkout but payment never completed on that attempt. A **Verify** link appears next to pending rows — it checks Square for a completed payment on that registration's checkout and confirms it on the spot if the money is there.
 - **Paid column**: reflects payments made through the website's checkout. If someone paid another way (a Square invoice, a manual payment link, at the door) — or registered while the event was briefly priced $0 — they'll show *Free* even though Square has their money. **Click the Paid/Free badge to fix it**: clicking *Free* marks them paid; clicking *Paid* un-marks it, but only for manual marks — registrations with a real Square checkout payment can't be un-marked.
 - **Add Registration** (top bar): manually add a guest who paid outside the website — a Square invoice, a manual payment link, or at the door — and so never appears in the list on their own. Pick the event, enter their name and email, optionally tick *Mark as paid*. The registration takes a spot on the event; no confirmation email is sent.
 - **Delete a registration** with the trash icon. Deleting a *confirmed* registration automatically frees up one spot on that event (capped at the event's capacity). Pending registrations never held a spot, so deleting them changes nothing.
@@ -66,6 +66,7 @@ Create and manage the events shown on the site.
 - **Fields**: title, description, **date** (use the format `2026-07-14` — year-month-day — so dates display correctly everywhere), time, location, category, host, price, total spots / spots left, and a **cover image** upload.
 - **Reminder emails**: choose when registered guests get an automatic reminder (1 hour to 1 week before the event), or no reminder.
 - **Published** controls whether the event appears on the public Events page.
+- **Archive** (box icon on each row) tidies up finished events: an archived event disappears from the public Events page (upcoming *and* past lists), stops sending reminders, and is hidden from this list by default — tick **Show archived** to see and unarchive them. Its registrations, orders, and Community Moments photo album are all kept.
 - Spots left decreases automatically as registrations are confirmed.
 
 ## Education

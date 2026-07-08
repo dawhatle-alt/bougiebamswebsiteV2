@@ -17,6 +17,9 @@ export const eventsTable = pgTable("events", {
   host: text("host").notNull().default("BougieBams"),
   published: boolean("published").notNull().default(false),
   featured: boolean("featured").notNull().default(false),
+  // Archived events disappear from public listings and the admin default view
+  // but keep their registrations and gallery albums.
+  archived: boolean("archived").notNull().default(false),
   stripeProductId: text("stripe_product_id"),
   reminderHoursBefore: integer("reminder_hours_before"),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),

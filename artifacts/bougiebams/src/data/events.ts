@@ -33,6 +33,7 @@ export interface ApiEvent {
   spotsLeft: number;
   host: string;
   published: boolean;
+  archived?: boolean;
   reminderHoursBefore: number | null;
 }
 
