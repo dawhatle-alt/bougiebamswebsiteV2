@@ -604,13 +604,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </div>
                     {items.length > 0 && (
                       <div className="p-6 bg-muted/30 border-t border-border mt-auto">
-                        <div className="flex justify-between font-serif text-lg mb-2">
+                        <div className="flex justify-between font-serif text-lg mb-6">
                           <span>Subtotal</span>
                           <span>${subtotal}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-6">
-                          {subtotal > 150 ? "You qualify for free shipping!" : "Free shipping on orders over $150."}
-                        </p>
                         <div className="space-y-2 mb-4">
                           <input
                             type="text"

@@ -196,15 +196,10 @@ export default function BuildYourSet() {
                   })}
                 </div>
 
-                <div className="border-t border-border pt-4 flex justify-between items-baseline font-serif text-xl mb-1">
+                <div className="border-t border-border pt-4 flex justify-between items-baseline font-serif text-xl mb-6">
                   <span>Total</span>
                   <span>${total}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {total > 150
-                    ? "You qualify for complimentary shipping!"
-                    : "Complimentary shipping on orders over $150."}
-                </p>
 
                 <Button
                   className="w-full h-12 text-base"
