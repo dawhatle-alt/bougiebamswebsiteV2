@@ -42,6 +42,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [verifyingId, setVerifyingId] = useState<number | null>(null);
   const [allEvents, setAllEvents] = useState<{ id: number; title: string; date: string }[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({ eventId: "", name: "", email: "", notes: "", paid: true });
@@ -214,6 +215,28 @@ export default function RegistrationsManager({ onAuthError }: Props) {
       setAddError(err instanceof Error ? err.message : "Could not add the registration.");
     } finally {
       setAddSaving(false);
+    }
+  }
+
+  async function verifyWithSquare(reg: Registration) {
+    setVerifyingId(reg.id);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/registrations/${reg.id}/verify-payment`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json() as { status: string };
+      if (data.status === "confirmed") {
+        setRegistrations((prev) => prev.map((r) => (r.id === reg.id ? { ...r, status: "confirmed", paid: true } : r)));
+      } else {
+        setError(`Square shows no completed payment for ${reg.name}'s checkout — still ${data.status}. If they paid another way, use the Paid toggle or Add Registration.`);
+      }
+    } catch {
+      setError("Could not verify with Square. Please try again.");
+    } finally {
+      setVerifyingId(null);
     }
   }
 
@@ -516,6 +539,18 @@ export default function RegistrationsManager({ onAuthError }: Props) {
                     }`}>
                       {r.status}
                     </span>
+                    {r.status === "pending" && (
+                      <button
+                        type="button"
+                        onClick={() => void verifyWithSquare(r)}
+                        disabled={verifyingId === r.id}
+                        title="Check Square for a completed payment on this registration's checkout — confirms it if paid"
+                        className="ml-2 inline-flex items-center gap-1 text-[11px] font-medium text-[#1E2A5A] underline underline-offset-2 hover:text-[#D4AF37] disabled:opacity-50"
+                      >
+                        {verifyingId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                        Verify
+                      </button>
+                    )}
                   </TableCell>
                   <TableCell className="text-[#5A6178]">
                     <button
