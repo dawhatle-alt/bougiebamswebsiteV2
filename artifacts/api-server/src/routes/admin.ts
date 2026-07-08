@@ -18,6 +18,7 @@ import {
 import { GetAdminStatsResponse } from "@workspace/api-zod";
 import { requireAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
+import { tableExists } from "../lib/dbBootstrap";
 import { listOrders, syncOrdersFromSquare } from "../lib/orders";
 import { sendCheckinReportEmail } from "../lib/email";
 import { listRedemptions, deleteRedemption } from "../lib/discounts";
@@ -34,18 +35,22 @@ let settingsTableReady: Promise<void> | null = null;
 
 function ensureSettingsTable(): Promise<void> {
   if (!settingsTableReady) {
-    settingsTableReady = db
-      .execute(sql`
-        CREATE TABLE IF NOT EXISTS site_settings (
-          key text PRIMARY KEY,
-          value text,
-          updated_at timestamptz NOT NULL DEFAULT now()
-        )
-      `)
-      // Deny-all via Supabase's public REST API; the server's direct Postgres
-      // connection is the table owner and is unaffected.
-      .then(() => db.execute(sql`ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY`))
-      .then(() => undefined)
+    // Check the catalog first — DDL (even no-op ALTERs) takes exclusive locks
+    // that queue behind live traffic when run on every cold start.
+    settingsTableReady = tableExists("site_settings")
+      .then(async (exists) => {
+        if (exists) return;
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS site_settings (
+            key text PRIMARY KEY,
+            value text,
+            updated_at timestamptz NOT NULL DEFAULT now()
+          )
+        `);
+        // Deny-all via Supabase's public REST API; the server's direct Postgres
+        // connection is the table owner and is unaffected.
+        await db.execute(sql`ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY`);
+      })
       .catch((err) => {
         settingsTableReady = null;
         throw err;

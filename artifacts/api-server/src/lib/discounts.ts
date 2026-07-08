@@ -1,6 +1,7 @@
 import { eq, and, sql, isNotNull, desc } from "drizzle-orm";
 import { db, discountCodesTable, subscribersTable, discountRedemptionsTable } from "@workspace/db";
 import { logger } from "./logger";
+import { tableExists } from "./dbBootstrap";
 
 // The welcome popup's built-in code and the offer it advertises (15% off).
 const WELCOME_CODE = "BOUGIE15";
@@ -70,22 +71,26 @@ let redemptionsTableReady: Promise<void> | null = null;
 
 function ensureRedemptionsTable(): Promise<void> {
   if (!redemptionsTableReady) {
-    redemptionsTableReady = db
-      .execute(sql`
-        CREATE TABLE IF NOT EXISTS discount_redemptions (
-          id serial PRIMARY KEY,
-          code text NOT NULL,
-          email text NOT NULL,
-          order_id text,
-          paid_at timestamptz,
-          created_at timestamptz NOT NULL DEFAULT now(),
-          CONSTRAINT discount_redemptions_code_email UNIQUE (code, email)
-        )
-      `)
-      // Deny-all via Supabase's public REST API; the server's direct Postgres
-      // connection is the table owner and is unaffected.
-      .then(() => db.execute(sql`ALTER TABLE discount_redemptions ENABLE ROW LEVEL SECURITY`))
-      .then(() => undefined)
+    // Check the catalog first — DDL (even no-op ALTERs) takes exclusive locks
+    // that queue behind live traffic when run on every cold start.
+    redemptionsTableReady = tableExists("discount_redemptions")
+      .then(async (exists) => {
+        if (exists) return;
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS discount_redemptions (
+            id serial PRIMARY KEY,
+            code text NOT NULL,
+            email text NOT NULL,
+            order_id text,
+            paid_at timestamptz,
+            created_at timestamptz NOT NULL DEFAULT now(),
+            CONSTRAINT discount_redemptions_code_email UNIQUE (code, email)
+          )
+        `);
+        // Deny-all via Supabase's public REST API; the server's direct Postgres
+        // connection is the table owner and is unaffected.
+        await db.execute(sql`ALTER TABLE discount_redemptions ENABLE ROW LEVEL SECURITY`);
+      })
       .catch((err) => {
         redemptionsTableReady = null;
         throw err;

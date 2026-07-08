@@ -3,6 +3,7 @@ import { db, ordersTable, registrationsTable } from "@workspace/db";
 import { logger } from "./logger";
 import { sendOrderNotificationEmail } from "./email";
 import { markRedemptionPaid } from "./discounts";
+import { tableExists } from "./dbBootstrap";
 
 // Migrations are applied manually in this project (drizzle-kit push doesn't run
 // on deploy), so lazily create the table on first use — same pattern as
@@ -11,36 +12,35 @@ let ordersTableReady: Promise<void> | null = null;
 
 function ensureOrdersTable(): Promise<void> {
   if (!ordersTableReady) {
-    ordersTableReady = db
-      .execute(sql`
-        CREATE TABLE IF NOT EXISTS orders (
-          id text PRIMARY KEY,
-          kind text NOT NULL DEFAULT 'product',
-          total_cents integer NOT NULL DEFAULT 0,
-          currency text NOT NULL DEFAULT 'USD',
-          buyer_name text,
-          buyer_email text,
-          buyer_phone text,
-          shipping_address text,
-          items text,
-          state text NOT NULL DEFAULT 'COMPLETED',
-          notified_at timestamptz,
-          created_at timestamptz NOT NULL DEFAULT now()
-        )
-      `)
-      // Tables created before these columns existed need them added in place.
-      .then(() =>
-        db.execute(sql`
-          ALTER TABLE orders
-            ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'product',
-            ADD COLUMN IF NOT EXISTS discount_code text,
-            ADD COLUMN IF NOT EXISTS discount_cents integer NOT NULL DEFAULT 0
-        `),
-      )
-      // Deny-all via Supabase's public REST API; the server's direct Postgres
-      // connection is the table owner and is unaffected.
-      .then(() => db.execute(sql`ALTER TABLE orders ENABLE ROW LEVEL SECURITY`))
-      .then(() => undefined)
+    // Check the catalog first — DDL (even no-op ALTERs) takes exclusive locks
+    // that queue behind live traffic when run on every cold start. Production
+    // already has the table with all columns (kind/discount_code/discount_cents
+    // were added in place); the create path only runs in fresh environments.
+    ordersTableReady = tableExists("orders")
+      .then(async (exists) => {
+        if (exists) return;
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS orders (
+            id text PRIMARY KEY,
+            kind text NOT NULL DEFAULT 'product',
+            total_cents integer NOT NULL DEFAULT 0,
+            currency text NOT NULL DEFAULT 'USD',
+            buyer_name text,
+            buyer_email text,
+            buyer_phone text,
+            shipping_address text,
+            items text,
+            state text NOT NULL DEFAULT 'COMPLETED',
+            notified_at timestamptz,
+            discount_code text,
+            discount_cents integer NOT NULL DEFAULT 0,
+            created_at timestamptz NOT NULL DEFAULT now()
+          )
+        `);
+        // Deny-all via Supabase's public REST API; the server's direct Postgres
+        // connection is the table owner and is unaffected.
+        await db.execute(sql`ALTER TABLE orders ENABLE ROW LEVEL SECURITY`);
+      })
       .catch((err) => {
         ordersTableReady = null;
         throw err;
