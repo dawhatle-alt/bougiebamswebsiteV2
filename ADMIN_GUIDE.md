@@ -138,6 +138,15 @@ The three (or more) large linked cards in the homepage "Curated Collections" sec
 
 Photos for the "From the Table" section on the Events page. Upload multiple photos at once, click a caption to edit it, and **drag to reorder**.
 
+Photos can be **assigned to an event** to build that event's album on the Tile Wall (the row of mahjong-tile album covers above the photo grid):
+
+- **Assign on upload:** pick an event in the "Uploads → …" dropdown before clicking Upload Photos — every photo in that batch is filed under that event. Leave it on "no event (general)" for photos that should only appear in All Moments.
+- **Assign later:** each photo card has its own event dropdown; change it any time.
+- **Choose the cover shot:** hover a photo and click the **star** in its top-right corner. The starred photo becomes the album's tile face and gets a gold COVER badge. Starring a different photo moves the cover — one cover per event. If you never star one, the first photo in the album is used.
+- **Filter:** use the "Show:" dropdown to see one event's photos (or the unassigned ones) while you work.
+
+On the Events page, each event with photos becomes a flip tile: the cover photo on the front, event details on the back, and clicking it filters the grid to that night. Each open album shows a shareable link (e.g. `bougiebams.com/events?moments=12`) — put it in a post-event email so guests can jump straight to their night's photos. Recent past events with no photos yet show as a "Photos coming soon" bam tile for 45 days.
+
 ## Announcement Bar
 
 The message bar across the top of every page (e.g. "Complimentary shipping on all orders over $150").
