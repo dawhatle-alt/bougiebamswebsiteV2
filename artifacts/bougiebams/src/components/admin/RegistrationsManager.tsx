@@ -4,7 +4,10 @@ import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Download, Loader2, RefreshCw, Trash2, ArrowUp, ArrowDown, ArrowUpDown, ClipboardList, Mail } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Download, Loader2, RefreshCw, Trash2, ArrowUp, ArrowDown, ArrowUpDown, ClipboardList, Mail, UserPlus } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -39,6 +42,11 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [allEvents, setAllEvents] = useState<{ id: number; title: string; date: string }[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ eventId: "", name: "", email: "", notes: "", paid: true });
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [eventFilter, setEventFilter] = useState<string>("all");
@@ -163,6 +171,52 @@ export default function RegistrationsManager({ onAuthError }: Props) {
     }
   }
 
+  useEffect(() => {
+    fetch(`${API_BASE}/api/admin/events`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { events: { id: number; title: string; date: string }[] } | null) => {
+        if (data?.events) {
+          setAllEvents([...data.events].sort((a, b) => (a.date < b.date ? 1 : -1)));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleAdd() {
+    if (!addForm.eventId) { setAddError("Pick an event."); return; }
+    if (!addForm.name.trim()) { setAddError("Name is required."); return; }
+    if (!addForm.email.trim()) { setAddError("Email is required."); return; }
+    setAddSaving(true);
+    setAddError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/registrations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          eventId: Number(addForm.eventId),
+          name: addForm.name.trim(),
+          email: addForm.email.trim(),
+          notes: addForm.notes.trim() || undefined,
+          paid: addForm.paid,
+        }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(d.error ?? "Failed");
+      }
+      const { registration } = await res.json() as { registration: Registration };
+      setRegistrations((prev) => [registration, ...prev]);
+      setAddOpen(false);
+      setAddForm({ eventId: "", name: "", email: "", notes: "", paid: true });
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Could not add the registration.");
+    } finally {
+      setAddSaving(false);
+    }
+  }
+
   async function togglePaid(reg: Registration) {
     setTogglingId(reg.id);
     setError("");
@@ -271,6 +325,13 @@ export default function RegistrationsManager({ onAuthError }: Props) {
             Refresh
           </Button>
           <Button
+            variant="outline"
+            onClick={() => { setAddError(""); setAddOpen(true); }}
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Add Registration
+          </Button>
+          <Button
             onClick={handleExport}
             disabled={registrations.length === 0}
             className="bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
@@ -280,6 +341,80 @@ export default function RegistrationsManager({ onAuthError }: Props) {
           </Button>
         </div>
       </div>
+
+      <Dialog open={addOpen} onOpenChange={(open) => { if (!addSaving) setAddOpen(open); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1E2A5A]">Add Registration</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-[#5A6178] -mt-1">
+            For guests who paid outside the website (Square invoice, manual payment link, at the door).
+            Takes a spot on the event; no confirmation email is sent.
+          </p>
+          <div className="space-y-3 mt-2">
+            <div>
+              <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Event *</label>
+              <select
+                className="w-full h-9 rounded-md border border-[#E2DBCD] bg-white px-3 text-sm text-[#1E2A5A] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                value={addForm.eventId}
+                onChange={(e) => setAddForm((f) => ({ ...f, eventId: e.target.value }))}
+              >
+                <option value="">Select an event…</option>
+                {allEvents.map((e) => (
+                  <option key={e.id} value={e.id}>{e.title} ({e.date})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Name *</label>
+              <Input
+                value={addForm.name}
+                onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Guest name"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Email *</label>
+              <Input
+                type="email"
+                value={addForm.email}
+                onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="guest@example.com"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Notes</label>
+              <Input
+                value={addForm.notes}
+                onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder="Optional — e.g. paid via Square invoice"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-[#1E2A5A] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={addForm.paid}
+                onChange={(e) => setAddForm((f) => ({ ...f, paid: e.target.checked }))}
+                className="rounded border-[#E2DBCD]"
+              />
+              Mark as paid
+            </label>
+            {addError && <p className="text-sm text-red-600">{addError}</p>}
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setAddOpen(false)} disabled={addSaving}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => void handleAdd()}
+                disabled={addSaving}
+                className="bg-[#1E2A5A] text-[#FAF7F0] hover:bg-[#172248]"
+              >
+                {addSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding…</> : "Add Registration"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="mb-6 rounded-md border border-[#E2DBCD] bg-white p-4 flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">

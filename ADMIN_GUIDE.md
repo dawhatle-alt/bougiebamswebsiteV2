@@ -44,6 +44,7 @@ Every event signup, across all events.
 - **Sort any column** by clicking its header (Event, Name, Email, Status, Paid, Date).
 - **Status**: `confirmed` = attending (paid, or a free event); `pending` = started paid checkout but payment never completed.
 - **Paid column**: reflects payments made through the website's checkout. If someone paid another way (a Square invoice, a manual payment link, at the door) — or registered while the event was briefly priced $0 — they'll show *Free* even though Square has their money. **Click the Paid/Free badge to fix it**: clicking *Free* marks them paid; clicking *Paid* un-marks it, but only for manual marks — registrations with a real Square checkout payment can't be un-marked.
+- **Add Registration** (top bar): manually add a guest who paid outside the website — a Square invoice, a manual payment link, or at the door — and so never appears in the list on their own. Pick the event, enter their name and email, optionally tick *Mark as paid*. The registration takes a spot on the event; no confirmation email is sent.
 - **Delete a registration** with the trash icon. Deleting a *confirmed* registration automatically frees up one spot on that event (capped at the event's capacity). Pending registrations never held a spot, so deleting them changes nothing.
 - **Check-in report** (top bar): pick an event from the dropdown, then:
   - **Download CSV** — an alphabetical participant list with a blank *Checked In* column, made for confirming guests at the door (print it or open on a phone).

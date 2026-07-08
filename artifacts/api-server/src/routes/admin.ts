@@ -439,6 +439,60 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
   });
 });
 
+// Manually add a registration — for guests who paid out-of-band (Square
+// invoice, manual payment link, at the door) and never went through the
+// website's registration flow. Created confirmed and takes a spot.
+router.post("/admin/registrations", requireAdmin, async (req, res): Promise<void> => {
+  const { eventId, name, email, notes, paid } = req.body as {
+    eventId?: unknown;
+    name?: unknown;
+    email?: unknown;
+    notes?: unknown;
+    paid?: unknown;
+  };
+  if (typeof eventId !== "number" || typeof name !== "string" || !name.trim() || typeof email !== "string" || !email.trim()) {
+    res.status(400).json({ error: "eventId (number), name and email are required" });
+    return;
+  }
+
+  const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId)).limit(1);
+  if (!event) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+
+  const [row] = await db
+    .insert(registrationsTable)
+    .values({
+      eventId,
+      name: name.trim().slice(0, 120),
+      email: email.trim().slice(0, 200),
+      notes: typeof notes === "string" && notes.trim() ? notes.trim().slice(0, 500) : null,
+      status: "confirmed",
+      paymentSessionId: paid === true ? `manual-${Date.now()}` : null,
+    })
+    .returning();
+
+  await db
+    .update(eventsTable)
+    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+    .where(eq(eventsTable.id, eventId));
+
+  res.status(201).json({
+    registration: {
+      id: row.id,
+      eventId: row.eventId,
+      eventTitle: event.title,
+      name: row.name,
+      email: row.email,
+      notes: row.notes ?? null,
+      status: row.status,
+      paid: !!row.paymentSessionId,
+      createdAt: row.createdAt.toISOString(),
+    },
+  });
+});
+
 // Reconcile a registration's paid flag against Square by hand. Registrations
 // made while an event was priced $0 (or paid out-of-band via a Square invoice
 // or manual payment link) have no payment reference, so the Paid column can't
