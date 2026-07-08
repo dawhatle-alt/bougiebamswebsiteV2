@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { SupabaseAuthProvider } from "@/context/SupabaseAuthContext";
+import { Analytics } from "@vercel/analytics/react";
 
 import Layout from "@/components/Layout";
 import WelcomeOfferDialog from "@/components/WelcomeOfferDialog";
@@ -158,6 +159,7 @@ function App() {
                 <Router />
               </WouterRouter>
               <Toaster />
+              <Analytics />
             </WishlistProvider>
           </CartProvider>
         </SupabaseAuthProvider>
