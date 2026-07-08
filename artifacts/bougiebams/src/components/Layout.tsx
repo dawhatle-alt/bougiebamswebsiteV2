@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, X, Instagram, Facebook, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown, CalendarDays, LogIn, LogOut, User } from "lucide-react";
+import { ShoppingBag, Menu, X, Instagram, Facebook, ArrowRight, Minus, Plus, Trash2, Loader2, Search, Heart, ChevronDown, CalendarDays, LogIn, LogOut, User, Receipt } from "lucide-react";
 import ChatWidget from "@/components/ChatWidget";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -420,6 +420,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           My Events
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/my-orders" className="flex items-center gap-2 cursor-pointer">
+                          <Receipt className="h-4 w-4" />
+                          My Orders
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => shopperSignOut()}
@@ -454,6 +460,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <Link href="/my-events" className="flex items-center gap-2 cursor-pointer">
                           <CalendarDays className="h-4 w-4" />
                           My Events
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/my-orders" className="flex items-center gap-2 cursor-pointer">
+                          <Receipt className="h-4 w-4" />
+                          My Orders
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -776,6 +788,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <CalendarDays className="w-7 h-7" />
                   My Events
                 </Link>
+                <Link href="/my-orders" className="font-serif text-3xl hover:text-primary transition-colors flex items-center gap-3">
+                  <Receipt className="w-7 h-7" />
+                  My Orders
+                </Link>
                 <button
                   onClick={() => shopperSignOut()}
                   className="font-serif text-2xl text-destructive hover:opacity-80 transition-opacity text-left flex items-center gap-3"
@@ -789,6 +805,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/my-events" className="font-serif text-3xl hover:text-primary transition-colors flex items-center gap-3">
                   <CalendarDays className="w-7 h-7" />
                   My Events
+                </Link>
+                <Link href="/my-orders" className="font-serif text-3xl hover:text-primary transition-colors flex items-center gap-3">
+                  <Receipt className="w-7 h-7" />
+                  My Orders
                 </Link>
                 <button
                   onClick={logout}

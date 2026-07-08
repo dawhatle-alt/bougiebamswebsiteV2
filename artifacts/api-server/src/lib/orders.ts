@@ -113,6 +113,18 @@ export async function listOrders() {
   return db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
 }
 
+/** Orders placed with a given buyer email (Square records the email the buyer
+ * entered at checkout, so this is the best available link to an account). */
+export async function listOrdersByEmail(email: string) {
+  await ensureOrdersTable();
+  const normalized = email.trim().toLowerCase();
+  return db
+    .select()
+    .from(ordersTable)
+    .where(sql`lower(${ordersTable.buyerEmail}) = ${normalized}`)
+    .orderBy(desc(ordersTable.createdAt));
+}
+
 /**
  * Persists a paid Square order — product purchases and event registration
  * payments alike (events carry a referenceId pointing at the registration and

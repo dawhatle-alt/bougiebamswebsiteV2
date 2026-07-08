@@ -2,10 +2,65 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, shopperProfilesTable } from "@workspace/db";
-import { requireShopperAuth } from "../middleware/auth";
+import { requireShopperAuth, requireAnyAuth } from "../middleware/auth";
+import { listOrdersByEmail } from "../lib/orders";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+interface OrderItem {
+  name: string;
+  quantity: string;
+  amountCents: number;
+}
+
+function parseItems(raw: string | null): OrderItem[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((x) => {
+      if (!x || typeof x !== "object") return [];
+      const o = x as Record<string, unknown>;
+      return [{
+        name: typeof o.name === "string" ? o.name : "Item",
+        quantity: typeof o.quantity === "string" ? o.quantity : "1",
+        amountCents: typeof o.amountCents === "number" ? o.amountCents : 0,
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+// Orders placed with the signed-in account's email — shop purchases and event
+// payments alike. Works for shoppers and admin (OIDC) sessions.
+router.get("/account/orders", requireAnyAuth, async (req: Request, res: Response): Promise<void> => {
+  const email = (req.shopperUser?.email ?? req.user?.email ?? "").trim();
+  if (!email) {
+    res.json({ orders: [] });
+    return;
+  }
+  try {
+    const rows = await listOrdersByEmail(email);
+    res.json({
+      orders: rows.map((r) => ({
+        id: r.id,
+        kind: r.kind,
+        totalCents: r.totalCents,
+        discountCents: r.discountCents,
+        discountCode: r.discountCode ?? null,
+        currency: r.currency,
+        state: r.state,
+        items: parseItems(r.items),
+        createdAt: r.createdAt,
+      })),
+    });
+  } catch (err) {
+    logger.error({ err }, "Error fetching account orders");
+    res.status(500).json({ error: "Could not fetch orders" });
+  }
+});
 
 router.get("/account/me", requireShopperAuth, async (req: Request, res: Response): Promise<void> => {
   const supabaseId = req.shopperUser!.sub;

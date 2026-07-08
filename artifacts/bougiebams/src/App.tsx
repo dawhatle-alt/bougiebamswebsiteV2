@@ -24,6 +24,7 @@ import Faq from "@/pages/Faq";
 import Events from "@/pages/Events";
 import EventDetail from "@/pages/EventDetail";
 import MyEvents from "@/pages/MyEvents";
+import MyOrders from "@/pages/MyOrders";
 import EventConfirmation from "@/pages/EventConfirmation";
 import Favorites from "@/pages/Favorites";
 import Contact from "@/pages/Contact";
@@ -74,6 +75,7 @@ function AnimatedRoutes() {
           <Route path="/events/:id" component={EventDetail} />
           <Route path="/events" component={Events} />
           <Route path="/my-events" component={MyEvents} />
+          <Route path="/my-orders" component={MyOrders} />
           <Route path="/account" component={Account} />
           <Route path="/favorites" component={Favorites} />
           <Route path="/contact" component={Contact} />
@@ -108,6 +110,7 @@ const ROUTE_TITLES: Record<string, string | null> = {
   "/events": "Mahjong Events & Game Nights",
   "/events/confirmation": "Registration Confirmation",
   "/my-events": "My Events",
+  "/my-orders": "My Orders",
   "/account": "My Account",
   "/favorites": "Favorites — Mahjong Accessories & Winner Brags",
   "/contact": "Contact Us",
