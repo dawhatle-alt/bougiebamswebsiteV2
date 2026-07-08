@@ -468,17 +468,26 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   }
 }
 
-router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> => {
-  // Best-effort order sync so revenue numbers reflect Square, not just what the
-  // live capture paths happened to record.
+// Kick off the best-effort Square order sync WITHOUT awaiting it. Square's
+// orders/search has been observed hanging well past 30s, and any await on it
+// (even behind a Promise.race cap) has taken down admin screens with function
+// timeouts. The webhook is the authoritative capture path; this only backfills.
+function backgroundSquareSync(context: string): void {
   try {
     const client = getSquareClient();
     if (client && isSquareLocationConfigured()) {
-      await withTimeout(syncOrdersFromSquare(client, getSquareLocationId()), SQUARE_SYNC_TIMEOUT_MS);
+      void withTimeout(syncOrdersFromSquare(client, getSquareLocationId()), SQUARE_SYNC_TIMEOUT_MS)
+        .catch((err) => logger.warn({ err, context }, "Background Square order sync did not finish"));
     }
   } catch (err) {
-    logger.error({ err }, "Dashboard order sync failed — using locally recorded orders");
+    logger.warn({ err, context }, "Background Square order sync could not start");
   }
+}
+
+router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> => {
+  logger.info("dashboard: start");
+  backgroundSquareSync("dashboard");
+  logger.info("dashboard: sync dispatched, querying");
 
   try {
     const [orders, regs, latestSubs, prods, eventsRows, [subCount], [blogCount]] = await Promise.all([
@@ -499,6 +508,7 @@ router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> =>
       db.select({ count: count() }).from(subscribersTable),
       db.select({ count: count() }).from(blogPostsTable),
     ]);
+    logger.info("dashboard: queries done");
 
     // Revenue
     const monthStart = new Date();
@@ -890,14 +900,7 @@ router.put("/admin/press-bar", requireAdmin, async (req, res): Promise<void> => 
 router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
   // Best-effort pull of recent orders straight from Square so the view is
   // accurate even without the webhook or confirmation-page capture paths.
-  try {
-    const client = getSquareClient();
-    if (client && isSquareLocationConfigured()) {
-      await withTimeout(syncOrdersFromSquare(client, getSquareLocationId()), SQUARE_SYNC_TIMEOUT_MS);
-    }
-  } catch (err) {
-    logger.error({ err }, "Square order sync failed — showing locally recorded orders");
-  }
+  backgroundSquareSync("admin-orders");
 
   try {
     const rows = await listOrders();
