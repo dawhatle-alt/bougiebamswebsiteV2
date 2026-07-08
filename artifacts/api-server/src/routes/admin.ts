@@ -450,13 +450,31 @@ function eventDateMs(d: string): number | null {
   return Number.isNaN(t) ? null : t;
 }
 
+// The Square sync is best-effort decoration on admin reads — a slow Square API
+// must not eat the function's 30s budget and 504 the whole screen, so cap it.
+const SQUARE_SYNC_TIMEOUT_MS = 6000;
+
+async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      p,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> => {
   // Best-effort order sync so revenue numbers reflect Square, not just what the
   // live capture paths happened to record.
   try {
     const client = getSquareClient();
     if (client && isSquareLocationConfigured()) {
-      await syncOrdersFromSquare(client, getSquareLocationId());
+      await withTimeout(syncOrdersFromSquare(client, getSquareLocationId()), SQUARE_SYNC_TIMEOUT_MS);
     }
   } catch (err) {
     logger.error({ err }, "Dashboard order sync failed — using locally recorded orders");
@@ -875,7 +893,7 @@ router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
   try {
     const client = getSquareClient();
     if (client && isSquareLocationConfigured()) {
-      await syncOrdersFromSquare(client, getSquareLocationId());
+      await withTimeout(syncOrdersFromSquare(client, getSquareLocationId()), SQUARE_SYNC_TIMEOUT_MS);
     }
   } catch (err) {
     logger.error({ err }, "Square order sync failed — showing locally recorded orders");
