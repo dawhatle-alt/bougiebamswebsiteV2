@@ -38,31 +38,33 @@ export default function Home() {
   const bestsellers = products.filter(p => p.isBestseller).slice(0, 4);
 
   // Curated Collections cards: admin-managed via /api/curated-collections, with
-  // the built-in set as the fallback when none are configured.
-  const defaultCollections = [
-    { title: "The Jade Collection", img: images.productJade, path: "/shop?category=Complete+Sets" },
-    { title: "The Rose Gold Set", img: images.productRosegold, path: "/shop?category=Complete+Sets" },
-    { title: "Accessories & Extras", img: images.heroTile3, path: "/shop?category=Tiles+%26+Accessories" },
-  ];
+  // the built-in set as the fallback when none are configured. `null` means the
+  // API hasn't answered yet — render nothing rather than flashing the stock
+  // fallback cards and swapping them out a beat later.
   const [curated, setCurated] = useState<{ title: string; img: string; path: string }[] | null>(null);
 
   useEffect(() => {
+    const defaultCollections = [
+      { title: "The Jade Collection", img: images.productJade, path: "/shop?category=Complete+Sets" },
+      { title: "The Rose Gold Set", img: images.productRosegold, path: "/shop?category=Complete+Sets" },
+      { title: "Accessories & Extras", img: images.heroTile3, path: "/shop?category=Tiles+%26+Accessories" },
+    ];
     const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
     let active = true;
     fetch(`${base}/api/curated-collections`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!active || !data?.items) return;
-        const mapped = (data.items as { title: string; imageUrl: string; linkPath: string }[])
+        if (!active) return;
+        const mapped = ((data?.items ?? []) as { title: string; imageUrl: string; linkPath: string }[])
           .filter((i) => i.imageUrl)
           .map((i) => ({ title: i.title, img: i.imageUrl, path: i.linkPath || "/shop" }));
-        if (mapped.length > 0) setCurated(mapped);
+        setCurated(mapped.length > 0 ? mapped : defaultCollections);
       })
-      .catch(() => {});
+      .catch(() => { if (active) setCurated(defaultCollections); });
     return () => { active = false; };
   }, []);
 
-  const collections = curated ?? defaultCollections;
+  const collections = curated ?? [];
 
   const testimonials = [
     {
