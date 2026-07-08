@@ -147,6 +147,14 @@ Photos can be **assigned to an event** to build that event's album on the Tile W
 
 On the Events page, each event with photos becomes a flip tile: the cover photo on the front, event details on the back, and clicking it filters the grid to that night. Each open album shows a shareable link (e.g. `bougiebams.com/events?moments=12`) — put it in a post-event email so guests can jump straight to their night's photos. Recent past events with no photos yet show as a "Photos coming soon" bam tile for 45 days.
 
+## Featured In
+
+The "As Featured In" strip on the homepage (the row of publication names below the hero).
+
+- **Toggle** it on or off — when off, the section disappears from the homepage entirely.
+- **Edit the list**: add, remove, rename, and reorder (↑/↓) publication names, then **Save**. Up to 12 names, and the live **preview** shows how the strip will look.
+- If the list is empty, the section stays hidden even when the toggle is on.
+
 ## Announcement Bar
 
 The message bar across the top of every page (e.g. "Complimentary shipping on all orders over $150").

@@ -793,6 +793,77 @@ router.put("/admin/curated-collections", requireAdmin, async (req, res): Promise
   }
 });
 
+// --- "As Featured In" press bar on the homepage -------------------------------
+const PRESS_BAR_DEFAULT_NAMES = [
+  "The Tile Edit",
+  "Modern Hostess",
+  "Salon & Soirée",
+  "Heritage Living",
+  "Atelier Weekly",
+];
+
+async function readPressBar(): Promise<{ enabled: boolean; names: string[] }> {
+  await ensureSettingsTable();
+  const rows = await db
+    .select()
+    .from(siteSettingsTable)
+    .where(eq(siteSettingsTable.key, "press_bar"));
+  const raw = rows[0]?.value;
+  // Default to the original hardcoded list so behavior is unchanged until edited.
+  if (!raw) return { enabled: true, names: PRESS_BAR_DEFAULT_NAMES };
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") throw new Error("bad shape");
+    const o = parsed as Record<string, unknown>;
+    const names = Array.isArray(o.names)
+      ? o.names.filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+      : [];
+    return { enabled: o.enabled === true, names };
+  } catch {
+    return { enabled: true, names: PRESS_BAR_DEFAULT_NAMES };
+  }
+}
+
+// Public: the "As Featured In" section on the homepage. Fails soft to the
+// default list so a transient DB error doesn't blank the section.
+router.get("/press-bar", async (_req, res): Promise<void> => {
+  try {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(await readPressBar());
+  } catch (err) {
+    logger.error({ err }, "Failed to read press bar setting");
+    res.json({ enabled: true, names: PRESS_BAR_DEFAULT_NAMES });
+  }
+});
+
+router.put("/admin/press-bar", requireAdmin, async (req, res): Promise<void> => {
+  const { enabled, names } = req.body as { enabled?: unknown; names?: unknown };
+  if (typeof enabled !== "boolean" || !Array.isArray(names)) {
+    res.status(400).json({ error: "enabled (boolean) and names (array) are required" });
+    return;
+  }
+  if (names.length > 12) {
+    res.status(400).json({ error: "Too many names (maximum 12)." });
+    return;
+  }
+  const clean: string[] = [];
+  for (const raw of names) {
+    if (typeof raw !== "string") {
+      res.status(400).json({ error: "Each name must be a string." });
+      return;
+    }
+    const name = raw.trim().slice(0, 60);
+    if (name) clean.push(name);
+  }
+  try {
+    await writeSetting("press_bar", JSON.stringify({ enabled, names: clean }));
+    res.json({ enabled, names: clean });
+  } catch (err) {
+    logger.error({ err }, "Failed to save press bar setting");
+    res.status(500).json({ error: "Could not save the Featured In section." });
+  }
+});
+
 router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
   // Best-effort pull of recent orders straight from Square so the view is
   // accurate even without the webhook or confirmation-page capture paths.

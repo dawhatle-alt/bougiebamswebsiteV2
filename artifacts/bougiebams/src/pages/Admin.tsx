@@ -26,6 +26,7 @@ import {
   Camera,
   Megaphone,
   MessageCircle,
+  Newspaper,
   LayoutGrid,
   Receipt,
   Menu,
@@ -42,6 +43,7 @@ import LessonsManager from "@/components/admin/LessonsManager";
 import FavoritesManager from "@/components/admin/FavoritesManager";
 import GalleryManager from "@/components/admin/GalleryManager";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
+import PressBarManager from "@/components/admin/PressBarManager";
 import ChatbotManager from "@/components/admin/ChatbotManager";
 import CuratedCollectionsManager from "@/components/admin/CuratedCollectionsManager";
 import OrdersManager from "@/components/admin/OrdersManager";
@@ -61,6 +63,7 @@ type AdminView =
   | "favorites"
   | "gallery"
   | "announcement"
+  | "pressbar"
   | "chatbot"
   | "curated"
   | "orders";
@@ -159,6 +162,7 @@ const NAV_GROUPS = [
       { key: "curated" as AdminView, label: "Curated Collections", icon: LayoutGrid },
       { key: "gallery" as AdminView, label: "Event Gallery", icon: Camera },
       { key: "announcement" as AdminView, label: "Announcement Bar", icon: Megaphone },
+      { key: "pressbar" as AdminView, label: "Featured In", icon: Newspaper },
       { key: "chatbot" as AdminView, label: "Chat Assistant", icon: MessageCircle },
     ],
   },
@@ -177,6 +181,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   favorites: "Favorites",
   gallery: "Event Gallery",
   announcement: "Announcement Bar",
+  pressbar: "Featured In",
   chatbot: "Chat Assistant",
   curated: "Curated Collections",
   orders: "Orders",
@@ -486,6 +491,8 @@ export default function Admin() {
             <GalleryManager onAuthError={handleAuthError} />
           ) : view === "announcement" ? (
             <AnnouncementManager onAuthError={handleAuthError} />
+          ) : view === "pressbar" ? (
+            <PressBarManager onAuthError={handleAuthError} />
           ) : view === "chatbot" ? (
             <ChatbotManager onAuthError={handleAuthError} />
           ) : view === "curated" ? (
