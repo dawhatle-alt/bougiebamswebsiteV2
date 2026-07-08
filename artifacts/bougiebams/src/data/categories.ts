@@ -9,6 +9,10 @@ export const SHOP_CATEGORIES: ShopCategory[] = [
     description: "Full mahjong sets with tiles, racks, and storage case.",
   },
   {
+    name: "Mats",
+    description: "Statement mahjong mats that anchor every table.",
+  },
+  {
     name: "Tiles & Accessories",
     description: "Individual tile sets, racks, pushers, and more.",
   },
