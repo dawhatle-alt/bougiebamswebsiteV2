@@ -20,23 +20,26 @@ const FALLBACK_IMAGES = [
 ];
 
 export function HeroShuffleGrid() {
-  const [imageUrls, setImageUrls] = useState<string[]>(FALLBACK_IMAGES);
+  // null = the admin-uploaded photo list hasn't answered yet. Render empty
+  // tiles rather than flashing the bundled stock photos and swapping them out
+  // a beat later; the stock set only shows when no photos are configured.
+  const [imageUrls, setImageUrls] = useState<string[] | null>(null);
   const [order, setOrder] = useState<number[]>(Array.from({ length: 12 }, (_, i) => i));
 
   useEffect(() => {
     fetch(`${API_BASE}/api/hero-images`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { images: { id: number; objectPath: string }[] } | null) => {
-        // Use the admin-uploaded photos as soon as any exist — the grid repeats
-        // them to fill all 12 tiles. Bundled defaults only show when none are set.
         if (data?.images && data.images.length > 0) {
           const urls = data.images.map((img) => `${API_BASE}/api/storage${img.objectPath}`);
           const repeated = Array.from({ length: 12 }, (_, i) => urls[i % urls.length]);
           setImageUrls(repeated);
           setOrder(Array.from({ length: 12 }, (_, i) => i));
+        } else {
+          setImageUrls(FALLBACK_IMAGES);
         }
       })
-      .catch(() => {});
+      .catch(() => setImageUrls(FALLBACK_IMAGES));
   }, []);
 
   useEffect(() => {
@@ -65,11 +68,13 @@ export function HeroShuffleGrid() {
             transition={{ type: "spring", stiffness: 40, damping: 12 }}
             className="w-full h-full rounded-sm md:rounded-md overflow-hidden bg-background relative"
           >
-            <img
-              src={imageUrls[imgIndex]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {imageUrls && (
+              <img
+                src={imageUrls[imgIndex]}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-tr from-background/20 to-transparent"></div>
           </motion.div>
         ))}
