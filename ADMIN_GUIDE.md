@@ -181,6 +181,7 @@ The floating chat bubble in the bottom-right corner of the site.
 | Event registration (paid) | Confirmed automatically once Square payment completes; guest gets a confirmation email |
 | Event registration (free) | Confirmed instantly; guest gets a confirmation email |
 | Event reminders | Emailed automatically per the event's reminder setting |
+| Registration reconciliation | Paid Square orders automatically repair the registration list (stuck-pending confirmed, "Free" mislabels stamped, missing rows restored with a "Restored from Square order …" note) — on every payment webhook, whenever the admin dashboard loads, and once daily |
 | Check-in report | On demand from Registrations (download or email) |
 | Welcome popup signup | Adds a Subscriber + shows the BOUGIE15 code |
 | Contact form | Emailed to hello@bougiebams.com |

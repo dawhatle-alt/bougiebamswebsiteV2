@@ -1,7 +1,7 @@
 import { sql, eq, and, isNull, desc } from "drizzle-orm";
-import { db, ordersTable, registrationsTable } from "@workspace/db";
+import { db, ordersTable, registrationsTable, eventsTable } from "@workspace/db";
 import { logger } from "./logger";
-import { sendOrderNotificationEmail } from "./email";
+import { sendOrderNotificationEmail, sendRegistrationConfirmationEmail } from "./email";
 import { markRedemptionPaid } from "./discounts";
 import { tableExists } from "./dbBootstrap";
 
@@ -215,6 +215,17 @@ export async function recordSquareOrder(
     logger.error({ err, orderId: order.id }, "Failed to mark discount redemption as paid");
   }
 
+  // Every paid event order repairs its registration: seats are limited, so a
+  // paid guest must never be missing from the list because a webhook or the
+  // confirmation redirect failed at the wrong moment.
+  if (isEvent) {
+    try {
+      await repairRegistrationFromOrder(order, { buyerName, buyerEmail });
+    } catch (err) {
+      logger.error({ err, orderId: order.id }, "Failed to reconcile registration from Square order");
+    }
+  }
+
   if (!notify) return;
 
   // Claim the notification (notified_at flips exactly once) so concurrent
@@ -249,6 +260,103 @@ export async function recordSquareOrder(
       .where(eq(ordersTable.id, order.id))
       .catch(() => {});
   }
+}
+
+/**
+ * Reconciles a registration against its PAID Square order (the caller has
+ * already verified payment). Three repairs, all idempotent:
+ * - stuck "pending" despite payment → confirm, take a spot, email the guest
+ * - confirmed but no payment reference (shows "Free") → stamp the reference
+ * - registration missing entirely → restore it from the order, take a spot
+ */
+async function repairRegistrationFromOrder(
+  order: SquareOrderLike,
+  buyer: { buyerName: string | null; buyerEmail: string | null },
+): Promise<void> {
+  if (!order.id || !order.referenceId) return;
+  const regId = parseInt(order.referenceId, 10);
+  if (Number.isNaN(regId)) return;
+
+  const paymentRef = `square-order-${order.id}`;
+
+  const [reg] = await db
+    .select()
+    .from(registrationsTable)
+    .where(eq(registrationsTable.id, regId))
+    .limit(1);
+
+  if (reg) {
+    if (reg.status === "pending") {
+      await db
+        .update(registrationsTable)
+        .set({ status: "confirmed", paymentSessionId: reg.paymentSessionId ?? paymentRef })
+        .where(eq(registrationsTable.id, reg.id));
+      await db
+        .update(eventsTable)
+        .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+        .where(eq(eventsTable.id, reg.eventId));
+      logger.warn({ registrationId: reg.id, orderId: order.id }, "Reconciled paid-but-pending registration from Square order");
+
+      const [evt] = await db.select().from(eventsTable).where(eq(eventsTable.id, reg.eventId)).limit(1);
+      if (evt && reg.email) {
+        try {
+          await sendRegistrationConfirmationEmail({
+            registrantName: reg.name,
+            registrantEmail: reg.email,
+            eventTitle: evt.title,
+            eventDate: evt.date,
+            eventTime: evt.time,
+            eventLocation: evt.location,
+            eventHost: evt.host,
+          });
+        } catch (err) {
+          logger.error({ err, registrationId: reg.id }, "Reconciliation confirmation email failed");
+        }
+      }
+    } else if (reg.status === "confirmed" && !reg.paymentSessionId) {
+      await db
+        .update(registrationsTable)
+        .set({ paymentSessionId: paymentRef })
+        .where(eq(registrationsTable.id, reg.id));
+      logger.info({ registrationId: reg.id, orderId: order.id }, "Stamped payment reference on confirmed registration");
+    }
+    return;
+  }
+
+  // The registration row is gone (or was never written). Restore it so the
+  // guest holds their seat — idempotent via the exact note marker.
+  const restoreNote = `Restored from Square order ${order.id}`;
+  const [alreadyRestored] = await db
+    .select({ id: registrationsTable.id })
+    .from(registrationsTable)
+    .where(eq(registrationsTable.notes, restoreNote))
+    .limit(1);
+  if (alreadyRestored) return;
+
+  const eventTitle = order.lineItems?.[0]?.name;
+  if (!eventTitle) {
+    logger.warn({ orderId: order.id }, "Paid event order references a missing registration but has no line item to match an event");
+    return;
+  }
+  const [evt] = await db.select().from(eventsTable).where(eq(eventsTable.title, eventTitle)).limit(1);
+  if (!evt) {
+    logger.warn({ orderId: order.id, eventTitle }, "Paid event order references a missing registration; no event matches its line item");
+    return;
+  }
+
+  await db.insert(registrationsTable).values({
+    eventId: evt.id,
+    name: buyer.buyerName ?? "Guest (restored from Square)",
+    email: buyer.buyerEmail ?? "",
+    notes: restoreNote,
+    status: "confirmed",
+    paymentSessionId: paymentRef,
+  });
+  await db
+    .update(eventsTable)
+    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+    .where(eq(eventsTable.id, evt.id));
+  logger.warn({ orderId: order.id, eventId: evt.id }, "Restored missing registration from paid Square order — check name/email against Square");
 }
 
 // Orders placed within this window still get the owner notification when they
