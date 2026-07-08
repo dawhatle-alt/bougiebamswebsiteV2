@@ -439,6 +439,49 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
   });
 });
 
+// Reconcile a registration's paid flag against Square by hand. Registrations
+// made while an event was priced $0 (or paid out-of-band via a Square invoice
+// or manual payment link) have no payment reference, so the Paid column can't
+// see the money — the admin marks them paid here after checking Square.
+router.patch("/admin/registrations/:id/paid", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params.id), 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const { paid } = req.body as { paid?: unknown };
+  if (typeof paid !== "boolean") {
+    res.status(400).json({ error: "paid (boolean) is required" });
+    return;
+  }
+
+  const [existing] = await db
+    .select({ id: registrationsTable.id, paymentSessionId: registrationsTable.paymentSessionId })
+    .from(registrationsTable)
+    .where(eq(registrationsTable.id, id))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+
+  // Never clobber a real Square payment reference when un-marking; only
+  // manual markers ("manual-...") may be removed.
+  if (!paid && existing.paymentSessionId && !existing.paymentSessionId.startsWith("manual-")) {
+    res.status(409).json({
+      error: "This registration has a Square payment reference; it can't be marked unpaid from here.",
+    });
+    return;
+  }
+
+  await db
+    .update(registrationsTable)
+    .set({ paymentSessionId: paid ? `manual-${Date.now()}` : null })
+    .where(eq(registrationsTable.id, id));
+
+  res.json({ success: true, paid });
+});
+
 // --- Dashboard -------------------------------------------------------------
 
 // Parses the events table's free-text date ("YYYY-MM-DD" preferred) to a local

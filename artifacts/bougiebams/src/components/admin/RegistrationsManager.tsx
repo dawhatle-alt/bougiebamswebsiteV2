@@ -38,6 +38,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [eventFilter, setEventFilter] = useState<string>("all");
@@ -159,6 +160,29 @@ export default function RegistrationsManager({ onAuthError }: Props) {
       setError(err instanceof Error && err.message !== "Failed" ? err.message : "Could not email the report. Please try again.");
     } finally {
       setEmailing(false);
+    }
+  }
+
+  async function togglePaid(reg: Registration) {
+    setTogglingId(reg.id);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/registrations/${reg.id}/paid`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ paid: !reg.paid }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(d.error ?? "Failed");
+      }
+      setRegistrations((prev) => prev.map((r) => (r.id === reg.id ? { ...r, paid: !reg.paid } : r)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update the paid flag.");
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -359,11 +383,21 @@ export default function RegistrationsManager({ onAuthError }: Props) {
                     </span>
                   </TableCell>
                   <TableCell className="text-[#5A6178]">
-                    {r.paid ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Paid</span>
-                    ) : (
-                      <span className="text-[#5A6178]">Free</span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => void togglePaid(r)}
+                      disabled={togglingId === r.id}
+                      title={r.paid ? "Click to mark unpaid (manual marks only)" : "Click to mark as paid (e.g. paid via Square directly)"}
+                      className="cursor-pointer disabled:opacity-50"
+                    >
+                      {togglingId === r.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#9A8F7E]" />
+                      ) : r.paid ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">Paid</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-[#5A6178] border border-dashed border-[#C5BBAC] hover:border-[#1E2A5A] hover:text-[#1E2A5A] transition-colors">Free</span>
+                      )}
+                    </button>
                   </TableCell>
                   <TableCell className="text-right text-[#5A6178]">
                     {formatDate(r.createdAt)}
