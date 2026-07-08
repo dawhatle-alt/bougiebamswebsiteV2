@@ -19,6 +19,7 @@ import lessonsRouter from "./lessons";
 import galleryRouter from "./gallery";
 import accountRouter from "./account";
 import cronRouter from "./cron";
+import businessRouter from "./business";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(lessonsRouter);
 router.use(galleryRouter);
 router.use(accountRouter);
 router.use(cronRouter);
+router.use(businessRouter);
 
 export default router;

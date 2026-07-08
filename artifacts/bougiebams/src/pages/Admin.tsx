@@ -29,6 +29,7 @@ import {
   Newspaper,
   LayoutGrid,
   Receipt,
+  Briefcase,
   Menu,
   X,
 } from "lucide-react";
@@ -47,6 +48,7 @@ import PressBarManager from "@/components/admin/PressBarManager";
 import ChatbotManager from "@/components/admin/ChatbotManager";
 import CuratedCollectionsManager from "@/components/admin/CuratedCollectionsManager";
 import OrdersManager from "@/components/admin/OrdersManager";
+import BusinessManager from "@/components/admin/business/BusinessManager";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -66,7 +68,8 @@ type AdminView =
   | "pressbar"
   | "chatbot"
   | "curated"
-  | "orders";
+  | "orders"
+  | "business";
 
 interface Subscriber {
   id: number;
@@ -129,6 +132,7 @@ const NAV_GROUPS = [
     label: "Overview",
     items: [
       { key: "dashboard" as AdminView, label: "Dashboard", icon: LayoutDashboard },
+      { key: "business" as AdminView, label: "Business HQ", icon: Briefcase },
     ],
   },
   {
@@ -185,6 +189,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   chatbot: "Chat Assistant",
   curated: "Curated Collections",
   orders: "Orders",
+  business: "Business HQ",
 };
 
 function AdminLoginScreen({ apiBase }: { apiBase: string }) {
@@ -499,6 +504,8 @@ export default function Admin() {
             <CuratedCollectionsManager onAuthError={handleAuthError} />
           ) : view === "orders" ? (
             <OrdersManager onAuthError={handleAuthError} />
+          ) : view === "business" ? (
+            <BusinessManager onAuthError={handleAuthError} />
           ) : (
             <>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">

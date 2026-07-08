@@ -16,3 +16,4 @@ export * from "./event_gallery";
 export * from "./site_settings";
 export * from "./orders";
 export * from "./discount_redemptions";
+export * from "./business";
