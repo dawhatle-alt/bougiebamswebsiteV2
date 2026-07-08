@@ -6,34 +6,19 @@ import { requireAdmin } from "../middleware/auth";
 
 const router: IRouter = Router();
 
-// Migrations are applied manually in this project (drizzle-kit push doesn't run
-// on deploy), so lazily add the album columns on first use — same pattern as
-// the orders table. Idempotent and safe per serverless instance.
-let galleryColumnsReady: Promise<void> | null = null;
-
-function ensureGalleryColumns(): Promise<void> {
-  if (!galleryColumnsReady) {
-    galleryColumnsReady = db
-      .execute(sql`
-        ALTER TABLE event_gallery
-          ADD COLUMN IF NOT EXISTS event_id integer,
-          ADD COLUMN IF NOT EXISTS is_cover boolean NOT NULL DEFAULT false
-      `)
-      .then(() => undefined)
-      .catch((err) => {
-        galleryColumnsReady = null;
-        throw err;
-      });
-  }
-  return galleryColumnsReady;
-}
+// The event_id/is_cover columns were added in production on 2026-07-07:
+//   ALTER TABLE event_gallery
+//     ADD COLUMN IF NOT EXISTS event_id integer,
+//     ADD COLUMN IF NOT EXISTS is_cover boolean NOT NULL DEFAULT false
+// Do NOT run DDL lazily per instance here — ALTER TABLE takes an ACCESS
+// EXCLUSIVE lock even as a no-op, and a lock queue on this hot table under
+// serverless cold-start fan-out can starve the whole connection pool.
 
 // Past events without photos stay visible as "photos coming soon" tiles for
 // this many days after the event date.
 const COMING_SOON_WINDOW_DAYS = 45;
 
 router.get("/gallery", async (_req: Request, res: Response): Promise<void> => {
-  await ensureGalleryColumns();
   const rows = await db
     .select()
     .from(eventGalleryTable)
@@ -87,7 +72,6 @@ router.post(
   "/admin/gallery",
   requireAdmin,
   async (req: Request, res: Response): Promise<void> => {
-    await ensureGalleryColumns();
     const { objectPath, caption, eventId } = req.body as {
       objectPath?: string;
       caption?: string;
@@ -143,7 +127,6 @@ router.put(
   "/admin/gallery/:id",
   requireAdmin,
   async (req: Request, res: Response): Promise<void> => {
-    await ensureGalleryColumns();
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "invalid id" }); return; }
     const body = req.body as {

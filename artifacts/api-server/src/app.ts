@@ -43,4 +43,15 @@ app.use(injectShopperUser);
 
 app.use("/api", router);
 
+// Express's default handler swallows the underlying error (generic HTML 500,
+// nothing in the logs) — log it so production failures are diagnosable.
+app.use(
+  (err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    logger.error({ err, url: req.url, method: req.method }, "unhandled route error");
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
 export default app;
