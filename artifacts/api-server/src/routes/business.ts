@@ -8,9 +8,14 @@ import {
   bizMarketingChannelsTable,
   bizInventoryItemsTable,
   bizScenariosTable,
+  ordersTable,
+  eventsTable,
+  registrationsTable,
+  subscribersTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middleware/auth";
 import { ensureBusinessTables } from "../lib/businessBootstrap";
+import { tableExists } from "../lib/dbBootstrap";
 import { logger } from "../lib/logger";
 
 // Business HQ (forecasting/planning) endpoints, ported from the
@@ -222,6 +227,152 @@ router.get("/admin/business/scenarios", requireAdmin, async (_req, res): Promise
   } catch (err) {
     logger.error({ err }, "Failed to fetch scenarios");
     res.status(500).json({ error: "Failed to fetch scenarios" });
+  }
+});
+
+interface OrderItem {
+  name?: string;
+  quantity?: number | string;
+  amountCents?: number;
+}
+
+// Real store performance, aggregated from orders/registrations/subscribers.
+// Queries run sequentially — pipelined queries stall behind the transaction-
+// mode pooler (same constraint as the admin dashboard).
+router.get("/admin/business/actuals", requireAdmin, async (_req, res): Promise<void> => {
+  try {
+    const hasOrders = await tableExists("orders");
+    const orders = hasOrders
+      ? await db
+          .select({
+            kind: ordersTable.kind,
+            totalCents: ordersTable.totalCents,
+            discountCents: ordersTable.discountCents,
+            items: ordersTable.items,
+            createdAt: ordersTable.createdAt,
+          })
+          .from(ordersTable)
+          .where(eq(ordersTable.state, "COMPLETED"))
+      : [];
+
+    const events = await db
+      .select({
+        id: eventsTable.id,
+        title: eventsTable.title,
+        date: eventsTable.date,
+        priceCents: eventsTable.priceCents,
+        totalSpots: eventsTable.totalSpots,
+        spotsLeft: eventsTable.spotsLeft,
+      })
+      .from(eventsTable);
+
+    const registrations = await db
+      .select({
+        eventId: registrationsTable.eventId,
+        status: registrationsTable.status,
+        paymentSessionId: registrationsTable.paymentSessionId,
+      })
+      .from(registrationsTable);
+
+    const subscriberRows = await db
+      .select({ subscribedAt: subscribersTable.subscribedAt })
+      .from(subscribersTable);
+
+    // Product vs event revenue, plus per-product breakdown from items JSON
+    let productRevenueCents = 0;
+    let productOrderCount = 0;
+    let eventRevenueCents = 0;
+    let eventOrderCount = 0;
+    let discountCentsTotal = 0;
+    let unitsSold = 0;
+    const byProduct = new Map<string, { name: string; quantity: number; revenueCents: number }>();
+    const monthly = new Map<string, { productCents: number; eventCents: number }>();
+
+    for (const order of orders) {
+      discountCentsTotal += order.discountCents ?? 0;
+      const month = order.createdAt.toISOString().slice(0, 7);
+      const bucket = monthly.get(month) ?? { productCents: 0, eventCents: 0 };
+      if (order.kind === "event") {
+        eventRevenueCents += order.totalCents;
+        eventOrderCount += 1;
+        bucket.eventCents += order.totalCents;
+      } else {
+        productRevenueCents += order.totalCents;
+        productOrderCount += 1;
+        bucket.productCents += order.totalCents;
+        if (order.items) {
+          try {
+            const items = JSON.parse(order.items) as OrderItem[];
+            for (const item of items) {
+              const name = (item.name ?? "Unknown").trim();
+              const qty = Number(item.quantity ?? 1) || 1;
+              unitsSold += qty;
+              const entry = byProduct.get(name) ?? { name, quantity: 0, revenueCents: 0 };
+              entry.quantity += qty;
+              entry.revenueCents += item.amountCents ?? 0;
+              byProduct.set(name, entry);
+            }
+          } catch {
+            // Malformed items JSON on an old order — skip the breakdown, keep totals.
+          }
+        }
+      }
+      monthly.set(month, bucket);
+    }
+
+    // Per-event fill + paid revenue from registrations
+    const regsByEvent = new Map<number, { confirmed: number; paid: number }>();
+    for (const reg of registrations) {
+      const entry = regsByEvent.get(reg.eventId) ?? { confirmed: 0, paid: 0 };
+      if (reg.status === "confirmed") entry.confirmed += 1;
+      if (reg.paymentSessionId) entry.paid += 1;
+      regsByEvent.set(reg.eventId, entry);
+    }
+    const byEvent = events
+      .map((e) => {
+        const regs = regsByEvent.get(e.id) ?? { confirmed: 0, paid: 0 };
+        return {
+          id: e.id,
+          title: e.title,
+          date: e.date,
+          priceCents: e.priceCents ?? 0,
+          capacity: e.totalSpots,
+          confirmed: regs.confirmed,
+          paid: regs.paid,
+          revenueCents: regs.paid * (e.priceCents ?? 0),
+        };
+      })
+      .filter((e) => e.confirmed > 0 || e.paid > 0)
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+    const now = Date.now();
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+    const subscribers = {
+      total: subscriberRows.length,
+      last30: subscriberRows.filter((s) => s.subscribedAt.getTime() >= thirtyDaysAgo).length,
+    };
+
+    res.json({
+      products: {
+        revenueCents: productRevenueCents,
+        orderCount: productOrderCount,
+        unitsSold,
+        byProduct: [...byProduct.values()].sort((a, b) => b.revenueCents - a.revenueCents),
+      },
+      events: {
+        revenueCents: eventRevenueCents,
+        orderCount: eventOrderCount,
+        byEvent,
+      },
+      monthly: [...monthly.entries()]
+        .map(([month, cents]) => ({ month, ...cents }))
+        .sort((a, b) => (a.month < b.month ? -1 : 1)),
+      subscribers,
+      discountCentsTotal,
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to compute business actuals");
+    res.status(500).json({ error: "Failed to compute actuals" });
   }
 });
 

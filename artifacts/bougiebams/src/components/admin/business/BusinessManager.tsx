@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { LayoutDashboard, SlidersHorizontal, Package, CalendarDays, Megaphone, Boxes, GitBranch } from "lucide-react";
+import { LayoutDashboard, TrendingUp, SlidersHorizontal, Package, CalendarDays, Megaphone, Boxes, GitBranch } from "lucide-react";
 import { AssumptionsProvider } from "./AssumptionsContext";
 import { setBusinessAuthErrorHandler } from "./api";
 import BizDashboard from "./BizDashboard";
+import BizActuals from "./BizActuals";
 import BizAssumptions from "./BizAssumptions";
 import BizProducts from "./BizProducts";
 import BizEvents from "./BizEvents";
@@ -13,10 +14,11 @@ import BizScenarios from "./BizScenarios";
 // Business HQ — forecasting/planning suite ported from the BougieBams-Business
 // repo. One admin view with internal tabs so the Admin.tsx shell stays small.
 
-type BizTab = "dashboard" | "assumptions" | "products" | "events" | "marketing" | "inventory" | "scenarios";
+type BizTab = "dashboard" | "actuals" | "assumptions" | "products" | "events" | "marketing" | "inventory" | "scenarios";
 
 const TABS: { key: BizTab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "actuals", label: "Actuals", icon: TrendingUp },
   { key: "assumptions", label: "Assumptions", icon: SlidersHorizontal },
   { key: "products", label: "Products", icon: Package },
   { key: "events", label: "Events ROI", icon: CalendarDays },
@@ -58,6 +60,8 @@ export default function BusinessManager({ onAuthError }: { onAuthError: (status:
 
         {tab === "dashboard" ? (
           <BizDashboard />
+        ) : tab === "actuals" ? (
+          <BizActuals />
         ) : tab === "assumptions" ? (
           <BizAssumptions />
         ) : tab === "products" ? (
