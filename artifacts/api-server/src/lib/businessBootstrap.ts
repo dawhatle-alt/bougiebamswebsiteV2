@@ -171,3 +171,41 @@ export function ensureBusinessTables(): Promise<void> {
   }
   return businessTablesReady;
 }
+
+// Advisor chat tables ship after the phase-1 tables, so they need their own
+// guard — environments that already have biz_assumptions would otherwise
+// never create them.
+let advisorTablesReady: Promise<void> | null = null;
+
+export function ensureAdvisorTables(): Promise<void> {
+  if (!advisorTablesReady) {
+    advisorTablesReady = tableExists("biz_conversations")
+      .then(async (exists) => {
+        if (exists) return;
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS biz_conversations (
+            id serial PRIMARY KEY,
+            title text NOT NULL DEFAULT 'New conversation',
+            created_at timestamptz NOT NULL DEFAULT now()
+          )
+        `);
+        await db.execute(sql`ALTER TABLE biz_conversations ENABLE ROW LEVEL SECURITY`);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS biz_messages (
+            id serial PRIMARY KEY,
+            conversation_id integer NOT NULL REFERENCES biz_conversations(id) ON DELETE CASCADE,
+            role text NOT NULL,
+            content text NOT NULL,
+            created_at timestamptz NOT NULL DEFAULT now()
+          )
+        `);
+        await db.execute(sql`ALTER TABLE biz_messages ENABLE ROW LEVEL SECURITY`);
+        await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_biz_messages_conversation_id ON biz_messages (conversation_id)`);
+      })
+      .catch((err) => {
+        advisorTablesReady = null;
+        throw err;
+      });
+  }
+  return advisorTablesReady;
+}

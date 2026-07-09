@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, numeric, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, numeric, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
 // Business HQ (forecasting/planning) tables, ported from the BougieBams-Business
 // repo. Prefixed biz_ to stay clear of the storefront's events/conversations
@@ -78,4 +78,22 @@ export const bizScenariosTable = pgTable("biz_scenarios", {
   marketingSpendMultiplier: num("marketing_spend_multiplier").notNull().default(1),
   eventCount: integer("event_count").notNull().default(20),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}).enableRLS();
+
+// AI advisor chat threads (separate from the storefront chatbot's
+// conversations/messages tables).
+export const bizConversationsTable = pgTable("biz_conversations", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull().default("New conversation"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+export const bizMessagesTable = pgTable("biz_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id")
+    .notNull()
+    .references(() => bizConversationsTable.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();

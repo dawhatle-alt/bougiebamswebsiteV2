@@ -40,6 +40,7 @@ interface Actuals {
   monthly: { month: string; productCents: number; eventCents: number }[];
   subscribers: { total: number; last30: number };
   discountCentsTotal: number;
+  byDiscountCode: { code: string; orders: number; revenueCents: number; discountCents: number }[];
 }
 
 function fmt(n: number) {
@@ -173,6 +174,39 @@ export default function BizActuals() {
                   <td className="px-4 py-3 font-semibold text-foreground">{p.name}</td>
                   <td className="px-4 py-3 tabular-nums">{p.quantity.toLocaleString()}</td>
                   <td className="px-4 py-3 tabular-nums font-medium text-foreground">{fmtCents(p.revenueCents)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Discount code attribution */}
+      <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-x-auto">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Discount Code Performance</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Revenue influenced per promo code</p>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border/70">
+              {["Code", "Orders", "Revenue Influenced", "Discounts Given"].map((h) => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/60">
+            {data.byDiscountCode.length === 0 ? (
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground text-sm">No orders with discount codes yet</td></tr>
+            ) : (
+              data.byDiscountCode.map((c) => (
+                <tr key={c.code} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3 font-semibold text-foreground">
+                    <span className="inline-block px-2 py-0.5 bg-primary/15 text-primary rounded text-xs font-bold tracking-wide">{c.code}</span>
+                  </td>
+                  <td className="px-4 py-3 tabular-nums">{c.orders.toLocaleString()}</td>
+                  <td className="px-4 py-3 tabular-nums font-medium text-foreground">{fmtCents(c.revenueCents)}</td>
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{fmtCents(c.discountCents)}</td>
                 </tr>
               ))
             )}
