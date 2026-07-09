@@ -364,6 +364,7 @@ export default function EventsManager({ onAuthError }: Props) {
             <div>
               <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Spots Left</label>
               <Input type="number" min="0" value={form.spotsLeft} onChange={(e) => field("spotsLeft", e.target.value)} placeholder="24" />
+              <p className="text-xs text-[#9A8F7E] mt-1.5">Remaining availability — counts down automatically with each registration. If you raise Total Spots, raise this too.</p>
             </div>
           </div>
 
@@ -527,7 +528,10 @@ export default function EventsManager({ onAuthError }: Props) {
                   <TableCell className="text-[#5A6178] whitespace-nowrap">{e.date}</TableCell>
                   <TableCell className="text-[#5A6178]">{e.category}</TableCell>
                   <TableCell className="text-[#5A6178]">{formatPrice(e)}</TableCell>
-                  <TableCell className="text-[#5A6178]">{e.spotsLeft}/{e.totalSpots}</TableCell>
+                  <TableCell className="text-[#5A6178] whitespace-nowrap">
+                    {Math.max(0, e.totalSpots - e.spotsLeft)}/{e.totalSpots} filled
+                    <span className="block text-xs text-[#9A8F7E]">{e.spotsLeft} left</span>
+                  </TableCell>
                   <TableCell>
                     {e.archived ? (
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[#EFEAE0] text-[#9A8F7E]">Archived</span>
