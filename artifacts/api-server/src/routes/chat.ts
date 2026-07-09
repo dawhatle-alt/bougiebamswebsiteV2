@@ -21,71 +21,27 @@ const ChatRequestBody = z.object({
 });
 
 async function buildSystemPrompt(): Promise<string> {
-  const [products, events] = await Promise.all([
-    db
-      .select({
-        name: productsTable.name,
-        description: productsTable.description,
-        price: productsTable.price,
-        category: productsTable.category,
-        inStock: productsTable.inStock,
-      })
-      .from(productsTable)
-      .where(eq(productsTable.inStock, true)),
-    db
-      .select({
-        id: eventsTable.id,
-        title: eventsTable.title,
-        description: eventsTable.description,
-        date: eventsTable.date,
-        time: eventsTable.time,
-        location: eventsTable.location,
-        priceCents: eventsTable.priceCents,
-        category: eventsTable.category,
-        spotsLeft: eventsTable.spotsLeft,
-      })
-      .from(eventsTable)
-      .where(eq(eventsTable.published, true)),
-  ]);
+  // Sequential: concurrent queries on one connection stall behind the transaction pooler
+  const products = await db.select({ name: productsTable.name, description: productsTable.description, price: productsTable.price, category: productsTable.category, inStock: productsTable.inStock }).from(productsTable).where(eq(productsTable.inStock, true));
+  const events = await db.select({ id: eventsTable.id, title: eventsTable.title, date: eventsTable.date, time: eventsTable.time, location: eventsTable.location, priceCents: eventsTable.priceCents, spotsLeft: eventsTable.spotsLeft }).from(eventsTable).where(eq(eventsTable.published, true));
 
-  const productList =
-    products.length > 0
-      ? products
-          .map(
-            (p) =>
-              `- ${p.name} (${p.category}): $${p.price}${p.description ? ` -- ${p.description}` : ""}`,
-          )
-          .join("\n")
-      : "No products currently available.";
+  const productList = products.length > 0
+    ? products.map((p) => `- ${p.name} (${p.category}): $${p.price}`).join("\n")
+    : "No products currently available.";
 
-  const eventList =
-    events.length > 0
-      ? events
-          .map(
-            (e) =>
-              `- **${e.title}** (ID: ${e.id}) -- ${e.date} at ${e.time}, ${e.location} | ${e.priceCents ? `$${(e.priceCents / 100).toFixed(2)}` : "Free"} | ${e.spotsLeft > 0 ? `${e.spotsLeft} spots left` : "Sold out"} | Registration link: /events/${e.id}`,
-          )
-          .join("\n")
-      : "No upcoming events at this time.";
+  const eventList = events.length > 0
+    ? events.map((e) => `- ${e.title} -- ${e.date} at ${e.time}, ${e.location} | ${e.priceCents ? `$${(e.priceCents / 100).toFixed(2)}` : "Free"} | ${e.spotsLeft > 0 ? `${e.spotsLeft} spots left` : "Sold out"} | /events/${e.id}`).join("\n")
+    : "No upcoming events.";
 
-  return `You are the BougieBams Assistant -- a knowledgeable, warm, and elegant guide for the BougieBams community. BougieBams is a mahjong lifestyle brand founded by a passionate mahjong player who wants to bring style, community, and education to the game.
+  return `You are the BougieBams Assistant -- a warm and knowledgeable guide for the BougieBams mahjong lifestyle community.
 
-Your two areas of expertise:
-1. **Mahjong** -- rules, how to play, tile types, scoring, strategy, game flow, etiquette, and variations (American, Chinese, Japanese, etc.)
-2. **BougieBams** -- the brand, its products, upcoming events, and community
-
-## Current BougieBams Products
+## Products
 ${productList}
 
-## Upcoming BougieBams Events
+## Events
 ${eventList}
 
-## Your behavior
-- Be warm, knowledgeable, and on-brand
-- For mahjong questions, give clear, accurate, and helpful answers.
-- For product questions, refer to the list above.
-- For event questions, share the details and always include the registration link: [Register for EVENT_NAME](/events/EVENT_ID)
-- Never make up products, prices, or event details that are not in the lists above.`;
+Be helpful, warm, and on-brand. For event registration, link to /events/{id}. Never invent products or events.`;
 }
 
 router.post("/chat", async (req, res): Promise<void> => {
@@ -96,7 +52,6 @@ router.post("/chat", async (req, res): Promise<void> => {
   }
 
   const { messages } = parsed.data;
-
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -105,14 +60,10 @@ router.post("/chat", async (req, res): Promise<void> => {
 
   try {
     const systemPrompt = await buildSystemPrompt();
-
     const stream = await getOpenAIClient().chat.completions.create({
       model: "gpt-4o-mini",
       max_completion_tokens: 1024,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
 
@@ -123,7 +74,6 @@ router.post("/chat", async (req, res): Promise<void> => {
         (res as unknown as { flush?: () => void }).flush?.();
       }
     }
-
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   } catch (err) {
