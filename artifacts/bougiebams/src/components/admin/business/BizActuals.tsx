@@ -107,7 +107,7 @@ export default function BizActuals() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Actual Revenue" value={fmtCents(totalActualCents)} sub="Products + events, all time" icon={<DollarSign size={16} />} />
         <StatCard label="Product Revenue" value={fmtCents(data.products.revenueCents)} sub={`${data.products.orderCount} orders · ${data.products.unitsSold} units`} icon={<Package size={16} />} />
-        <StatCard label="Event Revenue" value={fmtCents(data.events.revenueCents)} sub={`${data.events.orderCount} paid checkouts`} icon={<CalendarDays size={16} />} />
+        <StatCard label="Event Revenue" value={fmtCents(data.events.revenueCents)} sub={`${data.events.orderCount} paid registrations`} icon={<CalendarDays size={16} />} />
         <StatCard label="Avg Order Value" value={fmtCents(avgOrderCents)} sub="Product orders" icon={<Receipt size={16} />} />
         <StatCard label="Subscribers" value={data.subscribers.total.toLocaleString()} sub={`+${data.subscribers.last30} in last 30 days`} icon={<Mail size={16} />} />
         <StatCard label="Discounts Given" value={fmtCents(data.discountCentsTotal)} sub="Across all orders" icon={<TicketPercent size={16} />} />

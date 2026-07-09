@@ -77,6 +77,7 @@ export async function computeActuals(): Promise<BusinessActuals> {
       eventId: registrationsTable.eventId,
       status: registrationsTable.status,
       paymentSessionId: registrationsTable.paymentSessionId,
+      createdAt: registrationsTable.createdAt,
     })
     .from(registrationsTable);
 
@@ -109,9 +110,10 @@ export async function computeActuals(): Promise<BusinessActuals> {
     const month = order.createdAt.toISOString().slice(0, 7);
     const bucket = monthly.get(month) ?? { productCents: 0, eventCents: 0 };
     if (order.kind === "event") {
-      eventRevenueCents += order.totalCents;
-      eventOrderCount += 1;
-      bucket.eventCents += order.totalCents;
+      // Event money is counted from paid registrations below — registrations
+      // are the complete record (Square event orders only exist for payments
+      // captured since the July 2026 webhook fix, so counting them here would
+      // undercount and double-count at the same time).
     } else {
       productRevenueCents += order.totalCents;
       productOrderCount += 1;
@@ -136,12 +138,26 @@ export async function computeActuals(): Promise<BusinessActuals> {
     monthly.set(month, bucket);
   }
 
-  // Per-event fill + paid revenue from registrations
+  // Per-event fill + paid revenue from registrations — the authoritative
+  // source for event money. Also buckets paid registrations into the monthly
+  // trend by registration date.
+  const priceByEvent = new Map(events.map((e) => [e.id, e.priceCents ?? 0]));
   const regsByEvent = new Map<number, { confirmed: number; paid: number }>();
   for (const reg of registrations) {
     const entry = regsByEvent.get(reg.eventId) ?? { confirmed: 0, paid: 0 };
     if (reg.status === "confirmed") entry.confirmed += 1;
-    if (reg.paymentSessionId) entry.paid += 1;
+    if (reg.paymentSessionId) {
+      entry.paid += 1;
+      const priceCents = priceByEvent.get(reg.eventId) ?? 0;
+      if (priceCents > 0) {
+        eventRevenueCents += priceCents;
+        eventOrderCount += 1;
+        const month = reg.createdAt.toISOString().slice(0, 7);
+        const bucket = monthly.get(month) ?? { productCents: 0, eventCents: 0 };
+        bucket.eventCents += priceCents;
+        monthly.set(month, bucket);
+      }
+    }
     regsByEvent.set(reg.eventId, entry);
   }
   const byEvent = events
