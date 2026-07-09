@@ -115,8 +115,14 @@ export function calcStartupCapitalRemaining(assumptions: BusinessAssumptions): n
   return assumptions.startupCapital - calcStartupCapitalUsed(assumptions);
 }
 
+export function calcEventTicketRevenue(event: BusinessEvent): number {
+  // Store events carry real revenue (paid registrations × price); manual
+  // planning events estimate it from attendees × ticket price.
+  return event.revenue ?? event.attendees * event.ticketPrice;
+}
+
 export function calcEventNetProfit(event: BusinessEvent): number {
-  return (event.attendees * event.ticketPrice) - (event.attendees * event.venueCostPerAttendee) - event.otherExpenses;
+  return calcEventTicketRevenue(event) - (event.attendees * event.venueCostPerAttendee) - event.otherExpenses;
 }
 
 export function calcEventRevenue(events: BusinessEvent[]): number {

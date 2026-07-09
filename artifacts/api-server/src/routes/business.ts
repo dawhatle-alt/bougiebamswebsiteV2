@@ -8,9 +8,12 @@ import {
   bizMarketingChannelsTable,
   bizInventoryItemsTable,
   bizScenariosTable,
+  bizEventCostsTable,
+  eventsTable,
+  registrationsTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middleware/auth";
-import { ensureBusinessTables } from "../lib/businessBootstrap";
+import { ensureBusinessTables, ensureEventCostsTable } from "../lib/businessBootstrap";
 import { computeActuals } from "../lib/businessActuals";
 import { logger } from "../lib/logger";
 
@@ -120,14 +123,111 @@ router.put("/admin/business/assumptions", requireAdmin, async (req, res): Promis
   }
 });
 
+// Manual planning events merged with REAL store events: attendance and
+// revenue come from registrations; costs/marketing outcomes come from the
+// owner-editable biz_event_costs overlay. Queries run sequentially.
 router.get("/admin/business/events", requireAdmin, async (_req, res): Promise<void> => {
   try {
     await ensureBusinessTables();
-    const rows = await db.select().from(bizEventsTable).orderBy(asc(bizEventsTable.date));
-    res.json(rows.map(({ createdAt: _createdAt, ...row }) => row));
+    await ensureEventCostsTable();
+
+    const manual = await db.select().from(bizEventsTable).orderBy(asc(bizEventsTable.date));
+    const storeEvents = await db
+      .select({
+        id: eventsTable.id,
+        title: eventsTable.title,
+        date: eventsTable.date,
+        priceCents: eventsTable.priceCents,
+        published: eventsTable.published,
+      })
+      .from(eventsTable);
+    const registrations = await db
+      .select({
+        eventId: registrationsTable.eventId,
+        status: registrationsTable.status,
+        paymentSessionId: registrationsTable.paymentSessionId,
+      })
+      .from(registrationsTable);
+    const costs = await db.select().from(bizEventCostsTable);
+
+    const regsByEvent = new Map<number, { confirmed: number; paid: number }>();
+    for (const reg of registrations) {
+      const entry = regsByEvent.get(reg.eventId) ?? { confirmed: 0, paid: 0 };
+      if (reg.status === "confirmed") entry.confirmed += 1;
+      if (reg.paymentSessionId) entry.paid += 1;
+      regsByEvent.set(reg.eventId, entry);
+    }
+    const costsByEvent = new Map(costs.map((c) => [c.sourceEventId, c]));
+    const today = new Date().toISOString().slice(0, 10);
+
+    const store = storeEvents
+      .filter((e) => e.published || regsByEvent.has(e.id))
+      .map((e) => {
+        const regs = regsByEvent.get(e.id) ?? { confirmed: 0, paid: 0 };
+        const cost = costsByEvent.get(e.id);
+        const price = (e.priceCents ?? 0) / 100;
+        return {
+          id: `store-${e.id}`,
+          source: "store" as const,
+          sourceEventId: e.id,
+          name: e.title,
+          date: e.date,
+          status: e.date < today ? "completed" : "upcoming",
+          attendees: regs.confirmed,
+          ticketPrice: price,
+          revenue: regs.paid * price,
+          venueCostPerAttendee: cost?.venueCostPerAttendee ?? 0,
+          otherExpenses: cost?.otherExpenses ?? 0,
+          emailSignups: cost?.emailSignups ?? 0,
+          instagramFollowersGained: cost?.instagramFollowersGained ?? 0,
+          productSalesGenerated: 0,
+        };
+      });
+
+    res.json([
+      ...manual.map(({ createdAt: _createdAt, ...row }) => ({ ...row, source: "manual" as const })),
+      ...store,
+    ]);
   } catch (err) {
     logger.error({ err }, "Failed to fetch business events");
     res.status(500).json({ error: "Failed to fetch events" });
+  }
+});
+
+const eventCostsUpdateSchema = z
+  .object({
+    venueCostPerAttendee: money,
+    otherExpenses: money,
+    emailSignups: count,
+    instagramFollowersGained: count,
+  })
+  .partial();
+
+router.put("/admin/business/events/store/:sourceEventId/costs", requireAdmin, async (req, res): Promise<void> => {
+  const sourceEventId = parseInt(req.params.sourceEventId as string, 10);
+  if (!Number.isInteger(sourceEventId)) {
+    res.status(400).json({ error: "Invalid event id" });
+    return;
+  }
+  const parsed = eventCostsUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
+    return;
+  }
+  try {
+    await ensureEventCostsTable();
+    const [row] = await db
+      .insert(bizEventCostsTable)
+      .values({ sourceEventId, ...parsed.data })
+      .onConflictDoUpdate({
+        target: bizEventCostsTable.sourceEventId,
+        set: { ...parsed.data, updatedAt: new Date() },
+      })
+      .returning();
+    res.json(row);
+  } catch (err) {
+    logger.error({ err }, "Failed to update event costs");
+    res.status(500).json({ error: "Failed to update event costs" });
   }
 });
 

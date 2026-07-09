@@ -80,6 +80,18 @@ export const bizScenariosTable = pgTable("biz_scenarios", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 }).enableRLS();
 
+// Owner-entered cost/outcome overlay for REAL store events shown in the
+// Events ROI tab. Keyed by the storefront events.id — revenue and attendance
+// come from registrations; costs and marketing outcomes are hand-entered.
+export const bizEventCostsTable = pgTable("biz_event_costs", {
+  sourceEventId: integer("source_event_id").primaryKey(),
+  venueCostPerAttendee: num("venue_cost_per_attendee").notNull().default(0),
+  otherExpenses: num("other_expenses").notNull().default(0),
+  emailSignups: integer("email_signups").notNull().default(0),
+  instagramFollowersGained: integer("instagram_followers_gained").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}).enableRLS();
+
 // AI advisor chat threads (separate from the storefront chatbot's
 // conversations/messages tables).
 export const bizConversationsTable = pgTable("biz_conversations", {

@@ -172,6 +172,35 @@ export function ensureBusinessTables(): Promise<void> {
   return businessTablesReady;
 }
 
+// Ships after the phase-1 tables, so it needs its own guard — environments
+// that already have biz_assumptions would otherwise never create it.
+let eventCostsReady: Promise<void> | null = null;
+
+export function ensureEventCostsTable(): Promise<void> {
+  if (!eventCostsReady) {
+    eventCostsReady = tableExists("biz_event_costs")
+      .then(async (exists) => {
+        if (exists) return;
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS biz_event_costs (
+            source_event_id integer PRIMARY KEY,
+            venue_cost_per_attendee numeric NOT NULL DEFAULT 0,
+            other_expenses numeric NOT NULL DEFAULT 0,
+            email_signups integer NOT NULL DEFAULT 0,
+            instagram_followers_gained integer NOT NULL DEFAULT 0,
+            updated_at timestamptz DEFAULT now()
+          )
+        `);
+        await db.execute(sql`ALTER TABLE biz_event_costs ENABLE ROW LEVEL SECURITY`);
+      })
+      .catch((err) => {
+        eventCostsReady = null;
+        throw err;
+      });
+  }
+  return eventCostsReady;
+}
+
 // Advisor chat tables ship after the phase-1 tables, so they need their own
 // guard — environments that already have biz_assumptions would otherwise
 // never create them.

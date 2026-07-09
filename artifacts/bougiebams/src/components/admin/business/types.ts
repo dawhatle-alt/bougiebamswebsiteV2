@@ -27,11 +27,18 @@ export interface BusinessAssumptions {
 
 export interface BusinessEvent {
   id: string;
+  // "store" events are synced from the shop's real events/registrations;
+  // "manual" ones are hand-entered planning rows.
+  source?: "manual" | "store";
+  sourceEventId?: number;
   name: string;
   date: string;
   status: "completed" | "upcoming";
   attendees: number;
   ticketPrice: number;
+  // Real ticket revenue (paid registrations × price) for store events;
+  // absent for manual events, where it's attendees × ticketPrice.
+  revenue?: number;
   venueCostPerAttendee: number;
   otherExpenses: number;
   emailSignups: number;

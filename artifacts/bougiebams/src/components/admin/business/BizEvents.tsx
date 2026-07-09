@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { BusinessEvent } from "./types";
-import { calcEventNetProfit } from "./calculations";
+import { calcEventNetProfit, calcEventTicketRevenue } from "./calculations";
 import { bizFetch, bizJson } from "./api";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Store } from "lucide-react";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -25,36 +25,76 @@ async function deleteEvent(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete event");
 }
 
+type CostField = "venueCostPerAttendee" | "emailSignups" | "instagramFollowersGained";
+
+async function updateEventCosts(sourceEventId: number, data: Partial<Record<CostField, number>>): Promise<void> {
+  const res = await bizFetch(`/events/store/${sourceEventId}/costs`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update event costs");
+}
+
 interface EventRowProps {
   event: BusinessEvent;
   onDelete: (id: string) => void;
+  onCostChange: (event: BusinessEvent, field: CostField, value: number) => void;
 }
-function EventRow({ event, onDelete }: EventRowProps) {
+function EventRow({ event, onDelete, onCostChange }: EventRowProps) {
+  const isStore = event.source === "store";
   const netProfit = calcEventNetProfit(event);
-  const ticketRevenue = event.attendees * event.ticketPrice;
+  const ticketRevenue = calcEventTicketRevenue(event);
   const cac = event.emailSignups > 0 ? (event.attendees * event.venueCostPerAttendee + event.otherExpenses) / event.emailSignups : null;
+
+  const costInput = (field: CostField, width: string, step?: number) => (
+    <input
+      type="number"
+      value={event[field]}
+      min={0}
+      step={step ?? 1}
+      onChange={(e) => onCostChange(event, field, parseFloat(e.target.value) || 0)}
+      className={`${width} text-right bg-input/60 border border-border rounded px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-ring`}
+    />
+  );
+
   return (
     <tr className="hover:bg-muted/30 transition-colors group">
-      <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">{event.name}</td>
+      <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">
+        {event.name}
+        {isStore && (
+          <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary/15 text-primary rounded text-[10px] font-bold uppercase tracking-wide align-middle">
+            <Store size={10} />
+            Store
+          </span>
+        )}
+      </td>
       <td className="px-4 py-3 text-muted-foreground text-sm whitespace-nowrap">{event.date}</td>
       <td className="px-4 py-3 tabular-nums">{event.attendees}</td>
       <td className="px-4 py-3 tabular-nums">{fmt(event.ticketPrice)}</td>
-      <td className="px-4 py-3 tabular-nums text-muted-foreground">{fmt(event.venueCostPerAttendee)}/pp</td>
+      <td className="px-4 py-3 tabular-nums text-muted-foreground">
+        {isStore ? costInput("venueCostPerAttendee", "w-20", 1) : `${fmt(event.venueCostPerAttendee)}/pp`}
+      </td>
       <td className="px-4 py-3 tabular-nums font-medium">{fmt(ticketRevenue)}</td>
       <td className="px-4 py-3 tabular-nums font-semibold text-foreground">
         <span className={netProfit >= 0 ? "text-green-700" : "text-destructive"}>{fmt(netProfit)}</span>
       </td>
-      <td className="px-4 py-3 tabular-nums text-muted-foreground">{event.emailSignups || "—"}</td>
-      <td className="px-4 py-3 tabular-nums text-muted-foreground">{event.instagramFollowersGained || "—"}</td>
+      <td className="px-4 py-3 tabular-nums text-muted-foreground">
+        {isStore ? costInput("emailSignups", "w-16") : event.emailSignups || "—"}
+      </td>
+      <td className="px-4 py-3 tabular-nums text-muted-foreground">
+        {isStore ? costInput("instagramFollowersGained", "w-16") : event.instagramFollowersGained || "—"}
+      </td>
       <td className="px-4 py-3 tabular-nums text-muted-foreground">{cac ? fmt(cac) : "—"}</td>
       <td className="px-4 py-3">
-        <button
-          onClick={() => onDelete(event.id)}
-          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-          title="Delete event"
-        >
-          <X size={14} />
-        </button>
+        {!isStore && (
+          <button
+            onClick={() => onDelete(event.id)}
+            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+            title="Delete event"
+          >
+            <X size={14} />
+          </button>
+        )}
       </td>
     </tr>
   );
@@ -77,12 +117,19 @@ export default function BizEvents() {
   const qc = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyEvent());
+  // Local overlay so cost edits render immediately while the save debounces
+  const [costOverrides, setCostOverrides] = useState<Record<string, Partial<Record<CostField, number>>>>({});
+  const debounceRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: serverEvents = [], isLoading } = useQuery({
     queryKey: ["biz-events"],
     queryFn: fetchEvents,
     retry: 1,
   });
+
+  const events = serverEvents.map((e) =>
+    costOverrides[e.id] ? { ...e, ...costOverrides[e.id] } : e
+  );
 
   const addMutation = useMutation({
     mutationFn: createEvent,
@@ -97,6 +144,25 @@ export default function BizEvents() {
     mutationFn: deleteEvent,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["biz-events"] }),
   });
+
+  const costMutation = useMutation({
+    mutationFn: ({ sourceEventId, data }: { sourceEventId: number; data: Partial<Record<CostField, number>> }) =>
+      updateEventCosts(sourceEventId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["biz-events"] }),
+  });
+
+  const handleCostChange = (event: BusinessEvent, field: CostField, value: number) => {
+    if (!event.sourceEventId) return;
+    setCostOverrides((prev) => ({
+      ...prev,
+      [event.id]: { ...prev[event.id], [field]: value },
+    }));
+    if (debounceRefs.current[event.id]) clearTimeout(debounceRefs.current[event.id]);
+    debounceRefs.current[event.id] = setTimeout(() => {
+      const data = { ...costOverrides[event.id], [field]: value };
+      costMutation.mutate({ sourceEventId: event.sourceEventId!, data });
+    }, 600);
+  };
 
   const completed = events.filter((e) => e.status === "completed");
   const upcoming = events.filter((e) => e.status === "upcoming");
@@ -115,19 +181,54 @@ export default function BizEvents() {
 
   const colHeaders = ["Event Name", "Date", "Attendees", "Ticket Price", "Venue Cost", "Ticket Revenue", "Net Profit", "Email Signups", "IG Followers", "Est. CAC", ""];
 
+  const renderTable = (title: string, rows: BusinessEvent[], emptyText: string) => (
+    <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-x-auto">
+      <div className="px-5 py-4 border-b border-border">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border/70">
+            {colHeaders.map((h, i) => (
+              <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/60">
+          {isLoading ? (
+            <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">Loading…</td></tr>
+          ) : rows.length === 0 ? (
+            <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">{emptyText}</td></tr>
+          ) : (
+            rows.map((e) => (
+              <EventRow
+                key={e.id}
+                event={e}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                onCostChange={handleCostChange}
+              />
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Event Profit Engine</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track financials and acquisition metrics per event</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Store events sync automatically with real attendance and ticket revenue — enter venue costs and marketing outcomes to complete the ROI picture
+          </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
         >
           <Plus size={15} />
-          Add Event
+          Add Manual Event
         </button>
       </div>
 
@@ -146,66 +247,22 @@ export default function BizEvents() {
         ))}
       </div>
 
-      {/* Completed Events */}
-      <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-x-auto">
-        <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground">Completed Events</h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border/70">
-              {colHeaders.map((h, i) => (
-                <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {isLoading ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">Loading…</td></tr>
-            ) : completed.length === 0 ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">No completed events yet</td></tr>
-            ) : (
-              completed.map((e) => <EventRow key={e.id} event={e} onDelete={(id) => deleteMutation.mutate(id)} />)
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Upcoming Events */}
-      <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-x-auto">
-        <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground">Upcoming Events</h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border/70">
-              {colHeaders.map((h, i) => (
-                <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {isLoading ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">Loading…</td></tr>
-            ) : upcoming.length === 0 ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">No upcoming events</td></tr>
-            ) : (
-              upcoming.map((e) => <EventRow key={e.id} event={e} onDelete={(id) => deleteMutation.mutate(id)} />)
-            )}
-          </tbody>
-        </table>
-      </div>
+      {renderTable("Completed Events", completed, "No completed events yet")}
+      {renderTable("Upcoming Events", upcoming, "No upcoming events")}
 
       {/* Add Event Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card border border-card-border rounded-2xl shadow-2xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-foreground">Add New Event</h3>
+              <h3 className="text-base font-bold text-foreground">Add Manual Event</h3>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
                 <X size={18} />
               </button>
             </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              For pop-ups and events not sold through the website. Site events appear automatically with real numbers.
+            </p>
             <div className="space-y-3">
               {[
                 { label: "Event Name", key: "name", type: "text" },
