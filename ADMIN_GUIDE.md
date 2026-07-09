@@ -67,7 +67,8 @@ Create and manage the events shown on the site.
 - **Reminder emails**: choose when registered guests get an automatic reminder (1 hour to 1 week before the event), or no reminder.
 - **Published** controls whether the event appears on the public Events page.
 - **Archive** (box icon on each row) tidies up finished events: an archived event disappears from the public Events page (upcoming *and* past lists), stops sending reminders, and is hidden from this list by default — tick **Show archived** to see and unarchive them. Its registrations, orders, and Community Moments photo album are all kept.
-- Spots left decreases automatically as registrations are confirmed.
+- The **Spots** column in the events list shows how full the event is — e.g. `16/20 filled`, with the remaining count underneath. Spots left decreases automatically as registrations are confirmed.
+- When editing an event, **Spots Left** is the remaining availability (not the registration count). If you raise Total Spots on an existing event, raise Spots Left by the same amount.
 
 ## Education
 
