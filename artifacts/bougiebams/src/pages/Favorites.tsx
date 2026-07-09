@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, ShoppingBag, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FloatingProductCard } from "@/components/FloatingProductCard";
 import { FAVORITES, CATEGORIES, CATEGORY_DESCRIPTIONS, type FavoriteCategory, type FavoriteProduct } from "@/data/favorites";
@@ -101,6 +101,17 @@ export default function Favorites() {
             <p className="text-lg md:text-xl text-white/90 font-light">
               Curated Mahjong accessories, winner brags, and table essentials we love.
             </p>
+            <a
+              href="https://www.amazon.com/shop/bougiebams"
+              target="_blank"
+              rel="nofollow sponsored noopener noreferrer"
+              className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-primary-foreground shadow-lg transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+              style={{ background: "linear-gradient(135deg, #b08a1e 0%, #C9A227 50%, #ddb93a 100%)" }}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Shop Our Full Amazon Storefront
+              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+            </a>
           </div>
         </div>
       </section>

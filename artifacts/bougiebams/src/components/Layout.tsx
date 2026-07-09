@@ -855,6 +855,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Facebook className="w-4 h-4" />
                 @bougiebams
               </a>
+              <a href="https://www.amazon.com/shop/bougiebams" target="_blank" rel="nofollow sponsored noopener noreferrer" aria-label="Shop our Amazon storefront"
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/40 text-sm text-primary hover:bg-primary hover:text-foreground transition-colors">
+                <ShoppingBag className="w-4 h-4" />
+                Amazon Storefront
+              </a>
             </div>
           </div>
           <div>
@@ -874,6 +879,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-3 text-sm text-muted">
               <li><a href="https://instagram.com/bougiebams" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Instagram · @bougiebams</a></li>
               <li><a href="https://facebook.com/bougiebams" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Facebook · @bougiebams</a></li>
+              <li><a href="https://www.amazon.com/shop/bougiebams" target="_blank" rel="nofollow sponsored noopener noreferrer" className="hover:text-primary transition-colors">Amazon · Storefront</a></li>
             </ul>
           </div>
         </div>
