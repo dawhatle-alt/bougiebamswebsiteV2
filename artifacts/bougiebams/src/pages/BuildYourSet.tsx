@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
+import { useBuildYourSetEnabled } from "@/hooks/useBuildYourSet";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { SHOP_CATEGORIES } from "@/data/categories";
@@ -16,6 +17,7 @@ export default function BuildYourSet() {
   const { products, loading, error } = useProducts();
   const { addItem } = useCart();
   const { toast } = useToast();
+  const enabled = useBuildYourSetEnabled();
 
   const [selected, setSelected] = useState<Record<string, Product>>({});
 
@@ -58,6 +60,31 @@ export default function BuildYourSet() {
       description: `${selectedItems.length} item${selectedItems.length > 1 ? "s" : ""} added.`,
     });
   };
+
+  if (enabled === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20 text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!enabled) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center pt-20 text-center px-6">
+        <span className="inline-flex items-center gap-2 text-primary font-semibold tracking-[0.2em] uppercase text-xs mb-5">
+          <Sparkles className="w-4 h-4" /> Coming Soon
+        </span>
+        <h1 className="font-serif text-4xl md:text-5xl mb-4">Build Your Set is on its way</h1>
+        <p className="text-muted-foreground max-w-md mb-8">
+          We're putting the finishing touches on our set-building experience. In the meantime, explore the collection in the shop.
+        </p>
+        <Button asChild size="lg" className="rounded-full px-8">
+          <Link href="/shop">Browse the Shop</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-24 min-h-screen bg-background">

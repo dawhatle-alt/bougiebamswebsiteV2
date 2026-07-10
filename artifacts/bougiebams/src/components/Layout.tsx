@@ -7,6 +7,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import SearchDialog from "@/components/SearchDialog";
 import { SHOP_CATEGORIES } from "@/data/categories";
 import { useProducts } from "@/hooks/useProducts";
+import { useBuildYourSetEnabled } from "@/hooks/useBuildYourSet";
 import shopMenuImg from "@assets/images/mahjong-lifestyle.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -64,6 +65,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
   const [announcement, setAnnouncement] = useState<{ enabled: boolean; text: string } | null>(null);
+  const buildYourSetEnabled = useBuildYourSetEnabled() === true;
 
   useEffect(() => {
     let active = true;
@@ -708,6 +710,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </div>
                     ))}
                   </div>
+                  {buildYourSetEnabled && (
                   <div className="col-span-4">
                     <Link
                       href="/build"
@@ -725,6 +728,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </div>
                     </Link>
                   </div>
+                  )}
                 </div>
               </div>
             </div>

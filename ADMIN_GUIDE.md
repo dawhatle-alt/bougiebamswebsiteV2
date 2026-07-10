@@ -174,6 +174,14 @@ The floating chat bubble in the bottom-right corner of the site.
 - **Toggle** it on or off for all visitors.
 - Note: the assistant needs the `OPENAI_API_KEY` server setting to actually answer questions. If that isn't configured, keep the toggle **off** so visitors don't see a broken chat.
 
+## Build Your Set (under Shop)
+
+The custom set-building experience where shoppers hand-pick pieces into a bundled set.
+
+- **Toggle** it on or off site-wide. When off: the homepage "Build Your Own Set" teaser and the shop-menu "Build Your Set" card are hidden, and anyone visiting the page directly sees a "coming soon" message with a link to the shop.
+- Use this while inventory or marketing collateral isn't ready — flip it back on when you're ready for folks to curate sets.
+- Which products appear inside Build Your Set is controlled separately, per product, via the **Build Set** toggle in Products.
+
 ---
 
 # Behind the Scenes (quick reference)

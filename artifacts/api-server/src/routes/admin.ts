@@ -85,6 +85,17 @@ async function readChatbotEnabled(): Promise<boolean> {
   return val == null ? true : val === "true";
 }
 
+async function readBuildYourSetEnabled(): Promise<boolean> {
+  await ensureSettingsTable();
+  const rows = await db
+    .select()
+    .from(siteSettingsTable)
+    .where(eq(siteSettingsTable.key, "build_your_set_enabled"));
+  const val = rows[0]?.value;
+  // Default ON so the experience stays available unless explicitly disabled.
+  return val == null ? true : val === "true";
+}
+
 interface CuratedItem {
   title: string;
   imagePath: string;
@@ -881,6 +892,31 @@ router.put("/admin/chatbot", requireAdmin, async (req, res): Promise<void> => {
   } catch (err) {
     logger.error({ err }, "Failed to update chatbot setting");
     res.status(500).json({ error: "Could not save the chatbot setting." });
+  }
+});
+
+// Public: whether the Build Your Set experience should be shown. Fails open.
+router.get("/build-your-set", async (_req, res): Promise<void> => {
+  try {
+    res.json({ enabled: await readBuildYourSetEnabled() });
+  } catch (err) {
+    logger.error({ err }, "Failed to read Build Your Set setting");
+    res.json({ enabled: true });
+  }
+});
+
+router.put("/admin/build-your-set", requireAdmin, async (req, res): Promise<void> => {
+  const { enabled } = req.body as { enabled?: unknown };
+  if (typeof enabled !== "boolean") {
+    res.status(400).json({ error: "enabled (boolean) is required" });
+    return;
+  }
+  try {
+    await writeSetting("build_your_set_enabled", String(enabled));
+    res.json({ enabled: await readBuildYourSetEnabled() });
+  } catch (err) {
+    logger.error({ err }, "Failed to update Build Your Set setting");
+    res.status(500).json({ error: "Could not save the Build Your Set setting." });
   }
 });
 

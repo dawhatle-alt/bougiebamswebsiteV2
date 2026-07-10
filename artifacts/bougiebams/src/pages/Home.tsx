@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import { TextEffect } from "@/components/ui/text-effect";
 import { useProducts } from "@/hooks/useProducts";
+import { useBuildYourSetEnabled } from "@/hooks/useBuildYourSet";
 import { images } from "@/data/images";
 import { useCart } from "@/context/CartContext";
 import useEmblaCarousel from "embla-carousel-react";
@@ -19,6 +20,7 @@ export default function Home() {
   const { addItem } = useCart();
   const { products } = useProducts();
   const { toast } = useToast();
+  const buildYourSetEnabled = useBuildYourSetEnabled() === true;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -229,7 +231,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Build Your Set Teaser */}
+      {/* Build Your Set Teaser (admin toggle: Build Your Set) */}
+      {buildYourSetEnabled && (
       <section className="relative overflow-hidden bg-secondary text-secondary-foreground py-24">
         <div className="container mx-auto px-4 md:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -263,6 +266,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Best Sellers */}
       <section className="py-24 bg-background">
