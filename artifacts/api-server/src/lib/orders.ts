@@ -200,11 +200,12 @@ export async function recordSquareOrder(
       state: order.state ?? "COMPLETED",
       ...(order.createdAt ? { createdAt: new Date(order.createdAt) } : {}),
     })
-    // Refresh just the discount fields on re-capture so orders recorded before
-    // these columns existed get backfilled by the next Square sync.
+    // Refresh kind and the discount fields on re-capture so orders recorded
+    // before these columns existed get backfilled by the next Square sync
+    // (kind defaulted to 'product', which mislabeled older event payments).
     .onConflictDoUpdate({
       target: ordersTable.id,
-      set: { discountCode, discountCents },
+      set: { kind: isEvent ? "event" : "product", discountCode, discountCents },
     });
 
   // If this order used a discount code, stamp the redemption as consumed so the
