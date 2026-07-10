@@ -21,6 +21,9 @@ export const eventsTable = pgTable("events", {
   // but keep their registrations and gallery albums.
   archived: boolean("archived").notNull().default(false),
   stripeProductId: text("stripe_product_id"),
+  // When set, the public Register button links here instead of the built-in
+  // registration/payment flow (e.g. Eventbrite or a partner site).
+  externalRegistrationUrl: text("external_registration_url"),
   reminderHoursBefore: integer("reminder_hours_before"),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -69,6 +69,7 @@ Create and manage the events shown on the site.
 - **Archive** (box icon on each row) tidies up finished events: an archived event disappears from the public Events page (upcoming *and* past lists), stops sending reminders, and is hidden from this list by default — tick **Show archived** to see and unarchive them. Its registrations, orders, and Community Moments photo album are all kept.
 - The **Spots** column in the events list shows how full the event is — e.g. `16/20 filled`, with the remaining count underneath. Spots left decreases automatically as registrations are confirmed.
 - When editing an event, **Spots Left** is the remaining availability (not the registration count). If you raise Total Spots on an existing event, raise Spots Left by the same amount.
+- **External Registration Link** (optional): paste a URL (e.g. an Eventbrite page) and the event's Register button will send guests there instead of the built-in registration and payment flow. Guests don't need to sign in, and the built-in checkout is disabled for that event. Note that spots and the registration list are *not* tracked for external registrations — manage attendance on the external site. Clear the field to switch back to built-in registration.
 
 ## Education
 

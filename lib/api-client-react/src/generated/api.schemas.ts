@@ -78,6 +78,8 @@ export interface ApiEvent {
   featured: boolean;
   /** @nullable */
   stripeProductId?: string | null;
+  /** @nullable */
+  externalRegistrationUrl?: string | null;
 }
 
 export type EventInputCategory = typeof EventInputCategory[keyof typeof EventInputCategory];

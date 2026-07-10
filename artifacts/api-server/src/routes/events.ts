@@ -33,6 +33,7 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
     published: row.published,
     featured: row.featured,
     stripeProductId: row.stripeProductId ?? null,
+    externalRegistrationUrl: row.externalRegistrationUrl ?? null,
   };
 }
 

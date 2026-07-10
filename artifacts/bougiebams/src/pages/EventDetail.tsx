@@ -297,6 +297,23 @@ export default function EventDetail() {
                     <Button variant="outline" className="rounded-full w-full">Browse Other Events</Button>
                   </Link>
                 </div>
+              ) : event.externalRegistrationUrl ? (
+                <div className="space-y-3">
+                  <a
+                    href={event.externalRegistrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button className="w-full h-14 text-lg rounded-xl">
+                      Register
+                      <ExternalLink className="w-4 h-4 ml-2" />
+                    </Button>
+                  </a>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Registration for this event is handled on an external site.
+                  </p>
+                </div>
               ) : !isAuthenticated && !shopperAuthenticated ? (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground text-center">Sign in to reserve your spot</p>

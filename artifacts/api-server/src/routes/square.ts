@@ -71,6 +71,10 @@ router.post(
       res.status(404).json({ error: "Event not found" });
       return;
     }
+    if (event.externalRegistrationUrl) {
+      res.status(400).json({ error: "Registration for this event is handled on an external site." });
+      return;
+    }
     if (event.spotsLeft <= 0) {
       res.status(409).json({ error: "This event is sold out" });
       return;

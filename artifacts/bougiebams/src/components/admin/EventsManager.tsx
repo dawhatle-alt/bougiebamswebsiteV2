@@ -37,6 +37,7 @@ interface FormState {
   published: boolean;
   imagePath: string | null;
   reminderHoursBefore: number | null;
+  externalRegistrationUrl: string;
 }
 
 const REMINDER_OPTIONS: { label: string; value: number | null }[] = [
@@ -67,6 +68,7 @@ const emptyForm: FormState = {
   published: true,
   imagePath: null,
   reminderHoursBefore: null,
+  externalRegistrationUrl: "",
 };
 
 function eventToForm(e: ApiEvent): FormState {
@@ -86,6 +88,7 @@ function eventToForm(e: ApiEvent): FormState {
     published: e.published,
     imagePath: e.imagePath ?? null,
     reminderHoursBefore: e.reminderHoursBefore ?? null,
+    externalRegistrationUrl: e.externalRegistrationUrl ?? "",
   };
 }
 
@@ -210,6 +213,7 @@ export default function EventsManager({ onAuthError }: Props) {
       published: form.published,
       imagePath: form.imagePath,
       reminderHoursBefore: form.reminderHoursBefore,
+      externalRegistrationUrl: form.externalRegistrationUrl.trim() || null,
     };
     const isEdit = form.id !== null;
     const url = isEdit
@@ -366,6 +370,17 @@ export default function EventsManager({ onAuthError }: Props) {
               <Input type="number" min="0" value={form.spotsLeft} onChange={(e) => field("spotsLeft", e.target.value)} placeholder="24" />
               <p className="text-xs text-[#9A8F7E] mt-1.5">Remaining availability — counts down automatically with each registration. If you raise Total Spots, raise this too.</p>
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">External Registration Link</label>
+            <Input
+              type="url"
+              value={form.externalRegistrationUrl}
+              onChange={(e) => field("externalRegistrationUrl", e.target.value)}
+              placeholder="https://www.eventbrite.com/e/…"
+            />
+            <p className="text-xs text-[#9A8F7E] mt-1.5">When set, the event's Register button sends guests to this link instead of the built-in registration and payment flow. Leave empty to use built-in registration.</p>
           </div>
 
           <div>

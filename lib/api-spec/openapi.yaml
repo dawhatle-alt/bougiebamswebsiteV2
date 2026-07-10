@@ -892,6 +892,8 @@ components:
           type: boolean
         stripeProductId:
           type: ["string", "null"]
+        externalRegistrationUrl:
+          type: ["string", "null"]
 
     EventInput:
       type: object
