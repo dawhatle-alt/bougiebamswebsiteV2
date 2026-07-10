@@ -203,9 +203,12 @@ export async function recordSquareOrder(
     // Refresh kind and the discount fields on re-capture so orders recorded
     // before these columns existed get backfilled by the next Square sync
     // (kind defaulted to 'product', which mislabeled older event payments).
+    // Only ever upgrade to 'event': a referenceId proves an event order, but
+    // its absence doesn't prove a product — manual payment-link event sales
+    // have none, and their kind is set by hand. Never downgrade those.
     .onConflictDoUpdate({
       target: ordersTable.id,
-      set: { kind: isEvent ? "event" : "product", discountCode, discountCents },
+      set: { ...(isEvent ? { kind: "event" as const } : {}), discountCode, discountCents },
     });
 
   // If this order used a discount code, stamp the redemption as consumed so the
