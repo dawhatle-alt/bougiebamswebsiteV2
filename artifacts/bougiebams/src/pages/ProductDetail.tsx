@@ -65,9 +65,8 @@ export default function ProductDetail() {
     .filter(p => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
-  const galleryImages = product.images.length > 1
-    ? product.images
-    : [...product.images, ...relatedProducts.slice(0, 3).map(p => p.images[0])].filter(Boolean);
+  const galleryImages = product.images.filter(Boolean);
+  const activeImage = Math.max(0, Math.min(selectedImage, galleryImages.length - 1));
 
   const visibleTabs = TAB_DEFS.map((def) => {
     const tab = product.tabs?.[def.key];
@@ -97,7 +96,7 @@ export default function ProductDetail() {
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 mb-24">
           <div className="w-full lg:w-3/5 flex flex-col gap-4">
             <motion.div
-              key={selectedImage}
+              key={activeImage}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
@@ -109,8 +108,8 @@ export default function ProductDetail() {
                 </div>
               )}
               <img
-                src={galleryImages[selectedImage]}
-                alt={`${product.name} — view ${selectedImage + 1}`}
+                src={galleryImages[activeImage]}
+                alt={`${product.name} — view ${activeImage + 1}`}
                 className="w-full h-full object-contain"
               />
             </motion.div>
@@ -122,7 +121,7 @@ export default function ProductDetail() {
                     key={i}
                     onClick={() => setSelectedImage(i)}
                     className={`flex-shrink-0 w-20 h-20 rounded-sm overflow-hidden border-2 transition-all duration-200 ${
-                      selectedImage === i
+                      activeImage === i
                         ? "border-primary opacity-100"
                         : "border-transparent opacity-60 hover:opacity-90"
                     }`}
