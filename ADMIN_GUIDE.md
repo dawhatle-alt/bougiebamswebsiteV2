@@ -196,5 +196,6 @@ The custom set-building experience where shoppers hand-pick pieces into a bundle
 | Check-in report | On demand from Registrations (download or email) |
 | Welcome popup signup | Adds a Subscriber + shows the BOUGIE15 code |
 | Contact form | Emailed to hello@bougiebams.com |
+| Facebook shop catalog | Auto-generated feed at `bougiebams.com/api/facebook/catalog.csv` — published products plus upcoming paid events, refetched by Meta on its schedule. Edit products/events here and the Facebook shop follows; no manual updates in Commerce Manager. |
 
 **Emails** are sent via Resend from noreply@bougiebams.com and include the BougieBams logo. **Payments** are processed entirely by Square — card details never touch the website's servers.

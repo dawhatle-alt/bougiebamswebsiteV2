@@ -21,6 +21,7 @@ import accountRouter from "./account";
 import cronRouter from "./cron";
 import businessRouter from "./business";
 import businessAdvisorRouter from "./businessAdvisor";
+import catalogFeedRouter from "./catalogFeed";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(accountRouter);
 router.use(cronRouter);
 router.use(businessRouter);
 router.use(businessAdvisorRouter);
+router.use(catalogFeedRouter);
 
 export default router;
