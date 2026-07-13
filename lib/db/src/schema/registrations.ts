@@ -12,6 +12,12 @@ export const registrationsTable = pgTable("registrations", {
   paymentSessionId: text("payment_session_id"),
   referralCode: text("referral_code"),
   userId: text("user_id"),
+  // Standard registration questions (collected when the event has
+  // collect_registration_details enabled).
+  seatingPreference: text("seating_preference"),
+  tilePreference: text("tile_preference"),
+  skillLevel: text("skill_level"),
+  compCodeUsed: text("comp_code_used"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

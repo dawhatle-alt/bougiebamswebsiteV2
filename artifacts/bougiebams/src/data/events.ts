@@ -36,6 +36,9 @@ export interface ApiEvent {
   archived?: boolean;
   reminderHoursBefore: number | null;
   externalRegistrationUrl?: string | null;
+  collectRegistrationDetails?: boolean;
+  hasCompCode?: boolean;
+  compCode?: string | null;
 }
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");

@@ -34,6 +34,10 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
     featured: row.featured,
     stripeProductId: row.stripeProductId ?? null,
     externalRegistrationUrl: row.externalRegistrationUrl ?? null,
+    collectRegistrationDetails: row.collectRegistrationDetails,
+    // The actual code stays server-side; the form only needs to know whether
+    // to show the coupon field.
+    hasCompCode: !!row.compCode?.trim(),
   };
 }
 

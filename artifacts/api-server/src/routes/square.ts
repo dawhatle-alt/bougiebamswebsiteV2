@@ -25,6 +25,12 @@ const RegistrationCheckoutBody = z.object({
   email: z.string().email(),
   notes: z.string().optional(),
   redirectBase: z.string().optional(),
+  // Standard registration questions (collected when the event enables them).
+  seatingPreference: z.string().max(300).optional(),
+  tilePreference: z.string().max(50).optional(),
+  skillLevel: z.string().max(50).optional(),
+  // Comp code — a match against the event's comp codes registers free.
+  couponCode: z.string().max(100).optional(),
 });
 
 router.post(
@@ -59,7 +65,7 @@ router.post(
       return;
     }
 
-    const { eventId, name, email, notes, redirectBase } = parsed.data;
+    const { eventId, name, email, notes, redirectBase, seatingPreference, tilePreference, skillLevel, couponCode } = parsed.data;
 
     const [event] = await db
       .select()
@@ -83,6 +89,25 @@ router.post(
     const priceInCents = event.priceCents ?? 0;
     const origin = getOrigin(req);
 
+    // A coupon matching one of the event's comp codes (comma-separated,
+    // case-insensitive) registers free; any other non-empty coupon is
+    // rejected so nobody gets silently charged after a typo.
+    const coupon = (couponCode ?? "").trim();
+    let compApplied = false;
+    if (priceInCents > 0 && coupon) {
+      const validCodes = (event.compCode ?? "")
+        .split(",")
+        .map((c) => c.trim().toLowerCase())
+        .filter(Boolean);
+      if (validCodes.includes(coupon.toLowerCase())) {
+        compApplied = true;
+      } else {
+        res.status(400).json({ error: "That coupon code isn't valid for this event." });
+        return;
+      }
+    }
+    const requiresPayment = priceInCents > 0 && !compApplied;
+
     try {
       const [registration] = await db
         .insert(registrationsTable)
@@ -91,12 +116,16 @@ router.post(
           name,
           email,
           notes: notes ?? null,
-          status: priceInCents > 0 ? "pending" : "confirmed",
+          status: requiresPayment ? "pending" : "confirmed",
           userId: req.isAuthenticated() ? req.user!.id : (req.shopperUser?.sub ?? null),
+          seatingPreference: seatingPreference?.trim() || null,
+          tilePreference: tilePreference?.trim() || null,
+          skillLevel: skillLevel?.trim() || null,
+          compCodeUsed: compApplied ? coupon : null,
         })
         .returning();
 
-      if (priceInCents > 0) {
+      if (requiresPayment) {
         const idempotencyKey = `reg-${registration.id}-${Date.now()}`;
         const locationId = getSquareLocationId();
 

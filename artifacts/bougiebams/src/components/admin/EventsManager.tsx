@@ -38,6 +38,8 @@ interface FormState {
   imagePath: string | null;
   reminderHoursBefore: number | null;
   externalRegistrationUrl: string;
+  collectRegistrationDetails: boolean;
+  compCode: string;
 }
 
 const REMINDER_OPTIONS: { label: string; value: number | null }[] = [
@@ -69,6 +71,8 @@ const emptyForm: FormState = {
   imagePath: null,
   reminderHoursBefore: null,
   externalRegistrationUrl: "",
+  collectRegistrationDetails: false,
+  compCode: "",
 };
 
 function eventToForm(e: ApiEvent): FormState {
@@ -89,6 +93,8 @@ function eventToForm(e: ApiEvent): FormState {
     imagePath: e.imagePath ?? null,
     reminderHoursBefore: e.reminderHoursBefore ?? null,
     externalRegistrationUrl: e.externalRegistrationUrl ?? "",
+    collectRegistrationDetails: e.collectRegistrationDetails ?? false,
+    compCode: e.compCode ?? "",
   };
 }
 
@@ -214,6 +220,8 @@ export default function EventsManager({ onAuthError }: Props) {
       imagePath: form.imagePath,
       reminderHoursBefore: form.reminderHoursBefore,
       externalRegistrationUrl: form.externalRegistrationUrl.trim() || null,
+      collectRegistrationDetails: form.collectRegistrationDetails,
+      compCode: form.compCode.trim() || null,
     };
     const isEdit = form.id !== null;
     const url = isEdit
@@ -381,6 +389,30 @@ export default function EventsManager({ onAuthError }: Props) {
               placeholder="https://www.eventbrite.com/e/…"
             />
             <p className="text-xs text-[#9A8F7E] mt-1.5">When set, the event's Register button sends guests to this link instead of the built-in registration and payment flow. Leave empty to use built-in registration.</p>
+          </div>
+
+          <div className="rounded-md border border-[#E2DBCD] bg-[#FAF7F0] p-4 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium text-[#1E2A5A]">Collect registration details</div>
+                <div className="text-xs text-[#9A8F7E]">Adds three questions to the registration form: seating preference, blanks &amp; 10 jokers, and skill level. Answers appear in Registrations.</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => field("collectRegistrationDetails", !form.collectRegistrationDetails)}
+                className={`relative inline-flex items-center px-0.5 w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  form.collectRegistrationDetails ? "bg-emerald-500" : "bg-[#D0CCBF]"
+                }`}
+                title={form.collectRegistrationDetails ? "On — click to turn off" : "Off — click to turn on"}
+              >
+                <span className={`w-5 h-5 rounded-full bg-white transition-transform shadow-sm ${form.collectRegistrationDetails ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Comp Code(s)</label>
+              <Input value={form.compCode} onChange={(e) => field("compCode", e.target.value)} placeholder="e.g. HOSTESS2026, VIP-GUEST" />
+              <p className="text-xs text-[#9A8F7E] mt-1.5">Paid events only: guests entering one of these codes (separate several with commas, not case-sensitive) register free and skip payment. The registration form shows a coupon field only when a code is set here. Leave empty for none.</p>
+            </div>
           </div>
 
           <div>

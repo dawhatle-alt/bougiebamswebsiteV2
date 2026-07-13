@@ -894,6 +894,10 @@ components:
           type: ["string", "null"]
         externalRegistrationUrl:
           type: ["string", "null"]
+        collectRegistrationDetails:
+          type: boolean
+        hasCompCode:
+          type: boolean
 
     EventInput:
       type: object

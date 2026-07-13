@@ -21,6 +21,10 @@ interface Registration {
   status: string;
   paid: boolean;
   createdAt: string;
+  seatingPreference?: string | null;
+  tilePreference?: string | null;
+  skillLevel?: string | null;
+  compCodeUsed?: string | null;
 }
 
 interface Props {
@@ -283,7 +287,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   }
 
   function handleExport() {
-    const header = ["ID", "Event", "Name", "Email", "Status", "Paid", "Notes", "Date"];
+    const header = ["ID", "Event", "Name", "Email", "Status", "Paid", "Notes", "Sit With", "Blanks & Jokers", "Skill Level", "Comp Code", "Date"];
     const rows = visible.map((r) => [
       String(r.id),
       r.eventTitle,
@@ -292,6 +296,10 @@ export default function RegistrationsManager({ onAuthError }: Props) {
       r.status,
       r.paid ? "Yes" : "No",
       r.notes ?? "",
+      r.seatingPreference ?? "",
+      r.tilePreference ?? "",
+      r.skillLevel ?? "",
+      r.compCodeUsed ?? "",
       formatDate(r.createdAt),
     ]);
     const csv = [header, ...rows]
@@ -527,7 +535,19 @@ export default function RegistrationsManager({ onAuthError }: Props) {
                   <TableCell className="font-medium text-[#1E2A5A] max-w-[180px] truncate">
                     {r.eventTitle}
                   </TableCell>
-                  <TableCell className="text-[#1E2A5A]">{r.name}</TableCell>
+                  <TableCell className="text-[#1E2A5A]">
+                    {r.name}
+                    {(r.skillLevel || r.tilePreference || r.seatingPreference || r.compCodeUsed) && (
+                      <div className="text-[11px] text-[#9A8F7E] mt-0.5 max-w-[240px]">
+                        {[
+                          r.skillLevel,
+                          r.tilePreference ? `Blanks/jokers: ${r.tilePreference}` : null,
+                          r.seatingPreference ? `Sit with: ${r.seatingPreference}` : null,
+                          r.compCodeUsed ? `Comp: ${r.compCodeUsed}` : null,
+                        ].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-[#5A6178]">{r.email}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${

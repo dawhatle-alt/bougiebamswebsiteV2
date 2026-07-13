@@ -70,6 +70,8 @@ Create and manage the events shown on the site.
 - The **Spots** column in the events list shows how full the event is — e.g. `16/20 filled`, with the remaining count underneath. Spots left decreases automatically as registrations are confirmed.
 - When editing an event, **Spots Left** is the remaining availability (not the registration count). If you raise Total Spots on an existing event, raise Spots Left by the same amount.
 - **External Registration Link** (optional): paste a URL (e.g. an Eventbrite page) and the event's Register button will send guests there instead of the built-in registration and payment flow. Guests don't need to sign in, and the built-in checkout is disabled for that event. Note that spots and the registration list are *not* tracked for external registrations — manage attendance on the external site. Clear the field to switch back to built-in registration.
+- **Collect registration details** (toggle): when on, the registration form also asks three standard questions — *sit with someone you know?* (names), *play with blanks and 10 jokers?* (Yes / No / Open to either), and *skill level* (learn / still learning / intermediate / advanced). Answers appear under each guest's name in **Registrations** and in its CSV export.
+- **Comp Code(s)**: for paid events, enter one or more codes (comma-separated, not case-sensitive, e.g. `HOSTESS2026, VIP-GUEST`). The registration form then shows an optional **Coupon Code** field; a guest entering a valid code registers **free** (confirmed instantly, no Square checkout) and the code used is recorded on their registration. A wrong code shows an error rather than charging them. Leave empty for no comp codes.
 
 ## Education
 

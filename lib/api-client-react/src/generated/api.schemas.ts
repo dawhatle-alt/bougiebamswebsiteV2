@@ -80,6 +80,8 @@ export interface ApiEvent {
   stripeProductId?: string | null;
   /** @nullable */
   externalRegistrationUrl?: string | null;
+  collectRegistrationDetails?: boolean;
+  hasCompCode?: boolean;
 }
 
 export type EventInputCategory = typeof EventInputCategory[keyof typeof EventInputCategory];

@@ -214,7 +214,9 @@ export const ListEventsResponse = zod.object({
   "published": zod.boolean(),
   "featured": zod.boolean(),
   "stripeProductId": zod.string().nullish(),
-  "externalRegistrationUrl": zod.string().nullish()
+  "externalRegistrationUrl": zod.string().nullish(),
+  "collectRegistrationDetails": zod.boolean().optional(),
+  "hasCompCode": zod.boolean().optional()
 }))
 })
 
@@ -253,7 +255,9 @@ export const CreateEventResponse = zod.object({
   "published": zod.boolean(),
   "featured": zod.boolean(),
   "stripeProductId": zod.string().nullish(),
-  "externalRegistrationUrl": zod.string().nullish()
+  "externalRegistrationUrl": zod.string().nullish(),
+  "collectRegistrationDetails": zod.boolean().optional(),
+  "hasCompCode": zod.boolean().optional()
 })
 })
 
@@ -293,7 +297,9 @@ export const GetEventResponse = zod.object({
   "published": zod.boolean(),
   "featured": zod.boolean(),
   "stripeProductId": zod.string().nullish(),
-  "externalRegistrationUrl": zod.string().nullish()
+  "externalRegistrationUrl": zod.string().nullish(),
+  "collectRegistrationDetails": zod.boolean().optional(),
+  "hasCompCode": zod.boolean().optional()
 })
 })
 
@@ -336,7 +342,9 @@ export const UpdateEventResponse = zod.object({
   "published": zod.boolean(),
   "featured": zod.boolean(),
   "stripeProductId": zod.string().nullish(),
-  "externalRegistrationUrl": zod.string().nullish()
+  "externalRegistrationUrl": zod.string().nullish(),
+  "collectRegistrationDetails": zod.boolean().optional(),
+  "hasCompCode": zod.boolean().optional()
 })
 })
 

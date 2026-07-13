@@ -29,7 +29,10 @@ export default function EventDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({ name: "", email: "", notes: "" });
+  const [formData, setFormData] = useState({
+    name: "", email: "", notes: "",
+    seatingPreference: "", tilePreference: "", skillLevel: "", couponCode: "",
+  });
 
   useEffect(() => {
     if (shopperAuthenticated && shopperUser) {
@@ -109,6 +112,10 @@ export default function EventDetail() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
+    if (event.collectRegistrationDetails && (!formData.tilePreference || !formData.skillLevel)) {
+      setSubmitError("Please answer the blanks & jokers and skill level questions.");
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -126,6 +133,10 @@ export default function EventDetail() {
           name: formData.name,
           email: formData.email,
           notes: formData.notes || undefined,
+          seatingPreference: formData.seatingPreference.trim() || undefined,
+          tilePreference: formData.tilePreference || undefined,
+          skillLevel: formData.skillLevel || undefined,
+          couponCode: formData.couponCode.trim() || undefined,
           redirectBase: window.location.origin + (import.meta.env.BASE_URL ?? "/").replace(/\/$/, ""),
         }),
       });
@@ -360,6 +371,84 @@ export default function EventDetail() {
                       rows={3}
                     />
                   </div>
+
+                  {event.collectRegistrationDetails && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="seating">Do you prefer to sit with someone you know?</Label>
+                        <p className="text-xs text-muted-foreground -mt-1">If yes, provide their name(s)</p>
+                        <Textarea
+                          id="seating"
+                          placeholder="e.g. Jane Smith, Michelle Lee"
+                          value={formData.seatingPreference}
+                          onChange={e => setFormData({ ...formData, seatingPreference: e.target.value })}
+                          className="bg-background resize-none"
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Do you want to play with blanks and 10 jokers?</Label>
+                        <p className="text-xs text-muted-foreground -mt-1">No guarantees</p>
+                        <div className="space-y-1.5">
+                          {["Yes", "No", "I'm open to either"].map((opt) => (
+                            <label key={opt} className="flex items-center gap-2.5 cursor-pointer text-sm">
+                              <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${formData.tilePreference === opt ? "border-primary" : "border-muted-foreground/40"}`}>
+                                {formData.tilePreference === opt && <span className="w-2 h-2 rounded-full bg-primary" />}
+                              </span>
+                              <input
+                                type="radio"
+                                name="tilePreference"
+                                value={opt}
+                                checked={formData.tilePreference === opt}
+                                onChange={() => setFormData({ ...formData, tilePreference: opt })}
+                                className="sr-only"
+                              />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>What is your skill level?</Label>
+                        <div className="space-y-1.5">
+                          {["I want to learn how to play", "I'm still learning", "Intermediate", "Advanced"].map((opt) => (
+                            <label key={opt} className="flex items-center gap-2.5 cursor-pointer text-sm">
+                              <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${formData.skillLevel === opt ? "border-primary" : "border-muted-foreground/40"}`}>
+                                {formData.skillLevel === opt && <span className="w-2 h-2 rounded-full bg-primary" />}
+                              </span>
+                              <input
+                                type="radio"
+                                name="skillLevel"
+                                value={opt}
+                                checked={formData.skillLevel === opt}
+                                onChange={() => setFormData({ ...formData, skillLevel: opt })}
+                                className="sr-only"
+                              />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {event.priceCents && event.hasCompCode ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="coupon">
+                        Coupon Code
+                        <span className="text-xs font-normal text-muted-foreground ml-1">(optional)</span>
+                      </Label>
+                      <Input
+                        id="coupon"
+                        placeholder="Enter code for free registration"
+                        value={formData.couponCode}
+                        onChange={e => setFormData({ ...formData, couponCode: e.target.value })}
+                        className="bg-background"
+                      />
+                    </div>
+                  ) : null}
 
                   {submitError && (
                     <p className="text-xs text-destructive">{submitError}</p>

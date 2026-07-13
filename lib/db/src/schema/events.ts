@@ -24,6 +24,12 @@ export const eventsTable = pgTable("events", {
   // When set, the public Register button links here instead of the built-in
   // registration/payment flow (e.g. Eventbrite or a partner site).
   externalRegistrationUrl: text("external_registration_url"),
+  // When true, the registration form also asks the standard questions:
+  // seating preference, blanks/jokers, and skill level.
+  collectRegistrationDetails: boolean("collect_registration_details").notNull().default(false),
+  // Comma-separated comp codes; a matching coupon at registration skips
+  // payment and confirms the spot free. Never exposed on the public API.
+  compCode: text("comp_code"),
   reminderHoursBefore: integer("reminder_hours_before"),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
