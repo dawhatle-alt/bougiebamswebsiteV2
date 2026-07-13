@@ -206,6 +206,7 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
     collectRegistrationDetails: row.collectRegistrationDetails,
     compCode: row.compCode ?? null,
     compCodeLimit: row.compCodeLimit ?? null,
+    sortOrder: row.sortOrder ?? null,
   };
 }
 
@@ -337,6 +338,7 @@ router.post("/admin/events", requireAdmin, async (req, res): Promise<void> => {
       collectRegistrationDetails: b.collectRegistrationDetails === true,
       compCode: typeof b.compCode === "string" && b.compCode.trim() ? b.compCode.trim() : null,
       compCodeLimit: b.compCodeLimit != null && Number(b.compCodeLimit) > 0 ? Math.floor(Number(b.compCodeLimit)) : null,
+      sortOrder: b.sortOrder != null && Number.isFinite(Number(b.sortOrder)) ? Math.floor(Number(b.sortOrder)) : null,
     })
     .returning();
   res.status(201).json({ event: toApiEvent(row) });
@@ -368,6 +370,7 @@ router.put("/admin/events/:id", requireAdmin, async (req, res): Promise<void> =>
   if ("collectRegistrationDetails" in b) updateData.collectRegistrationDetails = b.collectRegistrationDetails === true;
   if ("compCode" in b) updateData.compCode = typeof b.compCode === "string" && b.compCode.trim() ? b.compCode.trim() : null;
   if ("compCodeLimit" in b) updateData.compCodeLimit = b.compCodeLimit != null && Number(b.compCodeLimit) > 0 ? Math.floor(Number(b.compCodeLimit)) : null;
+  if ("sortOrder" in b) updateData.sortOrder = b.sortOrder != null && Number.isFinite(Number(b.sortOrder)) ? Math.floor(Number(b.sortOrder)) : null;
   const [row] = await db
     .update(eventsTable)
     .set(updateData)

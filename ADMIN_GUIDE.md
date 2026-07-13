@@ -73,6 +73,7 @@ Create and manage the events shown on the site.
 - **Collect registration details** (toggle): when on, the registration form also asks three standard questions — *sit with someone you know?* (names), *play with blanks and 10 jokers?* (Yes / No / Open to either), and *skill level* (learn / still learning / intermediate / advanced). Answers appear under each guest's name in **Registrations** and in its CSV export.
 - **Comp Code(s)**: for paid events, enter one or more codes (comma-separated, not case-sensitive, e.g. `HOSTESS2026, VIP-GUEST`). The registration form then shows an optional **Coupon Code** field; a guest entering a valid code registers **free** (confirmed instantly, no Square checkout) and the code used is recorded on their registration. A wrong code shows an error rather than charging them. Leave empty for no comp codes.
 - **Use Limit** (next to Comp Codes): caps how many free registrations *each* code allows for this event — e.g. limit 5 with two codes means each code works 5 times. Once a code hits its limit, further guests see "already been used the maximum number of times." Removing a registration that used a comp code gives that redemption back. Empty = unlimited.
+- **Display Order**: controls the event's position on the public Events page — 1 shows first, 2 second, and so on. Events without a number appear after all numbered ones, sorted by date. Leave empty for automatic date order.
 
 ## Education
 

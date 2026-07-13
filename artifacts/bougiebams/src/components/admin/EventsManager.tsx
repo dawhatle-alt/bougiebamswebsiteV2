@@ -41,6 +41,7 @@ interface FormState {
   collectRegistrationDetails: boolean;
   compCode: string;
   compCodeLimit: string;
+  sortOrder: string;
 }
 
 const REMINDER_OPTIONS: { label: string; value: number | null }[] = [
@@ -75,6 +76,7 @@ const emptyForm: FormState = {
   collectRegistrationDetails: false,
   compCode: "",
   compCodeLimit: "",
+  sortOrder: "",
 };
 
 function eventToForm(e: ApiEvent): FormState {
@@ -98,6 +100,7 @@ function eventToForm(e: ApiEvent): FormState {
     collectRegistrationDetails: e.collectRegistrationDetails ?? false,
     compCode: e.compCode ?? "",
     compCodeLimit: e.compCodeLimit != null ? String(e.compCodeLimit) : "",
+    sortOrder: e.sortOrder != null ? String(e.sortOrder) : "",
   };
 }
 
@@ -226,6 +229,7 @@ export default function EventsManager({ onAuthError }: Props) {
       collectRegistrationDetails: form.collectRegistrationDetails,
       compCode: form.compCode.trim() || null,
       compCodeLimit: parseInt(form.compCodeLimit) > 0 ? parseInt(form.compCodeLimit) : null,
+      sortOrder: form.sortOrder.trim() !== "" && Number.isFinite(Number(form.sortOrder)) ? Math.floor(Number(form.sortOrder)) : null,
     };
     const isEdit = form.id !== null;
     const url = isEdit
@@ -382,6 +386,12 @@ export default function EventsManager({ onAuthError }: Props) {
               <Input type="number" min="0" value={form.spotsLeft} onChange={(e) => field("spotsLeft", e.target.value)} placeholder="24" />
               <p className="text-xs text-[#9A8F7E] mt-1.5">Remaining availability — counts down automatically with each registration. If you raise Total Spots, raise this too.</p>
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Display Order</label>
+            <Input type="number" value={form.sortOrder} onChange={(e) => field("sortOrder", e.target.value)} placeholder="e.g. 1" className="max-w-[140px]" />
+            <p className="text-xs text-[#9A8F7E] mt-1.5">Position on the public Events page — 1 shows first, 2 second, and so on. Events without a number follow, sorted by date. Leave empty for automatic date order.</p>
           </div>
 
           <div>

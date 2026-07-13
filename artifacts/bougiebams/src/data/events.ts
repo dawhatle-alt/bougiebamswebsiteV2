@@ -40,6 +40,7 @@ export interface ApiEvent {
   hasCompCode?: boolean;
   compCode?: string | null;
   compCodeLimit?: number | null;
+  sortOrder?: number | null;
 }
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");

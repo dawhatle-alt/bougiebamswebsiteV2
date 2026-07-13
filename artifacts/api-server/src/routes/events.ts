@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, gte, lt, and, type SQL } from "drizzle-orm";
+import { eq, count, gte, lt, and, sql, type SQL } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import {
   ListEventsResponse,
@@ -63,7 +63,9 @@ router.get("/events", async (req, res): Promise<void> => {
     .select()
     .from(eventsTable)
     .where(and(...conditions))
-    .orderBy(eventsTable.date);
+    // Admin-assigned display order wins (lower first); unnumbered events
+    // follow, sorted by date.
+    .orderBy(sql`${eventsTable.sortOrder} ASC NULLS LAST`, eventsTable.date);
   res.json(ListEventsResponse.parse({ events: rows.map(toApiEvent) }));
 });
 

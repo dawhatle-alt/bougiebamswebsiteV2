@@ -32,6 +32,9 @@ export const eventsTable = pgTable("events", {
   compCode: text("comp_code"),
   // Max redemptions per comp code for this event; null = unlimited.
   compCodeLimit: integer("comp_code_limit"),
+  // Manual position on the public Events page: lower numbers first, ties and
+  // unnumbered events fall back to date order.
+  sortOrder: integer("sort_order"),
   reminderHoursBefore: integer("reminder_hours_before"),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
