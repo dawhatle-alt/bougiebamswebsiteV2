@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { setPageMeta } from "@/hooks/usePageTitle";
+import { trackPixel } from "@/lib/metaPixel";
 import { AnimatePresence, motion } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -133,6 +134,16 @@ function RouteTitles() {
     } else if (!DYNAMIC_TITLE_PREFIXES.some((p) => location.startsWith(p))) {
       setPageMeta(null);
     }
+  }, [location]);
+  // SPA navigations don't reload the page, so the pixel's initial PageView
+  // only covers the first route — fire one per route change ourselves.
+  const firstRoute = useRef(true);
+  useEffect(() => {
+    if (firstRoute.current) {
+      firstRoute.current = false; // index.html base code already tracked this one
+      return;
+    }
+    trackPixel("PageView");
   }, [location]);
   return null;
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { Product } from "@/data/products";
+import { trackPixel } from "@/lib/metaPixel";
 
 export interface CartItem {
   product: Product;
@@ -25,6 +26,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const addItem = useCallback((product: Product, quantity = 1) => {
+    trackPixel("AddToCart", {
+      content_ids: [`product-${product.id}`],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price * quantity,
+      currency: "USD",
+    });
     setItems((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {

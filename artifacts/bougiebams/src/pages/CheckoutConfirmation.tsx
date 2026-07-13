@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { CheckCircle2, Loader2, ShoppingBag, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
+import { trackPixel } from "@/lib/metaPixel";
 
 interface LineItem {
   name: string;
@@ -63,6 +64,18 @@ export default function CheckoutConfirmation() {
     };
     void run();
   }, [orderId, checkoutId]);
+
+  // Report the conversion to Meta once, after the order summary settles (the
+  // buyer only lands here after completing Square checkout).
+  const purchaseTracked = useRef(false);
+  useEffect(() => {
+    if (purchaseTracked.current || loading || (!orderId && !checkoutId)) return;
+    purchaseTracked.current = true;
+    trackPixel("Purchase", {
+      value: (data?.total ?? 0) / 100,
+      currency: data?.currency || "USD",
+    });
+  }, [loading, data, orderId, checkoutId]);
 
   if (loading) {
     return (

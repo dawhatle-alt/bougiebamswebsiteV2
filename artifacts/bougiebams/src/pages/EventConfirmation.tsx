@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { Calendar, MapPin, User, Mail, CheckCircle2, Clock, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateCT } from "@/lib/dateUtils";
+import { trackPixel } from "@/lib/metaPixel";
 
 interface ConfirmationData {
   id: number;
@@ -88,6 +89,23 @@ export default function EventConfirmation() {
 
     run();
   }, [referenceId, checkoutId]);
+
+  // Report the conversion to Meta once the registration is confirmed — paid
+  // seats count as a Purchase, free seats as a CompleteRegistration.
+  const conversionTracked = useRef(false);
+  useEffect(() => {
+    if (conversionTracked.current || !data || data.status !== "confirmed") return;
+    conversionTracked.current = true;
+    if (data.event.priceCents > 0) {
+      trackPixel("Purchase", {
+        value: data.event.priceCents / 100,
+        currency: "USD",
+        content_name: data.event.title,
+      });
+    } else {
+      trackPixel("CompleteRegistration", { content_name: data.event.title });
+    }
+  }, [data]);
 
   useEffect(() => {
     if (!data || data.status === "confirmed") return;
