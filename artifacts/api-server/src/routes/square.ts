@@ -100,6 +100,18 @@ router.post(
         .map((c) => c.trim().toLowerCase())
         .filter(Boolean);
       if (validCodes.includes(coupon.toLowerCase())) {
+        // Enforce the per-code redemption cap (cancelled registrations give
+        // their redemption back).
+        if (event.compCodeLimit != null) {
+          const [row] = await db
+            .select({ used: sql<number>`count(*)` })
+            .from(registrationsTable)
+            .where(sql`${registrationsTable.eventId} = ${eventId} AND lower(${registrationsTable.compCodeUsed}) = ${coupon.toLowerCase()} AND ${registrationsTable.status} != 'cancelled'`);
+          if (Number(row?.used ?? 0) >= event.compCodeLimit) {
+            res.status(400).json({ error: "That coupon code has already been used the maximum number of times for this event." });
+            return;
+          }
+        }
         compApplied = true;
       } else {
         res.status(400).json({ error: "That coupon code isn't valid for this event." });

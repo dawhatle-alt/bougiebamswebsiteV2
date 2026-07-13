@@ -40,6 +40,7 @@ interface FormState {
   externalRegistrationUrl: string;
   collectRegistrationDetails: boolean;
   compCode: string;
+  compCodeLimit: string;
 }
 
 const REMINDER_OPTIONS: { label: string; value: number | null }[] = [
@@ -73,6 +74,7 @@ const emptyForm: FormState = {
   externalRegistrationUrl: "",
   collectRegistrationDetails: false,
   compCode: "",
+  compCodeLimit: "",
 };
 
 function eventToForm(e: ApiEvent): FormState {
@@ -95,6 +97,7 @@ function eventToForm(e: ApiEvent): FormState {
     externalRegistrationUrl: e.externalRegistrationUrl ?? "",
     collectRegistrationDetails: e.collectRegistrationDetails ?? false,
     compCode: e.compCode ?? "",
+    compCodeLimit: e.compCodeLimit != null ? String(e.compCodeLimit) : "",
   };
 }
 
@@ -222,6 +225,7 @@ export default function EventsManager({ onAuthError }: Props) {
       externalRegistrationUrl: form.externalRegistrationUrl.trim() || null,
       collectRegistrationDetails: form.collectRegistrationDetails,
       compCode: form.compCode.trim() || null,
+      compCodeLimit: parseInt(form.compCodeLimit) > 0 ? parseInt(form.compCodeLimit) : null,
     };
     const isEdit = form.id !== null;
     const url = isEdit
@@ -408,10 +412,17 @@ export default function EventsManager({ onAuthError }: Props) {
                 <span className={`w-5 h-5 rounded-full bg-white transition-transform shadow-sm ${form.collectRegistrationDetails ? "translate-x-5" : "translate-x-0"}`} />
               </button>
             </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Comp Code(s)</label>
-              <Input value={form.compCode} onChange={(e) => field("compCode", e.target.value)} placeholder="e.g. HOSTESS2026, VIP-GUEST" />
-              <p className="text-xs text-[#9A8F7E] mt-1.5">Paid events only: guests entering one of these codes (separate several with commas, not case-sensitive) register free and skip payment. The registration form shows a coupon field only when a code is set here. Leave empty for none.</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Comp Code(s)</label>
+                <Input value={form.compCode} onChange={(e) => field("compCode", e.target.value)} placeholder="e.g. HOSTESS2026, VIP-GUEST" />
+                <p className="text-xs text-[#9A8F7E] mt-1.5">Paid events only: guests entering one of these codes (separate several with commas, not case-sensitive) register free and skip payment. The registration form shows a coupon field only when a code is set here. Leave empty for none.</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Use Limit</label>
+                <Input type="number" min="1" value={form.compCodeLimit} onChange={(e) => field("compCodeLimit", e.target.value)} placeholder="e.g. 5" />
+                <p className="text-xs text-[#9A8F7E] mt-1.5">Max free registrations per code. Empty = unlimited.</p>
+              </div>
             </div>
           </div>
 

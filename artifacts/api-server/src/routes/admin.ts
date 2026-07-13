@@ -205,6 +205,7 @@ function toApiEvent(row: typeof eventsTable.$inferSelect) {
     externalRegistrationUrl: row.externalRegistrationUrl ?? null,
     collectRegistrationDetails: row.collectRegistrationDetails,
     compCode: row.compCode ?? null,
+    compCodeLimit: row.compCodeLimit ?? null,
   };
 }
 
@@ -335,6 +336,7 @@ router.post("/admin/events", requireAdmin, async (req, res): Promise<void> => {
       externalRegistrationUrl: typeof b.externalRegistrationUrl === "string" && b.externalRegistrationUrl.trim() ? b.externalRegistrationUrl.trim() : null,
       collectRegistrationDetails: b.collectRegistrationDetails === true,
       compCode: typeof b.compCode === "string" && b.compCode.trim() ? b.compCode.trim() : null,
+      compCodeLimit: b.compCodeLimit != null && Number(b.compCodeLimit) > 0 ? Math.floor(Number(b.compCodeLimit)) : null,
     })
     .returning();
   res.status(201).json({ event: toApiEvent(row) });
@@ -365,6 +367,7 @@ router.put("/admin/events/:id", requireAdmin, async (req, res): Promise<void> =>
   if ("externalRegistrationUrl" in b) updateData.externalRegistrationUrl = typeof b.externalRegistrationUrl === "string" && b.externalRegistrationUrl.trim() ? b.externalRegistrationUrl.trim() : null;
   if ("collectRegistrationDetails" in b) updateData.collectRegistrationDetails = b.collectRegistrationDetails === true;
   if ("compCode" in b) updateData.compCode = typeof b.compCode === "string" && b.compCode.trim() ? b.compCode.trim() : null;
+  if ("compCodeLimit" in b) updateData.compCodeLimit = b.compCodeLimit != null && Number(b.compCodeLimit) > 0 ? Math.floor(Number(b.compCodeLimit)) : null;
   const [row] = await db
     .update(eventsTable)
     .set(updateData)

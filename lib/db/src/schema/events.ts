@@ -30,6 +30,8 @@ export const eventsTable = pgTable("events", {
   // Comma-separated comp codes; a matching coupon at registration skips
   // payment and confirms the spot free. Never exposed on the public API.
   compCode: text("comp_code"),
+  // Max redemptions per comp code for this event; null = unlimited.
+  compCodeLimit: integer("comp_code_limit"),
   reminderHoursBefore: integer("reminder_hours_before"),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
