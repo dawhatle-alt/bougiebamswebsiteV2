@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { setPageMeta } from "@/hooks/usePageTitle";
 import { trackPixel } from "@/lib/metaPixel";
@@ -31,7 +31,9 @@ import Favorites from "@/pages/Favorites";
 import Contact from "@/pages/Contact";
 import CheckoutConfirmation from "@/pages/CheckoutConfirmation";
 import FacebookCheckout from "@/pages/FacebookCheckout";
-import Admin from "@/pages/Admin";
+// Lazy: the admin panel (with its charts and management UIs) is a large chunk
+// of code that shoppers never use — keep it out of the public bundle.
+const Admin = lazy(() => import("@/pages/Admin"));
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ResetPassword from "@/pages/ResetPassword";
@@ -151,7 +153,11 @@ function RouteTitles() {
 function Router() {
   return (
     <Switch>
-      <Route path="/admin" component={Admin} />
+      <Route path="/admin">
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading admin…</div>}>
+          <Admin />
+        </Suspense>
+      </Route>
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/reset-password" component={ResetPassword} />

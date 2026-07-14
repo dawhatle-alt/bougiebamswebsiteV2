@@ -45,6 +45,11 @@ export function HeroShuffleGrid() {
   }, []);
 
   useEffect(() => {
+    // Honor Reduce Motion (and save phone batteries): skip the perpetual
+    // tile shuffle for users who asked for less animation.
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
     const interval = setInterval(() => {
       setOrder((prev) => {
         const newOrder = [...prev];

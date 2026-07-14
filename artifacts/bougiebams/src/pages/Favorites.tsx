@@ -116,13 +116,13 @@ export default function Favorites() {
         </div>
       </section>
 
-      <section className="sticky top-[104px] z-30 bg-background border-b border-border shadow-sm">
+      <section className="sticky top-[72px] md:top-[104px] z-30 bg-background border-b border-border shadow-sm">
         <div className="container mx-auto px-4 max-w-7xl py-4">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="flex flex-wrap items-center gap-2 flex-1">
               <button
                 onClick={() => setActiveCategory("All")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                className={`px-4 py-2.5 rounded-full text-sm font-medium transition-colors border ${
                   activeCategory === "All"
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
@@ -136,7 +136,7 @@ export default function Favorites() {
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                    className={`px-4 py-2.5 rounded-full text-sm font-medium transition-colors border ${
                       activeCategory === cat
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"

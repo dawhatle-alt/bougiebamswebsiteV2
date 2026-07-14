@@ -74,7 +74,7 @@ export default function Shop() {
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                className={`px-4 py-2.5 rounded-full text-sm font-medium transition-colors border ${
                   activeCategory === category
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
@@ -159,8 +159,8 @@ export default function Shop() {
                 </Link>
                 
                 <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex gap-2 z-20">
-                  <Button 
-                    className="flex-1 bg-background/95 backdrop-blur-sm text-foreground hover:bg-primary hover:text-primary-foreground rounded-none"
+                  <Button
+                    className="flex-1 h-11 bg-background/95 backdrop-blur-sm text-foreground hover:bg-primary hover:text-primary-foreground rounded-none"
                     onClick={(e) => {
                       e.preventDefault();
                       setQuickViewProduct(product.id);
@@ -168,8 +168,8 @@ export default function Shop() {
                   >
                     <Eye className="w-4 h-4 mr-2" /> Quick View
                   </Button>
-                  <Button 
-                    className="flex-1 bg-foreground text-background hover:bg-primary rounded-none disabled:opacity-50"
+                  <Button
+                    className="flex-1 h-11 bg-foreground text-background hover:bg-primary rounded-none disabled:opacity-50"
                     disabled={!product.inStock}
                     onClick={(e) => {
                       e.preventDefault();
