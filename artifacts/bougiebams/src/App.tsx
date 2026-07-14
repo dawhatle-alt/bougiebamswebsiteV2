@@ -146,6 +146,10 @@ function RouteTitles() {
       return;
     }
     trackPixel("PageView");
+    // SPA route changes keep the old scroll offset, dropping visitors at the
+    // bottom of the next page — start every page at the top like a real
+    // navigation would.
+    window.scrollTo(0, 0);
   }, [location]);
   return null;
 }

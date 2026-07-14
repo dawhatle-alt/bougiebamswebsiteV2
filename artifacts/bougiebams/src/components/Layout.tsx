@@ -745,7 +745,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <X className="w-6 h-6" />
             </button>
           </div>
-          <nav className="flex flex-col gap-6 p-8 overflow-y-auto">
+          <nav
+            className="flex flex-col gap-6 p-8 overflow-y-auto"
+            onClick={(e) => {
+              // Close on any link tap. The location-change effect misses
+              // same-route taps (Events while already on /events, or shop
+              // category links that only change the query string), which
+              // left the menu open looking like the tap did nothing.
+              if ((e.target as HTMLElement).closest("a")) setMobileMenuOpen(false);
+            }}
+          >
             <button
               onClick={() => setMobileShopOpen((v) => !v)}
               aria-expanded={mobileShopOpen}
