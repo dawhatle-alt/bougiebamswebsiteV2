@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import ogPreviewRouter from "./routes/ogPreview";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { injectShopperUser } from "./middleware/auth";
@@ -42,6 +43,9 @@ app.use(authMiddleware);
 app.use(injectShopperUser);
 
 app.use("/api", router);
+// Detail-page URLs are rewritten here (vercel.json) so shared links carry
+// product/event/post-specific social preview tags.
+app.use(ogPreviewRouter);
 
 // Express's default handler swallows the underlying error (generic HTML 500,
 // nothing in the logs) — log it so production failures are diagnosable.
