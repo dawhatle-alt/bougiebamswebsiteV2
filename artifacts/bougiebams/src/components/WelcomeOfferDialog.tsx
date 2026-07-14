@@ -74,7 +74,8 @@ export default function WelcomeOfferDialog() {
           most visibly on phones. Positioning from the top with no transform
           animation makes the placement unconditional. */}
       <DialogContent
-        className="w-[calc(100%-2rem)] max-w-md max-h-[85dvh] overflow-y-auto p-0 gap-0 border-primary/30 rounded-lg top-[8dvh] translate-y-0 animate-none"
+        className="w-[calc(100%-2rem)] max-w-md max-h-[85dvh] overflow-y-auto p-0 gap-0 border-primary/30 rounded-lg top-[8dvh] translate-y-0"
+        style={{ animation: "none" }}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogTitle className="sr-only">15% off your first order</DialogTitle>
