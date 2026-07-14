@@ -349,7 +349,10 @@ function ListCard({ event, index }: { event: ApiEvent; index: number }) {
 export default function Events() {
   const [showUpcomingOnly, setShowUpcomingOnly] = useState(true);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  // Phones default to the more scannable list view; the toggle still works.
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    typeof window !== "undefined" && window.innerWidth < 768 ? "list" : "grid"
+  );
 
   const { data, isLoading } = useListEvents(
     showUpcomingOnly ? { upcoming: "true" } : { past: "true" }
