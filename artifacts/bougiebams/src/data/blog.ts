@@ -20,7 +20,7 @@ export interface ApiBlogPost {
 
 export function blogImageUrl(imagePath: string | null | undefined): string {
   if (!imagePath) return defaultBlogImage;
-  return `${API_BASE}/api/storage${imagePath}`;
+  return `${API_BASE}/api/storage${imagePath}?w=1200`;
 }
 
 export function formatBlogDate(iso: string | null | undefined): string {

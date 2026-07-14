@@ -46,7 +46,8 @@ export interface ApiEvent {
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function eventImageUrl(imagePath: string): string {
-  return `${API_BASE}/api/storage${imagePath}`;
+  // 1600px covers the full-width event hero at retina density.
+  return `${API_BASE}/api/storage${imagePath}?w=1600`;
 }
 
 export function normalizeEvent(api: ApiEvent): BougieBamsEvent {

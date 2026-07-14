@@ -173,9 +173,10 @@ export default function Home() {
                 >
                 <Link href={collection.path} className="block relative h-full w-full overflow-hidden rounded-[10px]">
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500 z-10" />
-                  <img 
-                    src={collection.img} 
+                  <img
+                    src={collection.img}
                     alt={collection.title}
+                    loading="lazy"
                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 p-8 flex flex-col justify-end z-20">
@@ -261,7 +262,7 @@ export default function Home() {
               transition={{ duration: 0.7 }}
               className="relative aspect-[4/3] overflow-hidden rounded-md"
             >
-              <img src={buildImg} alt="Build your own mahjong set" className="w-full h-full object-cover" />
+              <img src={buildImg} alt="Build your own mahjong set" loading="lazy" className="w-full h-full object-cover" />
             </motion.div>
           </div>
         </div>
@@ -312,6 +313,7 @@ export default function Home() {
                     <img
                       src={product.images[0]}
                       alt={product.name}
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>
@@ -360,9 +362,10 @@ export default function Home() {
                       <p className="font-serif text-2xl md:text-3xl leading-relaxed text-foreground mb-10">
                         "{testimonial.quote}"
                       </p>
-                      <img 
-                        src={testimonial.avatar} 
+                      <img
+                        src={testimonial.avatar}
                         alt={testimonial.name}
+                        loading="lazy"
                         className="w-16 h-16 rounded-full object-cover mb-4 ring-2 ring-primary/20 p-1"
                       />
                       <span className="font-sans font-medium tracking-widest uppercase text-xs text-muted-foreground">

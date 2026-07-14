@@ -28,12 +28,19 @@ router.get("/storage/{*splat}", async (req, res): Promise<void> => {
     try {
       const objectPath = `/${splat}`;
       const { publicUrl } = await objectStorage.getObjectEntityFile(objectPath);
+      // Optional ?w=<px> asks Supabase's image CDN for a resized variant —
+      // phones shouldn't download 1920px originals to fill 120px tiles.
+      const wRaw = Number(req.query.w);
+      const width = Number.isFinite(wRaw) ? Math.min(1920, Math.max(16, Math.floor(wRaw))) : null;
+      const target = width
+        ? `${publicUrl.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/")}?width=${width}&quality=75`
+        : publicUrl;
       // The object path → public URL mapping is immutable, so let Vercel's CDN
       // serve repeat image loads without invoking the function (or the DB) at
       // all — a gallery page fans out to one request per photo otherwise.
       res.set("Cache-Control", "public, max-age=3600, s-maxage=86400");
       // Redirect to Supabase public URL — avoids proxying bandwidth through the API server
-      res.redirect(302, publicUrl);
+      res.redirect(302, target);
     } catch (err) {
       if (err instanceof ObjectNotFoundError) {
         res.status(404).json({ error: "File not found" });

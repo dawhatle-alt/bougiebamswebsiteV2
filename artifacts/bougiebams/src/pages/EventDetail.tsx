@@ -182,7 +182,7 @@ export default function EventDetail() {
         : event.imagePath.startsWith("/api/")
           ? event.imagePath
           : event.imagePath.startsWith("/")
-            ? `/api/storage${event.imagePath}`
+            ? `/api/storage${event.imagePath}?w=1600`
             : `${import.meta.env.BASE_URL}${event.imagePath}`)
     : `${import.meta.env.BASE_URL}bougie-zebra-banner.png`;
 

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
-const logoUrl = `${import.meta.env.BASE_URL}bougiebams-logo-transparent.png`;
+const logoUrl = `${import.meta.env.BASE_URL}bougiebams-logo-small.png`;
 
 export default function Login() {
   const [, navigate] = useLocation();

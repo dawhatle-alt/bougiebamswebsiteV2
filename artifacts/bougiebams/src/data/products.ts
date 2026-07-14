@@ -80,7 +80,10 @@ export function productImageUrl(imagePath: string): string {
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
   const normalized = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-  return `${API_BASE}/api/storage${normalized}`;
+  // ?w= asks the image CDN for a right-sized variant — 1200px covers the
+  // largest rendering (product detail) at retina density for roughly half
+  // the bytes of the ~2000px originals.
+  return `${API_BASE}/api/storage${normalized}?w=1200`;
 }
 
 interface ProductMeta {

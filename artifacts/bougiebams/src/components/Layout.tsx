@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const logoUrl = `${import.meta.env.BASE_URL}bougiebams-logo-transparent.png`;
+const logoUrl = `${import.meta.env.BASE_URL}bougiebams-logo-small.png`;
 
 type SubItem = { href: string; label: string };
 type NavItem = { id: string; href: string; name: string; subItems?: SubItem[] };
@@ -844,7 +844,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <footer className="bg-foreground text-background py-16 mt-auto">
         <div className="container mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-2">
-            <img src={`${import.meta.env.BASE_URL}bougiebams-logo-transparent.png`} alt="BougieBams" className="h-24 w-auto mb-6" />
+            <img src={`${import.meta.env.BASE_URL}bougiebams-logo-small.png`} alt="BougieBams" className="h-24 w-auto mb-6" />
             <p className="text-muted text-sm leading-relaxed max-w-sm mb-6">
               A luxury, intimate mahjong community for everyone. Curated gatherings, rich connections, and elevated experiences.
             </p>

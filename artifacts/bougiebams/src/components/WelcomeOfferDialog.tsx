@@ -69,7 +69,7 @@ export default function WelcomeOfferDialog() {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) dismiss(); }}>
       <DialogContent
-        className="max-w-md p-0 overflow-hidden gap-0 border-primary/30"
+        className="w-[calc(100%-2rem)] max-w-md max-h-[85dvh] overflow-y-auto p-0 gap-0 border-primary/30 rounded-lg"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogTitle className="sr-only">15% off your first order</DialogTitle>
@@ -79,13 +79,13 @@ export default function WelcomeOfferDialog() {
         <button
           onClick={dismiss}
           aria-label="Close"
-          className="absolute right-4 top-4 z-10 text-secondary-foreground/60 hover:text-secondary-foreground transition-colors"
+          className="absolute right-2 top-2 z-10 p-3 text-secondary-foreground/60 hover:text-secondary-foreground transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {status === "success" ? (
-          <div className="bg-secondary text-secondary-foreground px-8 py-12 text-center">
+          <div className="bg-secondary text-secondary-foreground px-6 py-10 sm:px-8 sm:py-12 text-center">
             <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
               <Check className="w-7 h-7 text-primary" />
             </div>
@@ -112,9 +112,9 @@ export default function WelcomeOfferDialog() {
             </p>
           </div>
         ) : (
-          <div className="bg-secondary text-secondary-foreground px-8 py-12 text-center">
+          <div className="bg-secondary text-secondary-foreground px-6 py-10 sm:px-8 sm:py-12 text-center">
             <p className="text-xs tracking-[0.2em] uppercase text-primary mb-3">An Invitation</p>
-            <h2 className="font-serif text-4xl leading-tight mb-3">
+            <h2 className="font-serif text-3xl sm:text-4xl leading-tight mb-3">
               Enjoy 15% Off<br />Your First Order
             </h2>
             <p className="text-secondary-foreground/70 mb-8 leading-relaxed">

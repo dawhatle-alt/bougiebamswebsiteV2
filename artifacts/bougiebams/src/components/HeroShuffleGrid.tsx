@@ -31,7 +31,9 @@ export function HeroShuffleGrid() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { images: { id: number; objectPath: string }[] } | null) => {
         if (data?.images && data.images.length > 0) {
-          const urls = data.images.map((img) => `${API_BASE}/api/storage${img.objectPath}`);
+          // Tiles render at ~120-190px; ask the image CDN for a 480px variant
+          // instead of shipping 1920px originals to phones.
+          const urls = data.images.map((img) => `${API_BASE}/api/storage${img.objectPath}?w=480`);
           const repeated = Array.from({ length: 12 }, (_, i) => urls[i % urls.length]);
           setImageUrls(repeated);
           setOrder(Array.from({ length: 12 }, (_, i) => i));
