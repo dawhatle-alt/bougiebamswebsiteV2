@@ -68,8 +68,13 @@ export default function WelcomeOfferDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) dismiss(); }}>
+      {/* animate-none + translate-y-0 + fixed top: the base dialog's enter
+          animation can wedge at its first frame (transform stuck at the
+          slide-from-top state), leaving the dialog half above the viewport —
+          most visibly on phones. Positioning from the top with no transform
+          animation makes the placement unconditional. */}
       <DialogContent
-        className="w-[calc(100%-2rem)] max-w-md max-h-[85dvh] overflow-y-auto p-0 gap-0 border-primary/30 rounded-lg"
+        className="w-[calc(100%-2rem)] max-w-md max-h-[85dvh] overflow-y-auto p-0 gap-0 border-primary/30 rounded-lg top-[8dvh] translate-y-0 animate-none"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogTitle className="sr-only">15% off your first order</DialogTitle>

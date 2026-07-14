@@ -32,8 +32,10 @@ router.get("/storage/{*splat}", async (req, res): Promise<void> => {
       // phones shouldn't download 1920px originals to fill 120px tiles.
       const wRaw = Number(req.query.w);
       const width = Number.isFinite(wRaw) ? Math.min(1920, Math.max(16, Math.floor(wRaw))) : null;
+      // resize=contain with a square box scales proportionally so the longest
+      // side fits `width` — width-only requests crop instead of scaling.
       const target = width
-        ? `${publicUrl.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/")}?width=${width}&quality=75`
+        ? `${publicUrl.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/")}?width=${width}&height=${width}&resize=contain&quality=75`
         : publicUrl;
       // The object path → public URL mapping is immutable, so let Vercel's CDN
       // serve repeat image loads without invoking the function (or the DB) at
