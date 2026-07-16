@@ -8,7 +8,7 @@ import { resolveProductDiscount } from "../lib/discounts";
 /**
  * Meta (Facebook/Instagram) Shop offsite checkout. Meta redirects buyers here
  * with their cart as ?products=<contentId>:<qty>,... (+ optional &coupon= and
- * utm_*/fbclid tracking). Content ids are the catalog feed's ids
+ * utm_ / fbclid tracking). Content ids are the catalog feed's ids
  * (product-<id> / event-<id>). We resolve them server-side, build a Square
  * payment link with production prices from the DB, and 302 the buyer straight
  * to Square's hosted checkout — no JS required, which is also what Meta's URL
