@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import ogPreviewRouter from "./routes/ogPreview";
+import fbCheckoutRouter from "./routes/fbCheckout";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { injectShopperUser } from "./middleware/auth";
@@ -46,6 +47,8 @@ app.use("/api", router);
 // Detail-page URLs are rewritten here (vercel.json) so shared links carry
 // product/event/post-specific social preview tags.
 app.use(ogPreviewRouter);
+// Meta Shop offsite checkout — /fb-checkout is rewritten here too.
+app.use(fbCheckoutRouter);
 
 // Express's default handler swallows the underlying error (generic HTML 500,
 // nothing in the logs) — log it so production failures are diagnosable.
