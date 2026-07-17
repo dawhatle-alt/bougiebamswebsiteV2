@@ -6,7 +6,10 @@ const FROM_EMAIL = process.env.EMAIL_FROM ?? process.env.FROM_EMAIL ?? "noreply@
 const CONTACT_EMAIL = process.env.OWNER_EMAIL ?? process.env.CONTACT_EMAIL ?? "hello@bougiebams.com";
 
 const WEB_ORIGIN = (process.env.PUBLIC_WEB_ORIGIN ?? "https://bougiebams.com").replace(/\/$/, "");
-const LOGO_URL = `${WEB_ORIGIN}/bougiebams-logo-small.png`;
+// Email-specific logo: solid cream background baked into the file, so the
+// artwork stays visible in dark-mode mail clients (a transparent PNG's dark
+// art vanishes on dark backgrounds).
+const LOGO_URL = `${WEB_ORIGIN}/bougiebams-logo-email.png`;
 
 // Branded header for customer-facing emails. Uses the width attribute (respected
 // by most email clients) alongside inline styles, since email CSS support is spotty.
