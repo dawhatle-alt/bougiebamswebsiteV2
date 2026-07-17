@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
 import { db, subscribersTable } from "@workspace/db";
 import {
   SubscribeBody,
@@ -54,6 +55,20 @@ router.post("/subscribe", async (req, res): Promise<void> => {
 
   await emailWelcomeCode(email, discountCode);
   res.status(201).json({ message: "Subscribed successfully", discountCode: discountCode ?? null });
+});
+
+router.delete("/admin/subscribers/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [row] = await db.delete(subscribersTable).where(eq(subscribersTable.id, id)).returning();
+  if (!row) {
+    res.status(404).json({ error: "Subscriber not found" });
+    return;
+  }
+  res.sendStatus(204);
 });
 
 router.get("/admin/subscribers", requireAdmin, async (_req, res): Promise<void> => {

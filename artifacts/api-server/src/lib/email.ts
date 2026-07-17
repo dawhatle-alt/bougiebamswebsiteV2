@@ -6,7 +6,7 @@ const FROM_EMAIL = process.env.EMAIL_FROM ?? process.env.FROM_EMAIL ?? "noreply@
 const CONTACT_EMAIL = process.env.OWNER_EMAIL ?? process.env.CONTACT_EMAIL ?? "hello@bougiebams.com";
 
 const WEB_ORIGIN = (process.env.PUBLIC_WEB_ORIGIN ?? "https://bougiebams.com").replace(/\/$/, "");
-const LOGO_URL = `${WEB_ORIGIN}/bougiebams-logo-transparent.png`;
+const LOGO_URL = `${WEB_ORIGIN}/bougiebams-logo-small.png`;
 
 // Branded header for customer-facing emails. Uses the width attribute (respected
 // by most email clients) alongside inline styles, since email CSS support is spotty.

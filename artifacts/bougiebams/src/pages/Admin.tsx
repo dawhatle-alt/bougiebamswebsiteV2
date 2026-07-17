@@ -34,6 +34,7 @@ import {
   X,
   Blocks,
   Gift,
+  Trash2,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductManager from "@/components/admin/ProductManager";
@@ -290,6 +291,7 @@ export default function Admin() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [deletingSubId, setDeletingSubId] = useState<number | null>(null);
 
   const handleAuthError = useCallback((status?: number) => {
     if (status === 401) {
@@ -321,6 +323,27 @@ export default function Admin() {
       setLoadError("Could not load subscribers. Please try again.");
     } finally {
       setLoading(false);
+    }
+  }, [handleAuthError]);
+
+  const deleteSubscriber = useCallback(async (id: number) => {
+    setDeletingSubId(id);
+    setLoadError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/subscribers/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.status === 401 || res.status === 403) {
+        handleAuthError(res.status);
+        return;
+      }
+      if (!res.ok) throw new Error("Request failed");
+      setSubscribers((prev) => prev.filter((s) => s.id !== id));
+    } catch {
+      setLoadError("Could not remove the subscriber. Please try again.");
+    } finally {
+      setDeletingSubId(null);
     }
   }, [handleAuthError]);
 
@@ -573,6 +596,7 @@ export default function Admin() {
                         <TableHead>Source</TableHead>
                         <TableHead>Discount Code</TableHead>
                         <TableHead className="text-right">Date Joined</TableHead>
+                        <TableHead className="text-right w-[60px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -589,6 +613,20 @@ export default function Admin() {
                           </TableCell>
                           <TableCell className="text-right text-[#5A6178]">
                             {formatDate(s.createdAt)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-[#9A8F7E] hover:text-red-600 hover:bg-red-50"
+                              onClick={() => void deleteSubscriber(s.id)}
+                              disabled={deletingSubId === s.id}
+                              title="Remove subscriber"
+                            >
+                              {deletingSubId === s.id
+                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                : <Trash2 className="w-4 h-4" />}
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
