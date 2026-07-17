@@ -13,6 +13,8 @@ interface PopupConfig {
   body: string;
   buttonLabel: string;
   dismissLabel: string;
+  // The code the signup flow issues (server-defined, read-only here).
+  discountCode?: string;
 }
 
 interface Props {
@@ -127,7 +129,10 @@ export default function WelcomePopupManager({ onAuthError }: Props) {
         </div>
 
         <p className="text-xs text-[#9A8F7E]">
-          Note: the popup's signup still issues the standard welcome discount code. If you change the percentage in the wording, update the actual code under <span className="font-medium">Discount Codes</span> to match.
+          Note: signing up through this popup issues the discount code{" "}
+          <span className="font-semibold text-[#1E2A5A]">{config.discountCode ?? "BOUGIE15"}</span>. If you change the
+          percentage in the wording above, adjust that code under <span className="font-medium">Discount Codes</span> so
+          the offer matches what the popup promises.
         </p>
 
         {/* Live preview in the popup's real colors */}

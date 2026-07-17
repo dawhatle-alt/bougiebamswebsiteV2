@@ -179,7 +179,7 @@ The 15%-off offer shown to first-time visitors shortly after they arrive.
 - **Toggle** it on or off site-wide, and edit every line of the wording: the small top line, the headline (press Enter to split it across two lines), the message, the button text, and the "no thanks" link.
 - A live preview shows your changes in the popup's real colors before you save.
 - Visitors who have dismissed or claimed the offer won't see it again on the same device.
-- The signup still issues the standard welcome discount code — if your new wording mentions a different percentage, update the code itself under **Discount Codes** so they match.
+- The signup issues the **BOUGIE15** discount code (the page names it in a note) — if your new wording mentions a different percentage, update that code under **Discount Codes** so they match.
 
 ## Chat Assistant
 

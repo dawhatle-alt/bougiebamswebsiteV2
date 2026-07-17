@@ -21,7 +21,7 @@ import { logger } from "../lib/logger";
 import { tableExists } from "../lib/dbBootstrap";
 import { listOrders, syncOrdersFromSquare } from "../lib/orders";
 import { sendCheckinReportEmail } from "../lib/email";
-import { listRedemptions, deleteRedemption } from "../lib/discounts";
+import { listRedemptions, deleteRedemption, WELCOME_CODE } from "../lib/discounts";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 
 const router: IRouter = Router();
@@ -958,12 +958,14 @@ router.put("/admin/chatbot", requireAdmin, async (req, res): Promise<void> => {
 });
 
 // Public: welcome popup copy for the storefront. Fails soft to defaults.
+// discountCode names the code the signup flow issues, so the admin editor can
+// point at the right entry under Discount Codes.
 router.get("/welcome-popup", async (_req, res): Promise<void> => {
   try {
-    res.json(await readWelcomePopup());
+    res.json({ ...(await readWelcomePopup()), discountCode: WELCOME_CODE });
   } catch (err) {
     logger.error({ err }, "Failed to read welcome popup settings");
-    res.json(WELCOME_POPUP_DEFAULTS);
+    res.json({ ...WELCOME_POPUP_DEFAULTS, discountCode: WELCOME_CODE });
   }
 });
 
@@ -985,7 +987,7 @@ router.put("/admin/welcome-popup", requireAdmin, async (req, res): Promise<void>
   };
   try {
     await writeSetting("welcome_popup", JSON.stringify(config));
-    res.json(await readWelcomePopup());
+    res.json({ ...(await readWelcomePopup()), discountCode: WELCOME_CODE });
   } catch (err) {
     logger.error({ err }, "Failed to update welcome popup settings");
     res.status(500).json({ error: "Could not save the welcome popup settings." });

@@ -4,7 +4,7 @@ import { logger } from "./logger";
 import { tableExists } from "./dbBootstrap";
 
 // The welcome popup's built-in code and the offer it advertises (15% off).
-const WELCOME_CODE = "BOUGIE15";
+export const WELCOME_CODE = "BOUGIE15";
 const WELCOME_PERCENT = 15;
 
 export interface ResolvedDiscount {
