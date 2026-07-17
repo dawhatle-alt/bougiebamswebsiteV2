@@ -172,6 +172,15 @@ The message bar across the top of every page (e.g. "Complimentary shipping on al
 
 - **Toggle** it on or off site-wide, edit the **message** (140 characters max), and check the live **preview** before saving.
 
+## Welcome Popup
+
+The 15%-off offer shown to first-time visitors shortly after they arrive.
+
+- **Toggle** it on or off site-wide, and edit every line of the wording: the small top line, the headline (press Enter to split it across two lines), the message, the button text, and the "no thanks" link.
+- A live preview shows your changes in the popup's real colors before you save.
+- Visitors who have dismissed or claimed the offer won't see it again on the same device.
+- The signup still issues the standard welcome discount code — if your new wording mentions a different percentage, update the code itself under **Discount Codes** so they match.
+
 ## Chat Assistant
 
 The floating chat bubble in the bottom-right corner of the site.

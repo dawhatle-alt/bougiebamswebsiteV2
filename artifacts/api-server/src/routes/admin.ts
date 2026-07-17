@@ -85,6 +85,48 @@ async function readChatbotEnabled(): Promise<boolean> {
   return val == null ? true : val === "true";
 }
 
+// Welcome-offer popup copy + kill switch, stored as one JSON settings row.
+interface WelcomePopupConfig {
+  enabled: boolean;
+  eyebrow: string;
+  title: string;
+  body: string;
+  buttonLabel: string;
+  dismissLabel: string;
+}
+
+const WELCOME_POPUP_DEFAULTS: WelcomePopupConfig = {
+  enabled: true,
+  eyebrow: "An Invitation",
+  title: "Enjoy 15% Off\nYour First Order",
+  body: "Join the BougieBams community for exclusive offers, early access, and the art of the game — delivered to your inbox.",
+  buttonLabel: "Claim My 15% Off",
+  dismissLabel: "No thanks, I'll pay full price",
+};
+
+async function readWelcomePopup(): Promise<WelcomePopupConfig> {
+  await ensureSettingsTable();
+  const rows = await db
+    .select()
+    .from(siteSettingsTable)
+    .where(eq(siteSettingsTable.key, "welcome_popup"));
+  const raw = rows[0]?.value;
+  if (!raw) return WELCOME_POPUP_DEFAULTS;
+  try {
+    const parsed = JSON.parse(raw) as Partial<WelcomePopupConfig>;
+    return {
+      enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : WELCOME_POPUP_DEFAULTS.enabled,
+      eyebrow: typeof parsed.eyebrow === "string" ? parsed.eyebrow : WELCOME_POPUP_DEFAULTS.eyebrow,
+      title: typeof parsed.title === "string" ? parsed.title : WELCOME_POPUP_DEFAULTS.title,
+      body: typeof parsed.body === "string" ? parsed.body : WELCOME_POPUP_DEFAULTS.body,
+      buttonLabel: typeof parsed.buttonLabel === "string" ? parsed.buttonLabel : WELCOME_POPUP_DEFAULTS.buttonLabel,
+      dismissLabel: typeof parsed.dismissLabel === "string" ? parsed.dismissLabel : WELCOME_POPUP_DEFAULTS.dismissLabel,
+    };
+  } catch {
+    return WELCOME_POPUP_DEFAULTS;
+  }
+}
+
 async function readBuildYourSetEnabled(): Promise<boolean> {
   await ensureSettingsTable();
   const rows = await db
@@ -912,6 +954,41 @@ router.put("/admin/chatbot", requireAdmin, async (req, res): Promise<void> => {
   } catch (err) {
     logger.error({ err }, "Failed to update chatbot setting");
     res.status(500).json({ error: "Could not save the chatbot setting." });
+  }
+});
+
+// Public: welcome popup copy for the storefront. Fails soft to defaults.
+router.get("/welcome-popup", async (_req, res): Promise<void> => {
+  try {
+    res.json(await readWelcomePopup());
+  } catch (err) {
+    logger.error({ err }, "Failed to read welcome popup settings");
+    res.json(WELCOME_POPUP_DEFAULTS);
+  }
+});
+
+router.put("/admin/welcome-popup", requireAdmin, async (req, res): Promise<void> => {
+  const b = req.body as Partial<WelcomePopupConfig>;
+  if (typeof b.enabled !== "boolean") {
+    res.status(400).json({ error: "enabled (boolean) is required" });
+    return;
+  }
+  const clean = (v: unknown, fallback: string, max: number): string =>
+    typeof v === "string" && v.trim() ? v.trim().slice(0, max) : fallback;
+  const config: WelcomePopupConfig = {
+    enabled: b.enabled,
+    eyebrow: clean(b.eyebrow, WELCOME_POPUP_DEFAULTS.eyebrow, 60),
+    title: clean(b.title, WELCOME_POPUP_DEFAULTS.title, 120),
+    body: clean(b.body, WELCOME_POPUP_DEFAULTS.body, 400),
+    buttonLabel: clean(b.buttonLabel, WELCOME_POPUP_DEFAULTS.buttonLabel, 60),
+    dismissLabel: clean(b.dismissLabel, WELCOME_POPUP_DEFAULTS.dismissLabel, 80),
+  };
+  try {
+    await writeSetting("welcome_popup", JSON.stringify(config));
+    res.json(await readWelcomePopup());
+  } catch (err) {
+    logger.error({ err }, "Failed to update welcome popup settings");
+    res.status(500).json({ error: "Could not save the welcome popup settings." });
   }
 });
 

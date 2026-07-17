@@ -33,6 +33,7 @@ import {
   Menu,
   X,
   Blocks,
+  Gift,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
 import ProductManager from "@/components/admin/ProductManager";
@@ -48,6 +49,7 @@ import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import PressBarManager from "@/components/admin/PressBarManager";
 import ChatbotManager from "@/components/admin/ChatbotManager";
 import BuildYourSetManager from "@/components/admin/BuildYourSetManager";
+import WelcomePopupManager from "@/components/admin/WelcomePopupManager";
 import CuratedCollectionsManager from "@/components/admin/CuratedCollectionsManager";
 import OrdersManager from "@/components/admin/OrdersManager";
 import BusinessManager from "@/components/admin/business/BusinessManager";
@@ -69,6 +71,7 @@ type AdminView =
   | "announcement"
   | "pressbar"
   | "chatbot"
+  | "welcomepopup"
   | "buildyourset"
   | "curated"
   | "orders"
@@ -170,6 +173,7 @@ const NAV_GROUPS = [
       { key: "curated" as AdminView, label: "Curated Collections", icon: LayoutGrid },
       { key: "gallery" as AdminView, label: "Event Gallery", icon: Camera },
       { key: "announcement" as AdminView, label: "Announcement Bar", icon: Megaphone },
+      { key: "welcomepopup" as AdminView, label: "Welcome Popup", icon: Gift },
       { key: "pressbar" as AdminView, label: "Featured In", icon: Newspaper },
       { key: "chatbot" as AdminView, label: "Chat Assistant", icon: MessageCircle },
     ],
@@ -191,6 +195,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   announcement: "Announcement Bar",
   pressbar: "Featured In",
   chatbot: "Chat Assistant",
+  welcomepopup: "Welcome Popup",
   buildyourset: "Build Your Set",
   curated: "Curated Collections",
   orders: "Orders",
@@ -505,6 +510,8 @@ export default function Admin() {
             <PressBarManager onAuthError={handleAuthError} />
           ) : view === "chatbot" ? (
             <ChatbotManager onAuthError={handleAuthError} />
+          ) : view === "welcomepopup" ? (
+            <WelcomePopupManager onAuthError={handleAuthError} />
           ) : view === "buildyourset" ? (
             <BuildYourSetManager onAuthError={handleAuthError} />
           ) : view === "curated" ? (

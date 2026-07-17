@@ -7,8 +7,29 @@ import { X, Check, Copy } from "lucide-react";
 const STORAGE_KEY = "bougiebams_welcome_offer_seen";
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+// Copy is managed in Admin → Welcome Popup; these defaults render only if
+// the settings fetch fails.
+interface PopupConfig {
+  enabled: boolean;
+  eyebrow: string;
+  title: string;
+  body: string;
+  buttonLabel: string;
+  dismissLabel: string;
+}
+
+const DEFAULT_CONFIG: PopupConfig = {
+  enabled: true,
+  eyebrow: "An Invitation",
+  title: "Enjoy 15% Off\nYour First Order",
+  body: "Join the BougieBams community for exclusive offers, early access, and the art of the game — delivered to your inbox.",
+  buttonLabel: "Claim My 15% Off",
+  dismissLabel: "No thanks, I'll pay full price",
+};
+
 export default function WelcomeOfferDialog() {
   const [open, setOpen] = useState(false);
+  const [config, setConfig] = useState<PopupConfig>(DEFAULT_CONFIG);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -19,8 +40,25 @@ export default function WelcomeOfferDialog() {
     if (typeof window === "undefined") return;
     const alreadySeen = window.localStorage.getItem(STORAGE_KEY);
     if (alreadySeen) return;
-    const timer = window.setTimeout(() => setOpen(true), 2500);
-    return () => window.clearTimeout(timer);
+    let cancelled = false;
+    let timer: number | undefined;
+    fetch(`${API_BASE}/api/welcome-popup`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: PopupConfig | null) => {
+        if (cancelled) return;
+        const cfg = data ?? DEFAULT_CONFIG;
+        setConfig(cfg);
+        if (cfg.enabled) {
+          timer = window.setTimeout(() => setOpen(true), 2500);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) timer = window.setTimeout(() => setOpen(true), 2500);
+      });
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, []);
 
   const dismiss = () => {
@@ -119,12 +157,12 @@ export default function WelcomeOfferDialog() {
           </div>
         ) : (
           <div className="bg-secondary text-secondary-foreground px-6 py-10 sm:px-8 sm:py-12 text-center">
-            <p className="text-xs tracking-[0.2em] uppercase text-primary mb-3">An Invitation</p>
-            <h2 className="font-serif text-3xl sm:text-4xl leading-tight mb-3">
-              Enjoy 15% Off<br />Your First Order
+            <p className="text-xs tracking-[0.2em] uppercase text-primary mb-3">{config.eyebrow}</p>
+            <h2 className="font-serif text-3xl sm:text-4xl leading-tight mb-3 whitespace-pre-line">
+              {config.title}
             </h2>
             <p className="text-secondary-foreground/70 mb-8 leading-relaxed">
-              Join the BougieBams community for exclusive offers, early access, and the art of the game — delivered to your inbox.
+              {config.body}
             </p>
             <form onSubmit={handleSubmit} className="space-y-3">
               <Input
@@ -143,14 +181,14 @@ export default function WelcomeOfferDialog() {
                 disabled={status === "loading"}
                 className="w-full h-12 text-sm tracking-widest uppercase"
               >
-                {status === "loading" ? "Claiming…" : "Claim My 15% Off"}
+                {status === "loading" ? "Claiming…" : config.buttonLabel}
               </Button>
             </form>
             <button
               onClick={dismiss}
               className="text-xs text-secondary-foreground/50 hover:text-secondary-foreground/80 transition-colors mt-5"
             >
-              No thanks, I'll pay full price
+              {config.dismissLabel}
             </button>
           </div>
         )}
