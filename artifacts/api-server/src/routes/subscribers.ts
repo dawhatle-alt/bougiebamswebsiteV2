@@ -24,7 +24,10 @@ router.post("/subscribe", async (req, res): Promise<void> => {
       discountCode: discountCode ?? null,
     });
   } catch {
-    res.status(409).json({ message: "Already subscribed", discountCode: null });
+    // Duplicate email — they're already on the list. Treat it as success so
+    // the welcome popup shows the code again instead of erroring on repeat
+    // visitors (the per-email single-use rule is enforced at checkout).
+    res.status(200).json({ message: "Already subscribed", discountCode: discountCode ?? null });
     return;
   }
 
