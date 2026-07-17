@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, productsTable } from "@workspace/db";
+import { eq, asc, or } from "drizzle-orm";
+import { db, productsTable, productImagesTable } from "@workspace/db";
 import {
   ListProductsResponse,
   CreateProductBody,
@@ -15,6 +15,28 @@ import { requireAdmin } from "../middleware/auth";
 
 const router: IRouter = Router();
 
+// Ordered gallery image paths per product; legacy rows keyed by sku. A product
+// with no gallery rows falls back to its single image_path.
+async function loadGalleries(): Promise<Map<string, string[]>> {
+  const rows = await db
+    .select()
+    .from(productImagesTable)
+    .orderBy(asc(productImagesTable.sortOrder), asc(productImagesTable.id));
+  const map = new Map<string, string[]>();
+  for (const r of rows) {
+    for (const key of new Set([r.productId, r.sku])) {
+      const list = map.get(key) ?? [];
+      list.push(r.imagePath);
+      map.set(key, list);
+    }
+  }
+  return map;
+}
+
+function imagesFor(galleries: Map<string, string[]>, id: string, sku: string, imagePath: string | null): string[] {
+  return galleries.get(id) ?? galleries.get(sku) ?? (imagePath ? [imagePath] : []);
+}
+
 router.get("/products", async (req, res): Promise<void> => {
   const { category } = req.query;
   const conditions = [eq(productsTable.published, true)];
@@ -27,6 +49,7 @@ router.get("/products", async (req, res): Promise<void> => {
     .from(productsTable)
     .where(and(...conditions))
     .orderBy(productsTable.createdAt);
+  const galleries = await loadGalleries();
   const products = rows.map((r) => ({
     id: r.id,
     sku: r.sku,
@@ -36,6 +59,7 @@ router.get("/products", async (req, res): Promise<void> => {
     category: r.category,
     inStock: r.inStock,
     imagePath: r.imagePath ?? null,
+    images: imagesFor(galleries, r.id, r.sku, r.imagePath ?? null),
     featured: r.featured,
     published: r.published,
     buildYourSet: r.buildYourSet,
@@ -51,6 +75,7 @@ router.get("/products/featured", async (_req, res): Promise<void> => {
   const rows = await db.select().from(productsTable)
     .where(andFn(eqFn(productsTable.featured, true), eqFn(productsTable.published, true)))
     .orderBy(productsTable.createdAt);
+  const galleries = await loadGalleries();
   const products = rows.map((r) => ({
     id: r.id,
     sku: r.sku,
@@ -60,6 +85,7 @@ router.get("/products/featured", async (_req, res): Promise<void> => {
     category: r.category,
     inStock: r.inStock,
     imagePath: r.imagePath ?? null,
+    images: imagesFor(galleries, r.id, r.sku, r.imagePath ?? null),
     featured: r.featured,
     published: r.published,
     buildYourSet: r.buildYourSet,
@@ -87,6 +113,12 @@ router.get("/products/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  const gallery = await db
+    .select()
+    .from(productImagesTable)
+    .where(or(eq(productImagesTable.productId, row.id), eq(productImagesTable.sku, row.sku)))
+    .orderBy(asc(productImagesTable.sortOrder), asc(productImagesTable.id));
+
   res.json(
     GetProductResponse.parse({
       product: {
@@ -98,6 +130,7 @@ router.get("/products/:id", async (req, res): Promise<void> => {
         category: row.category,
         inStock: row.inStock,
         imagePath: row.imagePath ?? null,
+        images: gallery.length ? gallery.map((g) => g.imagePath) : row.imagePath ? [row.imagePath] : [],
         featured: row.featured,
         published: row.published,
         buildYourSet: row.buildYourSet,

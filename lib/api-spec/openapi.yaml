@@ -808,6 +808,10 @@ components:
           type: boolean
         affiliateUrl:
           type: ["string", "null"]
+        images:
+          type: array
+          items:
+            type: string
 
     ProductInput:
       type: object

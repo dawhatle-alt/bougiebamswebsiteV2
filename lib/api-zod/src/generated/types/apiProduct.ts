@@ -19,4 +19,5 @@ export interface ApiProduct {
   featured: boolean;
   /** @nullable */
   affiliateUrl?: string | null;
+  images?: string[];
 }

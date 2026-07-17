@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { count, eq, sql, inArray, asc, desc } from "drizzle-orm";
+import { count, eq, sql, inArray, asc, desc, or } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -1122,6 +1122,102 @@ router.delete("/admin/product-images/:sku", requireAdmin, async (req, res): Prom
     .update(productsTable)
     .set({ imagePath: null, updatedAt: new Date() })
     .where(eq(productsTable.sku, sku));
+  res.sendStatus(204);
+});
+
+// --- Product gallery: multiple ordered images per product -------------------
+// Legacy rows were written with productId = sku, so lookups match either key.
+
+async function listGalleryRows(productId: string, sku: string) {
+  return db
+    .select()
+    .from(productImagesTable)
+    .where(or(eq(productImagesTable.productId, productId), eq(productImagesTable.sku, sku)))
+    .orderBy(asc(productImagesTable.sortOrder), asc(productImagesTable.id));
+}
+
+// The products.image_path column stays in sync with the first gallery image —
+// it drives the shop cards, catalog feed, and link previews.
+async function syncPrimaryImage(productId: string, sku: string): Promise<void> {
+  const rows = await listGalleryRows(productId, sku);
+  await db
+    .update(productsTable)
+    .set({ imagePath: rows[0]?.imagePath ?? null, updatedAt: new Date() })
+    .where(eq(productsTable.id, productId));
+}
+
+router.get("/admin/products/:id/images", requireAdmin, async (req, res): Promise<void> => {
+  const id = req.params.id as string;
+  const [product] = await db.select().from(productsTable).where(eq(productsTable.id, id));
+  if (!product) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  const rows = await listGalleryRows(product.id, product.sku);
+  res.json({ images: rows.map((r) => ({ id: r.id, imagePath: r.imagePath, sortOrder: r.sortOrder })) });
+});
+
+router.post("/admin/products/:id/images", requireAdmin, async (req, res): Promise<void> => {
+  const id = req.params.id as string;
+  const { imagePath } = req.body as { imagePath?: string };
+  if (!imagePath || typeof imagePath !== "string") {
+    res.status(400).json({ error: "imagePath is required" });
+    return;
+  }
+  const [product] = await db.select().from(productsTable).where(eq(productsTable.id, id));
+  if (!product) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  const existing = await listGalleryRows(product.id, product.sku);
+  const nextOrder = existing.length ? Math.max(...existing.map((r) => r.sortOrder)) + 1 : 0;
+  const [row] = await db
+    .insert(productImagesTable)
+    .values({ productId: product.id, sku: product.sku, url: imagePath, imagePath, sortOrder: nextOrder })
+    .returning();
+  await syncPrimaryImage(product.id, product.sku);
+  res.status(201).json({ image: { id: row.id, imagePath: row.imagePath, sortOrder: row.sortOrder } });
+});
+
+router.put("/admin/products/:id/images/order", requireAdmin, async (req, res): Promise<void> => {
+  const id = req.params.id as string;
+  const { ids } = req.body as { ids?: unknown };
+  if (!Array.isArray(ids) || ids.some((x) => typeof x !== "number")) {
+    res.status(400).json({ error: "ids (number[]) is required" });
+    return;
+  }
+  const [product] = await db.select().from(productsTable).where(eq(productsTable.id, id));
+  if (!product) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  // Sequential updates on purpose — concurrent queries stall behind the
+  // transaction pooler.
+  for (let i = 0; i < ids.length; i++) {
+    await db
+      .update(productImagesTable)
+      .set({ sortOrder: i, updatedAt: new Date() })
+      .where(eq(productImagesTable.id, ids[i] as number));
+  }
+  await syncPrimaryImage(product.id, product.sku);
+  const rows = await listGalleryRows(product.id, product.sku);
+  res.json({ images: rows.map((r) => ({ id: r.id, imagePath: r.imagePath, sortOrder: r.sortOrder })) });
+});
+
+router.delete("/admin/products/:id/images/:imageId", requireAdmin, async (req, res): Promise<void> => {
+  const id = req.params.id as string;
+  const imageId = parseInt(req.params.imageId as string, 10);
+  if (Number.isNaN(imageId)) {
+    res.status(400).json({ error: "Invalid image id" });
+    return;
+  }
+  const [product] = await db.select().from(productsTable).where(eq(productsTable.id, id));
+  if (!product) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  await db.delete(productImagesTable).where(eq(productImagesTable.id, imageId));
+  await syncPrimaryImage(product.id, product.sku);
   res.sendStatus(204);
 });
 

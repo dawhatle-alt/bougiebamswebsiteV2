@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
 import { useProducts } from "@/hooks/useProducts";
@@ -7,8 +7,11 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Heart, Minus, Plus, Star, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Heart, Minus, Plus, Star, Loader2, ZoomIn, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Full-resolution variant for the zoom lightbox (gallery URLs carry ?w=1200).
+const zoomSrc = (src: string) => src.replace("?w=1200", "?w=1600");
 
 // The three detail-page tabs. Content is per-product, managed from the admin
 // panel; a tab with no content (or toggled off) is hidden.
@@ -25,7 +28,26 @@ export default function ProductDetail() {
   usePageTitle(product?.name, product?.description?.slice(0, 160));
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const { addItem } = useCart();
+
+  // Lightbox keyboard support: Esc closes, arrows move between photos.
+  const imgCount = product ? product.images.filter(Boolean).length : 0;
+  useEffect(() => {
+    if (!zoomOpen || imgCount === 0) return;
+    const wrap = (i: number) => ((i % imgCount) + imgCount) % imgCount;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoomOpen(false);
+      if (e.key === "ArrowRight") setSelectedImage((i) => wrap(Math.min(i, imgCount - 1) + 1));
+      if (e.key === "ArrowLeft") setSelectedImage((i) => wrap(Math.min(i, imgCount - 1) - 1));
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [zoomOpen, imgCount]);
   const { toggle, isSaved } = useWishlist();
   const { toast } = useToast();
 
@@ -107,12 +129,67 @@ export default function ProductDetail() {
                   New Arrival
                 </div>
               )}
-              <img
-                src={galleryImages[activeImage]}
-                alt={`${product.name} — view ${activeImage + 1}`}
-                className="w-full h-full object-contain"
-              />
+              <button
+                type="button"
+                onClick={() => setZoomOpen(true)}
+                className="group/zoom block w-full h-full cursor-zoom-in"
+                aria-label="Zoom image"
+              >
+                <img
+                  src={galleryImages[activeImage]}
+                  alt={`${product.name} — view ${activeImage + 1}`}
+                  className="w-full h-full object-contain"
+                />
+                <span className="absolute bottom-4 right-4 bg-background/85 backdrop-blur-sm rounded-full p-2.5 shadow-sm opacity-70 group-hover/zoom:opacity-100 transition-opacity">
+                  <ZoomIn className="w-4 h-4 text-foreground" />
+                </span>
+              </button>
             </motion.div>
+
+            {zoomOpen && (
+              <div
+                className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+                onClick={() => setZoomOpen(false)}
+              >
+                <img
+                  src={zoomSrc(galleryImages[activeImage])}
+                  alt={`${product.name} — enlarged view`}
+                  className="max-w-[95vw] max-h-[92dvh] object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setZoomOpen(false)}
+                  aria-label="Close zoom"
+                  className="absolute top-3 right-3 p-3 text-white/80 hover:text-white transition-colors"
+                >
+                  <X className="w-7 h-7" />
+                </button>
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous image"
+                      onClick={(e) => { e.stopPropagation(); setSelectedImage(activeImage === 0 ? galleryImages.length - 1 : activeImage - 1); }}
+                      className="absolute left-1 md:left-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white transition-colors"
+                    >
+                      <ChevronLeft className="w-8 h-8" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next image"
+                      onClick={(e) => { e.stopPropagation(); setSelectedImage(activeImage === galleryImages.length - 1 ? 0 : activeImage + 1); }}
+                      className="absolute right-1 md:right-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white transition-colors"
+                    >
+                      <ChevronRight className="w-8 h-8" />
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm tracking-widest">
+                      {activeImage + 1} / {galleryImages.length}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {galleryImages.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-1">

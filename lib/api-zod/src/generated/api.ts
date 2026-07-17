@@ -50,7 +50,8 @@ export const ListProductsResponse = zod.object({
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
-  "affiliateUrl": zod.string().nullish()
+  "affiliateUrl": zod.string().nullish(),
+  "images": zod.array(zod.string()).optional()
 }))
 })
 
@@ -84,7 +85,8 @@ export const CreateProductResponse = zod.object({
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
-  "affiliateUrl": zod.string().nullish()
+  "affiliateUrl": zod.string().nullish(),
+  "images": zod.array(zod.string()).optional()
 })
 })
 
@@ -107,7 +109,8 @@ export const ListFeaturedProductsResponse = zod.object({
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
-  "affiliateUrl": zod.string().nullish()
+  "affiliateUrl": zod.string().nullish(),
+  "images": zod.array(zod.string()).optional()
 }))
 })
 
@@ -134,7 +137,8 @@ export const GetProductResponse = zod.object({
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
-  "affiliateUrl": zod.string().nullish()
+  "affiliateUrl": zod.string().nullish(),
+  "images": zod.array(zod.string()).optional()
 })
 })
 
@@ -173,7 +177,8 @@ export const UpdateProductResponse = zod.object({
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
-  "affiliateUrl": zod.string().nullish()
+  "affiliateUrl": zod.string().nullish(),
+  "images": zod.array(zod.string()).optional()
 })
 })
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { SHOP_CATEGORIES } from "@/data/categories";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  ArrowLeft,
+  ArrowRight,
+  GalleryHorizontal,
   ImageIcon,
+  ImagePlus,
   Loader2,
   Pencil,
   Plus,
@@ -105,6 +109,215 @@ function resolveDisplayImage(sku: string, imagePath?: string | null): string | n
   return meta?.images?.[0] ?? null;
 }
 
+interface GalleryImage {
+  id: number;
+  imagePath: string;
+  sortOrder: number;
+}
+
+// Per-product photo gallery editor: upload multiple photos, arrange their
+// order (first photo = main image everywhere), remove. Expands under the
+// product's row.
+function GalleryEditor({
+  productId,
+  onAuthError,
+  onPrimaryChange,
+}: {
+  productId: string;
+  onAuthError: () => void;
+  onPrimaryChange: (imagePath: string | null) => void;
+}) {
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const apply = useCallback(
+    (list: GalleryImage[]) => {
+      setImages(list);
+      onPrimaryChange(list[0]?.imagePath ?? null);
+    },
+    [onPrimaryChange],
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/products/${encodeURIComponent(productId)}/images`, {
+        credentials: "include",
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+      const data = (await res.json()) as { images: GalleryImage[] };
+      setImages(data.images);
+    } catch {
+      setError("Could not load this product's photos.");
+    } finally {
+      setLoading(false);
+    }
+  }, [productId, onAuthError]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function addPhoto(file: File) {
+    setBusy(true);
+    setError("");
+    try {
+      const presignRes = await fetch(`${API_BASE}/api/admin/storage/upload-url`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (presignRes.status === 401) { onAuthError(); return; }
+      if (!presignRes.ok) throw new Error("Could not get upload URL.");
+      const { uploadURL, objectPath } = (await presignRes.json()) as { uploadURL: string; objectPath: string };
+      const putRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "image/jpeg" },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Upload failed — please try again.");
+      const saveRes = await fetch(`${API_BASE}/api/admin/products/${encodeURIComponent(productId)}/images`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imagePath: objectPath }),
+      });
+      if (saveRes.status === 401) { onAuthError(); return; }
+      if (!saveRes.ok) throw new Error("Uploaded but could not save.");
+      const data = (await saveRes.json()) as { image: GalleryImage };
+      apply([...images, data.image]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function move(index: number, dir: -1 | 1) {
+    const target = index + dir;
+    if (target < 0 || target >= images.length) return;
+    const next = [...images];
+    [next[index], next[target]] = [next[target], next[index]];
+    apply(next);
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/products/${encodeURIComponent(productId)}/images/order`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ids: next.map((i) => i.id) }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setError("Could not save the new order.");
+      void load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(imageId: number) {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/products/${encodeURIComponent(productId)}/images/${imageId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Failed");
+      apply(images.filter((i) => i.id !== imageId));
+    } catch {
+      setError("Could not remove the photo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="py-3 px-2">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#5A6178]">
+          Photo Gallery
+          <span className="ml-2 font-normal normal-case tracking-normal text-[#9A8F7E]">
+            First photo is the main image on the shop, feed, and link previews. Use the arrows to arrange.
+          </span>
+        </p>
+        {busy && <Loader2 className="w-4 h-4 animate-spin text-[#9A8F7E]" />}
+      </div>
+      {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+      {loading ? (
+        <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-[#9A8F7E]" /></div>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {images.map((img, i) => (
+            <div key={img.id} className="w-24">
+              <div className="relative w-24 h-24 rounded-md overflow-hidden bg-[#F5F0EA] border border-[#E2DBCD]">
+                <img src={`${API_BASE}/api/storage${img.imagePath}?w=200`} alt="" className="w-full h-full object-cover" />
+                {i === 0 && (
+                  <span className="absolute top-1 left-1 bg-[#1E2A5A] text-white text-[9px] font-medium px-1.5 py-0.5 rounded">Main</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void remove(img.id)}
+                  disabled={busy}
+                  title="Remove photo"
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow disabled:opacity-50"
+                >
+                  <Trash2 className="w-3 h-3 text-red-600" />
+                </button>
+              </div>
+              <div className="flex justify-center gap-1 mt-1">
+                <button
+                  type="button"
+                  onClick={() => void move(i, -1)}
+                  disabled={busy || i === 0}
+                  title="Move earlier"
+                  className="p-1 text-[#5A6178] hover:text-[#1E2A5A] disabled:opacity-30"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void move(i, 1)}
+                  disabled={busy || i === images.length - 1}
+                  title="Move later"
+                  className="p-1 text-[#5A6178] hover:text-[#1E2A5A] disabled:opacity-30"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
+            className="w-24 h-24 rounded-md border-2 border-dashed border-[#C5BCA8] hover:border-[#1E2A5A] flex flex-col items-center justify-center gap-1 text-[#9A8F7E] hover:text-[#1E2A5A] transition-colors disabled:opacity-50"
+          >
+            <ImagePlus className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Add Photo</span>
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void addPhoto(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductManager({ onAuthError }: Props) {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +325,7 @@ export default function ProductManager({ onAuthError }: Props) {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ApiProduct | null>(null);
+  const [galleryFor, setGalleryFor] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -325,10 +539,12 @@ export default function ProductManager({ onAuthError }: Props) {
       });
       if (!putRes.ok) throw new Error("Upload failed — please try again.");
 
+      // Append to the product's gallery (the legacy per-sku PUT wiped every
+      // other photo). If this is the first photo, it becomes the main image.
       const saveRes = await fetch(
-        `${API_BASE}/api/admin/product-images/${encodeURIComponent(sku)}`,
+        `${API_BASE}/api/admin/products/${encodeURIComponent(productId)}/images`,
         {
-          method: "PUT",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ imagePath: objectPath }),
@@ -338,7 +554,7 @@ export default function ProductManager({ onAuthError }: Props) {
       if (!saveRes.ok) throw new Error("Image uploaded but could not save.");
 
       setProducts((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, imagePath: objectPath } : p))
+        prev.map((p) => (p.id === productId ? { ...p, imagePath: p.imagePath ?? objectPath } : p))
       );
       setSuccessSku(sku);
       setTimeout(() => setSuccessSku(null), 3000);
@@ -434,7 +650,8 @@ export default function ProductManager({ onAuthError }: Props) {
                 const isUploading = uploading === p.sku;
                 const isSuccess = successSku === p.sku;
                 return (
-                  <TableRow key={p.id}>
+                  <Fragment key={p.id}>
+                  <TableRow>
                     <TableCell>
                       <div
                         className="relative w-10 h-10 rounded overflow-hidden bg-[#F5F0EA] flex-shrink-0 cursor-pointer group"
@@ -525,6 +742,15 @@ export default function ProductManager({ onAuthError }: Props) {
                         <Button
                           variant="ghost"
                           size="sm"
+                          className={`h-8 w-8 p-0 hover:text-[#1E2A5A] ${galleryFor === p.id ? "text-[#1E2A5A] bg-[#F5F0EA]" : "text-[#5A6178]"}`}
+                          onClick={() => setGalleryFor(galleryFor === p.id ? null : p.id)}
+                          title="Manage photo gallery"
+                        >
+                          <GalleryHorizontal className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-8 w-8 p-0 text-[#5A6178] hover:text-[#1E2A5A]"
                           onClick={() => openEdit(p)}
                           title="Edit product"
@@ -543,6 +769,20 @@ export default function ProductManager({ onAuthError }: Props) {
                       </div>
                     </TableCell>
                   </TableRow>
+                  {galleryFor === p.id && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="bg-[#FAF7F0]">
+                        <GalleryEditor
+                          productId={p.id}
+                          onAuthError={onAuthError}
+                          onPrimaryChange={(imagePath) =>
+                            setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, imagePath } : x)))
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  </Fragment>
                 );
               })}
             </TableBody>

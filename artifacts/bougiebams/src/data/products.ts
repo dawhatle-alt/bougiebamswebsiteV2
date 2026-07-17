@@ -62,6 +62,7 @@ export interface ApiProduct {
   category: string;
   inStock: boolean;
   imagePath?: string | null;
+  images?: string[];
   buildYourSet?: boolean;
   shippingIncluded?: boolean;
   tabs?: ProductTabs | null;
@@ -289,6 +290,7 @@ export const localProducts: Product[] = [
 
 export function mergeProduct(api: ApiProduct): Product {
   const meta = productMeta[api.sku];
+  const gallery = (api.images ?? []).map(productImageUrl).filter(Boolean);
   const uploadedImage = api.imagePath ? productImageUrl(api.imagePath) : null;
   return {
     id: api.id,
@@ -298,7 +300,7 @@ export function mergeProduct(api: ApiProduct): Product {
     category: api.category,
     description: api.description,
     inStock: api.inStock,
-    images: uploadedImage ? [uploadedImage] : (meta?.images ?? [DEFAULT_IMAGE]),
+    images: gallery.length ? gallery : uploadedImage ? [uploadedImage] : (meta?.images ?? [DEFAULT_IMAGE]),
     rating: meta?.rating ?? 5,
     reviewCount: meta?.reviewCount ?? 0,
     isNew: meta?.isNew,
