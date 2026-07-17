@@ -13,7 +13,7 @@ interface PopupConfig {
   body: string;
   buttonLabel: string;
   dismissLabel: string;
-  // The code the signup flow issues (server-defined, read-only here).
+  // The code the signup flow issues; editable here, managed under Discount Codes.
   discountCode?: string;
 }
 
@@ -128,12 +128,20 @@ export default function WelcomePopupManager({ onAuthError }: Props) {
           </div>
         </div>
 
-        <p className="text-xs text-[#9A8F7E]">
-          Note: signing up through this popup issues the discount code{" "}
-          <span className="font-semibold text-[#1E2A5A]">{config.discountCode ?? "BOUGIE15"}</span>. If you change the
-          percentage in the wording above, adjust that code under <span className="font-medium">Discount Codes</span> so
-          the offer matches what the popup promises.
-        </p>
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Discount Code</label>
+          <Input
+            value={config.discountCode ?? ""}
+            onChange={(e) => field("discountCode", e.target.value.toUpperCase())}
+            maxLength={30}
+            className="max-w-[220px] font-semibold tracking-widest"
+          />
+          <p className="text-xs text-[#9A8F7E] mt-1.5">
+            The code issued when someone signs up (letters, numbers, and dashes). Renaming it creates the new code under{" "}
+            <span className="font-medium">Discount Codes</span> automatically (at 15% if new) — <span className="font-medium">set its
+            percentage there</span> so the discount matches what the popup promises. The old code stays until you deactivate it.
+          </p>
+        </div>
 
         {/* Live preview in the popup's real colors */}
         <div className="rounded-md bg-[#1E2A5A] text-white px-6 py-8 text-center">

@@ -1,11 +1,41 @@
 import { eq, and, sql, isNotNull, desc } from "drizzle-orm";
-import { db, discountCodesTable, subscribersTable, discountRedemptionsTable } from "@workspace/db";
+import { db, discountCodesTable, subscribersTable, discountRedemptionsTable, siteSettingsTable } from "@workspace/db";
 import { logger } from "./logger";
 import { tableExists } from "./dbBootstrap";
 
-// The welcome popup's built-in code and the offer it advertises (15% off).
-export const WELCOME_CODE = "BOUGIE15";
+// The welcome popup's built-in code and the offer it advertises. The code
+// name is admin-configurable (site_settings) with this default; the percent
+// only seeds a missing discount_codes row — the row is the source of truth.
+export const DEFAULT_WELCOME_CODE = "BOUGIE15";
 const WELCOME_PERCENT = 15;
+
+export async function getWelcomeCode(): Promise<string> {
+  try {
+    const [row] = await db
+      .select()
+      .from(siteSettingsTable)
+      .where(eq(siteSettingsTable.key, "welcome_discount_code"));
+    const value = row?.value?.trim().toUpperCase();
+    return value || DEFAULT_WELCOME_CODE;
+  } catch {
+    return DEFAULT_WELCOME_CODE;
+  }
+}
+
+// Guarantee the advertised welcome code exists (and is manageable) under
+// Admin → Discount Codes. Existing rows are left untouched.
+export async function ensureWelcomeCodeRow(code: string): Promise<void> {
+  await db
+    .insert(discountCodesTable)
+    .values({
+      code,
+      discountPercent: WELCOME_PERCENT,
+      appliesTo: "both",
+      description: "Welcome offer",
+      active: true,
+    })
+    .onConflictDoNothing({ target: discountCodesTable.code });
+}
 
 export interface ResolvedDiscount {
   code: string;
@@ -32,21 +62,13 @@ export async function resolveProductDiscount(raw: string): Promise<ResolvedDisco
     return { code, percent: row.discountPercent };
   }
 
-  // The welcome popup hands out BOUGIE15 as its built-in code. If nobody has
-  // created it in admin yet, seed it so the advertised offer always works —
-  // and becomes visible/manageable under Admin → Discount Codes.
-  if (code === WELCOME_CODE) {
+  // The welcome popup hands out a configurable code. If nobody has created it
+  // in admin yet, seed it so the advertised offer always works — and becomes
+  // visible/manageable under Admin → Discount Codes.
+  const welcomeCode = await getWelcomeCode();
+  if (code === welcomeCode) {
     try {
-      await db
-        .insert(discountCodesTable)
-        .values({
-          code: WELCOME_CODE,
-          discountPercent: WELCOME_PERCENT,
-          appliesTo: "both",
-          description: "Welcome offer — 15% off first order",
-          active: true,
-        })
-        .onConflictDoNothing({ target: discountCodesTable.code });
+      await ensureWelcomeCodeRow(welcomeCode);
     } catch (err) {
       logger.error({ err }, "Failed to seed welcome discount code");
     }

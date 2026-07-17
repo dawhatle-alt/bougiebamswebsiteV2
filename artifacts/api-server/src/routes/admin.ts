@@ -21,7 +21,7 @@ import { logger } from "../lib/logger";
 import { tableExists } from "../lib/dbBootstrap";
 import { listOrders, syncOrdersFromSquare } from "../lib/orders";
 import { sendCheckinReportEmail } from "../lib/email";
-import { listRedemptions, deleteRedemption, WELCOME_CODE } from "../lib/discounts";
+import { listRedemptions, deleteRedemption, getWelcomeCode, ensureWelcomeCodeRow, DEFAULT_WELCOME_CODE } from "../lib/discounts";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 
 const router: IRouter = Router();
@@ -962,10 +962,10 @@ router.put("/admin/chatbot", requireAdmin, async (req, res): Promise<void> => {
 // point at the right entry under Discount Codes.
 router.get("/welcome-popup", async (_req, res): Promise<void> => {
   try {
-    res.json({ ...(await readWelcomePopup()), discountCode: WELCOME_CODE });
+    res.json({ ...(await readWelcomePopup()), discountCode: await getWelcomeCode() });
   } catch (err) {
     logger.error({ err }, "Failed to read welcome popup settings");
-    res.json({ ...WELCOME_POPUP_DEFAULTS, discountCode: WELCOME_CODE });
+    res.json({ ...WELCOME_POPUP_DEFAULTS, discountCode: DEFAULT_WELCOME_CODE });
   }
 });
 
@@ -987,7 +987,18 @@ router.put("/admin/welcome-popup", requireAdmin, async (req, res): Promise<void>
   };
   try {
     await writeSetting("welcome_popup", JSON.stringify(config));
-    res.json({ ...(await readWelcomePopup()), discountCode: WELCOME_CODE });
+    // Optional code rename: letters/numbers/dashes only. Renaming makes sure
+    // the new code exists under Discount Codes (seeded at 15% if new — adjust
+    // its percentage there).
+    const rawCode = (b as { discountCode?: unknown }).discountCode;
+    if (typeof rawCode === "string" && rawCode.trim()) {
+      const code = rawCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 30);
+      if (code) {
+        await writeSetting("welcome_discount_code", code);
+        await ensureWelcomeCodeRow(code);
+      }
+    }
+    res.json({ ...(await readWelcomePopup()), discountCode: await getWelcomeCode() });
   } catch (err) {
     logger.error({ err }, "Failed to update welcome popup settings");
     res.status(500).json({ error: "Could not save the welcome popup settings." });

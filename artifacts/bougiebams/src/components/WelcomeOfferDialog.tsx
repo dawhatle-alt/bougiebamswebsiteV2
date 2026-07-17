@@ -16,6 +16,7 @@ interface PopupConfig {
   body: string;
   buttonLabel: string;
   dismissLabel: string;
+  discountCode?: string;
 }
 
 const DEFAULT_CONFIG: PopupConfig = {
@@ -77,13 +78,13 @@ export default function WelcomeOfferDialog() {
       const res = await fetch(`${API_BASE}/api/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, source: "welcome_popup", discountCode: config.discountCode }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data?.error || "Something went wrong. Please try again.");
       }
-      setDiscountCode(data.discountCode || "BOUGIE15");
+      setDiscountCode(data.discountCode || config.discountCode || "BOUGIE15");
       setStatus("success");
       if (typeof window !== "undefined") {
         window.localStorage.setItem(STORAGE_KEY, "1");
