@@ -176,7 +176,7 @@ The message bar across the top of every page (e.g. "Complimentary shipping on al
 
 The 15%-off offer shown to first-time visitors shortly after they arrive.
 
-- **Toggle** it on or off site-wide, and edit every line of the wording: the small top line, the headline (press Enter to split it across two lines), the message, the button text, and the "no thanks" link.
+- **Toggle** it on or off site-wide, and edit every line of the wording: the small top line, the headline (press Enter to split it across two lines), the message, the button text, the "no thanks" link, and the **success message** shown above the code after someone claims the offer.
 - A live preview shows your changes in the popup's real colors before you save.
 - Visitors who have dismissed or claimed the offer won't see it again on the same device.
 - **Discount Code**: the code the signup issues (default `BOUGIE15`) is editable here. Renaming it automatically creates the new code under **Discount Codes** (seeded at 15% if new) — set the new code's percentage there so it matches the popup's wording, and deactivate the old code if you don't want it honored anymore.

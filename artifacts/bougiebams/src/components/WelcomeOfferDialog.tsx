@@ -16,6 +16,7 @@ interface PopupConfig {
   body: string;
   buttonLabel: string;
   dismissLabel: string;
+  successMessage?: string;
   discountCode?: string;
 }
 
@@ -26,6 +27,7 @@ const DEFAULT_CONFIG: PopupConfig = {
   body: "Join the BougieBams community for exclusive offers, early access, and the art of the game — delivered to your inbox.",
   buttonLabel: "Claim My 15% Off",
   dismissLabel: "No thanks, I'll pay full price",
+  successMessage: "Here's your discount code — use it at checkout on your first order.",
 };
 
 export default function WelcomeOfferDialog() {
@@ -137,7 +139,7 @@ export default function WelcomeOfferDialog() {
             <p className="text-xs tracking-[0.2em] uppercase text-primary mb-3">You're In</p>
             <h2 className="font-serif text-3xl mb-3">Welcome to BougieBams</h2>
             <p className="text-secondary-foreground/70 mb-8 leading-relaxed">
-              Here's your 15% off code. We've also sent it to your inbox.
+              {config.successMessage ?? DEFAULT_CONFIG.successMessage}
             </p>
             <button
               onClick={copyCode}

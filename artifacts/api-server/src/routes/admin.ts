@@ -93,6 +93,7 @@ interface WelcomePopupConfig {
   body: string;
   buttonLabel: string;
   dismissLabel: string;
+  successMessage: string;
 }
 
 const WELCOME_POPUP_DEFAULTS: WelcomePopupConfig = {
@@ -102,6 +103,7 @@ const WELCOME_POPUP_DEFAULTS: WelcomePopupConfig = {
   body: "Join the BougieBams community for exclusive offers, early access, and the art of the game — delivered to your inbox.",
   buttonLabel: "Claim My 15% Off",
   dismissLabel: "No thanks, I'll pay full price",
+  successMessage: "Here's your discount code — use it at checkout on your first order.",
 };
 
 async function readWelcomePopup(): Promise<WelcomePopupConfig> {
@@ -121,6 +123,7 @@ async function readWelcomePopup(): Promise<WelcomePopupConfig> {
       body: typeof parsed.body === "string" ? parsed.body : WELCOME_POPUP_DEFAULTS.body,
       buttonLabel: typeof parsed.buttonLabel === "string" ? parsed.buttonLabel : WELCOME_POPUP_DEFAULTS.buttonLabel,
       dismissLabel: typeof parsed.dismissLabel === "string" ? parsed.dismissLabel : WELCOME_POPUP_DEFAULTS.dismissLabel,
+      successMessage: typeof parsed.successMessage === "string" ? parsed.successMessage : WELCOME_POPUP_DEFAULTS.successMessage,
     };
   } catch {
     return WELCOME_POPUP_DEFAULTS;
@@ -984,6 +987,7 @@ router.put("/admin/welcome-popup", requireAdmin, async (req, res): Promise<void>
     body: clean(b.body, WELCOME_POPUP_DEFAULTS.body, 400),
     buttonLabel: clean(b.buttonLabel, WELCOME_POPUP_DEFAULTS.buttonLabel, 60),
     dismissLabel: clean(b.dismissLabel, WELCOME_POPUP_DEFAULTS.dismissLabel, 80),
+    successMessage: clean(b.successMessage, WELCOME_POPUP_DEFAULTS.successMessage, 300),
   };
   try {
     await writeSetting("welcome_popup", JSON.stringify(config));

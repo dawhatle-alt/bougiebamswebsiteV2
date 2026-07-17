@@ -13,6 +13,7 @@ interface PopupConfig {
   body: string;
   buttonLabel: string;
   dismissLabel: string;
+  successMessage?: string;
   // The code the signup flow issues; editable here, managed under Discount Codes.
   discountCode?: string;
 }
@@ -126,6 +127,18 @@ export default function WelcomePopupManager({ onAuthError }: Props) {
             <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Decline Link Text</label>
             <Input value={config.dismissLabel} onChange={(e) => field("dismissLabel", e.target.value)} maxLength={80} />
           </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Success Message</label>
+          <Textarea
+            value={config.successMessage ?? ""}
+            onChange={(e) => field("successMessage", e.target.value)}
+            rows={2}
+            maxLength={300}
+            className="resize-none"
+          />
+          <p className="text-xs text-[#9A8F7E] mt-1.5">Shown on the confirmation screen, above the discount code, after someone claims the offer.</p>
         </div>
 
         <div>
