@@ -99,6 +99,43 @@ export async function sendRegistrationConfirmationEmail(opts: {
   }
 }
 
+// Sent when someone claims the welcome offer — the popup vanishes after one
+// visit, so the email is how they find their code again.
+export async function sendWelcomeOfferEmail(opts: {
+  email: string;
+  discountCode: string;
+  discountPercent: number | null;
+}): Promise<void> {
+  const client = getClient();
+  if (!client) return;
+
+  const { email, discountCode, discountPercent } = opts;
+  const offer = discountPercent ? `${discountPercent}% off your first order` : "a discount on your first order";
+
+  const { error } = await client.emails.send({
+    from: FROM_EMAIL,
+    to: [email],
+    replyTo: CONTACT_EMAIL,
+    subject: discountPercent ? `Your ${discountPercent}% off code is inside` : "Your BougieBams welcome code",
+    html: `${logoHeader}
+      <h2>Welcome to BougieBams! 🀄</h2>
+      <p>Thanks for joining the community — here's ${offer}:</p>
+      <div style="margin:20px 0;padding:18px;border:2px dashed #C9A227;border-radius:8px;text-align:center">
+        <span style="font-size:24px;font-weight:bold;letter-spacing:6px;color:#1E2A5A">${discountCode}</span>
+      </div>
+      <p>Enter it at checkout at <a href="https://bougiebams.com/shop">bougiebams.com</a>. Good for one use per email address.</p>
+      <p>See you at the table!<br/>— The BougieBams Team</p>
+    `,
+    text: `Welcome to BougieBams!\n\nHere's ${offer}: ${discountCode}\n\nEnter it at checkout at bougiebams.com/shop. Good for one use per email address.\n\nSee you at the table!\n— The BougieBams Team`,
+  });
+
+  if (error) {
+    logger.error({ error, to: email }, "Failed to send welcome offer email");
+  } else {
+    logger.info({ to: email }, "Welcome offer email sent");
+  }
+}
+
 // Comma-separated list; ORDER_NOTIFY_EMAIL overrides the default recipients.
 const ORDER_NOTIFY_EMAILS = (process.env.ORDER_NOTIFY_EMAIL ?? "patsy@bougiebams.com,darrell@bougiebams.com")
   .split(",")

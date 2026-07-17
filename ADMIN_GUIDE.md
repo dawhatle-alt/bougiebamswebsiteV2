@@ -180,6 +180,7 @@ The 15%-off offer shown to first-time visitors shortly after they arrive.
 - A live preview shows your changes in the popup's real colors before you save.
 - Visitors who have dismissed or claimed the offer won't see it again on the same device.
 - **Discount Code**: the code the signup issues (default `BOUGIE15`) is editable here. Renaming it automatically creates the new code under **Discount Codes** (seeded at 15% if new) — set the new code's percentage there so it matches the popup's wording, and deactivate the old code if you don't want it honored anymore.
+- **Welcome email**: everyone who claims the offer is automatically emailed their code (from noreply@bougiebams.com), so they can find it after the popup is gone. Signing up again re-sends it.
 
 ## Chat Assistant
 
