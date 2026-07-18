@@ -18,19 +18,37 @@ const router: IRouter = Router();
 // this many days after the event date.
 const COMING_SOON_WINDOW_DAYS = 45;
 
+type GalleryRow = typeof eventGalleryTable.$inferSelect;
+
+function youTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,20})/);
+  return m ? m[1] : null;
+}
+function vimeoId(url: string): string | null {
+  const m = url.match(/vimeo\.com\/(?:video\/)?(\d{6,12})/);
+  return m ? m[1] : null;
+}
+
+// External links keep their raw URL; uploaded media goes through /api/storage.
+function toItem(r: GalleryRow) {
+  const mediaType = r.mediaType ?? "photo";
+  return {
+    id: r.id,
+    url: mediaType === "external" ? r.objectPath : `/api/storage${r.objectPath}`,
+    mediaType,
+    caption: r.caption ?? null,
+    eventId: r.eventId ?? null,
+    isCover: r.isCover,
+    sortOrder: r.sortOrder,
+  };
+}
+
 router.get("/gallery", async (_req: Request, res: Response): Promise<void> => {
   const rows = await db
     .select()
     .from(eventGalleryTable)
     .orderBy(eventGalleryTable.sortOrder, eventGalleryTable.createdAt);
-  const photos = rows.map((r) => ({
-    id: r.id,
-    url: `/api/storage${r.objectPath}`,
-    caption: r.caption ?? null,
-    eventId: r.eventId ?? null,
-    isCover: r.isCover,
-    sortOrder: r.sortOrder,
-  }));
+  const photos = rows.map(toItem);
 
   // Albums: every published event that has photos, plus recent past events
   // still waiting on their photos.
@@ -47,9 +65,21 @@ router.get("/gallery", async (_req: Request, res: Response): Promise<void> => {
   const albums = events
     .map((e) => {
       const eventPhotos = rows.filter((r) => r.eventId === e.id);
+      // Album tiles want a still image: an explicit cover wins, then any
+      // photo, then a video's poster if that's all the album has.
       const cover =
         eventPhotos.find((r) => r.isCover) ??
+        eventPhotos.find((r) => (r.mediaType ?? "photo") === "photo") ??
         (eventPhotos.length > 0 ? eventPhotos[0] : null);
+      let coverUrl: string | null = null;
+      if (cover) {
+        const mt = cover.mediaType ?? "photo";
+        if (mt === "photo") coverUrl = `/api/storage${cover.objectPath}`;
+        else if (mt === "external") {
+          const yt = youTubeId(cover.objectPath);
+          coverUrl = yt ? `https://img.youtube.com/vi/${yt}/hqdefault.jpg` : null;
+        }
+      }
       return {
         id: e.id,
         title: e.title,
@@ -59,7 +89,7 @@ router.get("/gallery", async (_req: Request, res: Response): Promise<void> => {
         totalSpots: e.totalSpots,
         spotsLeft: e.spotsLeft,
         photoCount: eventPhotos.length,
-        coverUrl: cover ? `/api/storage${cover.objectPath}` : null,
+        coverUrl,
       };
     })
     .filter((a) => a.photoCount > 0 || (a.date < today && a.date >= windowStart))
@@ -72,13 +102,25 @@ router.post(
   "/admin/gallery",
   requireAdmin,
   async (req: Request, res: Response): Promise<void> => {
-    const { objectPath, caption, eventId } = req.body as {
+    const { objectPath, caption, eventId, mediaType } = req.body as {
       objectPath?: string;
       caption?: string;
       eventId?: number | null;
+      mediaType?: string;
     };
     if (!objectPath?.trim()) {
       res.status(400).json({ error: "objectPath is required" });
+      return;
+    }
+    const path = objectPath.trim();
+    const mt = mediaType === "video" || mediaType === "external" ? mediaType : "photo";
+    if (mt === "external") {
+      if (!/^https?:\/\//i.test(path) || (!youTubeId(path) && !vimeoId(path))) {
+        res.status(400).json({ error: "Only YouTube or Vimeo links are supported." });
+        return;
+      }
+    } else if (!path.startsWith("/objects/")) {
+      res.status(400).json({ error: "Invalid storage path" });
       return;
     }
     const existing = await db.select().from(eventGalleryTable).orderBy(eventGalleryTable.sortOrder);
@@ -86,23 +128,14 @@ router.post(
     const [row] = await db
       .insert(eventGalleryTable)
       .values({
-        objectPath: objectPath.trim(),
+        objectPath: path,
+        mediaType: mt,
         caption: caption?.trim() ?? null,
         eventId: typeof eventId === "number" ? eventId : null,
         sortOrder: maxOrder,
       })
       .returning();
-    res.status(201).json({
-      success: true,
-      photo: {
-        id: row.id,
-        url: `/api/storage${row.objectPath}`,
-        caption: row.caption,
-        eventId: row.eventId ?? null,
-        isCover: row.isCover,
-        sortOrder: row.sortOrder,
-      },
-    });
+    res.status(201).json({ success: true, photo: toItem(row) });
   }
 );
 
@@ -163,17 +196,7 @@ router.put(
         .where(sql`${eventGalleryTable.eventId} = ${row.eventId} AND ${eventGalleryTable.id} <> ${row.id}`);
     }
 
-    res.json({
-      success: true,
-      photo: {
-        id: row.id,
-        url: `/api/storage${row.objectPath}`,
-        caption: row.caption,
-        eventId: row.eventId ?? null,
-        isCover: row.isCover,
-        sortOrder: row.sortOrder,
-      },
-    });
+    res.json({ success: true, photo: toItem(row) });
   }
 );
 

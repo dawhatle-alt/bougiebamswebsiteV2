@@ -147,7 +147,11 @@ The three (or more) large linked cards in the homepage "Curated Collections" sec
 
 ## Event Gallery
 
-Photos for the "From the Table" section on the Events page. Upload multiple photos at once, click a caption to edit it, and **drag to reorder**.
+Photos **and videos** for the "From the Table" section on the Events page. Upload multiple at once, click a caption to edit it, and **drag to reorder**.
+
+- **Videos** work two ways: upload a video file (MP4/MOV) with the same Upload button, or paste a **YouTube/Vimeo link** into the "Add Video Link" box. Video items show a play badge in the gallery, and visitors watch them in the full-screen viewer — uploaded files play directly, links play in an embedded player.
+- Everything that works for photos (captions, event assignment, ordering, deleting) works for videos too. Album tile covers always prefer a photo so the Tile Wall stays crisp.
+- Uploaded video files count against Supabase storage and its per-file size limit — for long clips, a YouTube link is the lighter option.
 
 Photos can be **assigned to an event** to build that event's album on the Tile Wall (the row of mahjong-tile album covers above the photo grid):
 

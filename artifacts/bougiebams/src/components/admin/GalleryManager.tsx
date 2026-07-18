@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Trash2, Loader2, RefreshCw, GripVertical, ImageIcon, Check, X, Pencil, Star } from "lucide-react";
+import { Upload, Trash2, Loader2, RefreshCw, GripVertical, ImageIcon, Check, X, Pencil, Star, Video, Play } from "lucide-react";
+import { externalThumbUrl, isVideoMedia } from "@/lib/galleryMedia";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface GalleryPhoto {
   id: number;
   url: string;
+  mediaType?: "photo" | "video" | "external";
   caption: string | null;
   eventId: number | null;
   isCover: boolean;
@@ -31,6 +33,8 @@ export default function GalleryManager({ onAuthError }: Props) {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadEventId, setUploadEventId] = useState<string>("");
+  const [videoLink, setVideoLink] = useState("");
+  const [addingLink, setAddingLink] = useState(false);
   const [filter, setFilter] = useState<string>("all");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -101,6 +105,7 @@ export default function GalleryManager({ onAuthError }: Props) {
           credentials: "include",
           body: JSON.stringify({
             objectPath,
+            mediaType: file.type.startsWith("video/") ? "video" : "photo",
             eventId: uploadEventId ? Number(uploadEventId) : null,
           }),
         });
@@ -113,6 +118,37 @@ export default function GalleryManager({ onAuthError }: Props) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleAddVideoLink() {
+    const url = videoLink.trim();
+    if (!url) return;
+    setAddingLink(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/gallery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          objectPath: url,
+          mediaType: "external",
+          eventId: uploadEventId ? Number(uploadEventId) : null,
+        }),
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? "Could not add the video link.");
+      }
+      const { photo } = (await res.json()) as { photo: GalleryPhoto };
+      setPhotos((prev) => [...prev, photo]);
+      setVideoLink("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add the video link.");
+    } finally {
+      setAddingLink(false);
     }
   }
 
@@ -269,7 +305,7 @@ export default function GalleryManager({ onAuthError }: Props) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/quicktime,video/webm"
             multiple
             className="hidden"
             onChange={(e) => void handleUpload(e.target.files)}
@@ -285,9 +321,28 @@ export default function GalleryManager({ onAuthError }: Props) {
             ) : (
               <Upload className="w-4 h-4 mr-2" />
             )}
-            {uploading ? "Uploading…" : "Upload Photos"}
+            {uploading ? "Uploading…" : "Upload Photos & Videos"}
           </Button>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <Input
+          value={videoLink}
+          onChange={(e) => setVideoLink(e.target.value)}
+          placeholder="Paste a YouTube or Vimeo link…"
+          className="max-w-md"
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void handleAddVideoLink()}
+          disabled={addingLink || !videoLink.trim()}
+        >
+          {addingLink ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Video className="w-4 h-4 mr-2" />}
+          Add Video Link
+        </Button>
+        <span className="text-xs text-[#9A8F7E]">Links use the event selected above, like uploads.</span>
       </div>
 
       {error && (
@@ -346,11 +401,28 @@ export default function GalleryManager({ onAuthError }: Props) {
                 } ${photo.isCover ? "border-[#D4AF37] ring-1 ring-[#D4AF37]/40" : "border-[#E2DBCD]"}`}
               >
                 <div className="relative group aspect-[4/3] bg-[#FAF7F0]">
-                  <img
-                    src={photo.url}
-                    alt={photo.caption ?? "Gallery photo"}
-                    className="w-full h-full object-cover"
-                  />
+                  {photo.mediaType === "video" ? (
+                    <video src={photo.url} preload="metadata" muted playsInline className="w-full h-full object-cover" />
+                  ) : photo.mediaType === "external" ? (
+                    externalThumbUrl(photo.url) ? (
+                      <img src={externalThumbUrl(photo.url) as string} alt="Video link" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#1E2A5A]" />
+                    )
+                  ) : (
+                    <img
+                      src={photo.url}
+                      alt={photo.caption ?? "Gallery photo"}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  {isVideoMedia(photo.mediaType) && (
+                    <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="rounded-full bg-black/55 flex items-center justify-center w-9 h-9">
+                        <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                      </span>
+                    </span>
+                  )}
                   <div className="absolute top-2 left-2 cursor-grab active:cursor-grabbing bg-black/40 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <GripVertical className="w-3.5 h-3.5" />
                   </div>

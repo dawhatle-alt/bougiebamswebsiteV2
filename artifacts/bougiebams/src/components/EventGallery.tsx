@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, ChevronLeft, ChevronRight, Camera, Copy, Check, ArrowLeft } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Camera, Copy, Check, ArrowLeft, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { parseCalendarDate } from "@/lib/dateUtils";
+import { externalEmbedSrc, externalThumbUrl, isVideoMedia } from "@/lib/galleryMedia";
 import { useListEvents } from "@workspace/api-client-react";
 import { ImageAutoSlider } from "@/components/ui/image-auto-slider";
 
@@ -15,10 +16,47 @@ const GOLD = "#D4AF37";
 interface GalleryPhoto {
   id: number;
   url: string;
+  mediaType?: "photo" | "video" | "external";
   caption: string | null;
   eventId: number | null;
   isCover: boolean;
   sortOrder: number;
+}
+
+/* Poster/thumbnail for any media item: photos render directly, uploaded
+   videos show their first frame, external links show the provider thumbnail
+   (or a navy tile) — videos always get a play badge. */
+function MediaThumb({ photo, imgClassName, small }: { photo: GalleryPhoto; imgClassName: string; small?: boolean }) {
+  const mt = photo.mediaType ?? "photo";
+  if (mt === "photo") {
+    return <img src={photo.url} alt={photo.caption ?? "Event photo"} className={imgClassName} loading="lazy" />;
+  }
+  const badge = (
+    <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <span className={`rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center ${small ? "w-8 h-8" : "w-12 h-12"}`}>
+        <Play className={`${small ? "w-3.5 h-3.5" : "w-5 h-5"} text-white fill-white ml-0.5`} />
+      </span>
+    </span>
+  );
+  if (mt === "video") {
+    return (
+      <span className="relative block w-full h-full">
+        <video src={photo.url} preload="metadata" muted playsInline className={imgClassName} />
+        {badge}
+      </span>
+    );
+  }
+  const thumb = externalThumbUrl(photo.url);
+  return (
+    <span className="relative block w-full h-full">
+      {thumb ? (
+        <img src={thumb} alt={photo.caption ?? "Event video"} className={imgClassName} loading="lazy" />
+      ) : (
+        <span className={`${imgClassName} block`} style={{ backgroundColor: NAVY }} />
+      )}
+      {badge}
+    </span>
+  );
 }
 
 interface GalleryAlbum {
@@ -283,16 +321,56 @@ function Lightbox({
         onClick={(e) => e.stopPropagation()}
       >
         <AnimatePresence mode="wait">
-          <motion.img
-            key={photo.id}
-            src={photo.url}
-            alt={photo.caption ?? "Event photo"}
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.2 }}
-            className="max-h-[76vh] max-w-full object-contain rounded-lg shadow-2xl"
-          />
+          {(photo.mediaType ?? "photo") === "photo" ? (
+            <motion.img
+              key={photo.id}
+              src={photo.url}
+              alt={photo.caption ?? "Event photo"}
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.2 }}
+              className="max-h-[76vh] max-w-full object-contain rounded-lg shadow-2xl"
+            />
+          ) : photo.mediaType === "video" ? (
+            <motion.div
+              key={photo.id}
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.2 }}
+              className="max-w-full"
+            >
+              <video
+                src={photo.url}
+                controls
+                autoPlay
+                playsInline
+                className="max-h-[76vh] max-w-full rounded-lg shadow-2xl bg-black"
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key={photo.id}
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-4xl aspect-video rounded-lg overflow-hidden shadow-2xl bg-black"
+            >
+              {externalEmbedSrc(photo.url) ? (
+                <iframe
+                  src={externalEmbedSrc(photo.url) as string}
+                  title={photo.caption ?? "Event video"}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/60 text-sm">Video unavailable</div>
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
         {albumTitle && (
           <span
@@ -453,7 +531,7 @@ export default function EventGallery() {
                       <div className="w-full h-full" style={{ backgroundColor: NAVY }}>
                         <div className="grid grid-rows-2 h-full">
                           {photos.slice(0, 2).map((p) => (
-                            <img key={p.id} src={p.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            <MediaThumb key={p.id} photo={p} imgClassName="w-full h-full object-cover" small />
                           ))}
                         </div>
                         <TileScrim title="All Moments" meta={`${photos.length} moments · every night`} />
@@ -593,11 +671,9 @@ export default function EventGallery() {
                   className="relative mb-3 break-inside-avoid group cursor-pointer overflow-hidden rounded-xl"
                   onClick={() => setLightboxIndex(i)}
                 >
-                  <img
-                    src={photo.url}
-                    alt={photo.caption ?? `Event photo ${i + 1}`}
-                    className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.04]"
-                    loading="lazy"
+                  <MediaThumb
+                    photo={photo}
+                    imgClassName={`w-full ${isVideoMedia(photo.mediaType) ? "aspect-video object-cover" : "h-auto"} block transition-transform duration-500 group-hover:scale-[1.04]`}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
                   {photo.caption && (

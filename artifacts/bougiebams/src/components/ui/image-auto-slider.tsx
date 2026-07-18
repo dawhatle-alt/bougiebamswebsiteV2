@@ -1,8 +1,11 @@
 import React, { useMemo } from "react";
+import { Play } from "lucide-react";
+import { externalThumbUrl, isVideoMedia } from "@/lib/galleryMedia";
 
 export interface SliderPhoto {
   id: number;
   url: string;
+  mediaType?: "photo" | "video" | "external";
   caption: string | null;
 }
 
@@ -69,12 +72,29 @@ export function ImageAutoSlider({ photos, onPhotoClick }: ImageAutoSliderProps) 
               aria-label={photo.caption ?? "View event photo"}
               tabIndex={i < photos.length ? 0 : -1}
             >
-              <img
-                src={photo.url}
-                alt={photo.caption ?? "Event photo"}
-                className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110"
-                loading="lazy"
-              />
+              {isVideoMedia(photo.mediaType) ? (
+                <span className="relative block w-full h-full">
+                  {photo.mediaType === "video" ? (
+                    <video src={photo.url} preload="metadata" muted playsInline className="w-full h-full object-cover" />
+                  ) : externalThumbUrl(photo.url) ? (
+                    <img src={externalThumbUrl(photo.url) as string} alt={photo.caption ?? "Event video"} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <span className="block w-full h-full bg-[#1E2A5A]" />
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center w-11 h-11">
+                      <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                    </span>
+                  </span>
+                </span>
+              ) : (
+                <img
+                  src={photo.url}
+                  alt={photo.caption ?? "Event photo"}
+                  className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110"
+                  loading="lazy"
+                />
+              )}
             </button>
           ))}
         </div>
