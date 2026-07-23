@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import {
   db,
   ordersTable,
@@ -59,8 +58,10 @@ export async function computeActuals(): Promise<BusinessActuals> {
           createdAt: ordersTable.createdAt,
         })
         .from(ordersTable)
-        .where(eq(ordersTable.state, "COMPLETED"))
     : [];
+  // No state filter: every recorded order is a PAID order (recordSquareOrder
+  // refuses unpaid ones), and paid payment-link orders sit in Square's OPEN
+  // state until fulfillment — filtering on COMPLETED dropped those sales.
 
   const events = await db
     .select({
