@@ -121,8 +121,14 @@ export function calcEventTicketRevenue(event: BusinessEvent): number {
   return event.revenue ?? event.attendees * event.ticketPrice;
 }
 
+export function calcEventVenueCost(event: BusinessEvent): number {
+  // Store events store the real total venue bill; manual planning events
+  // estimate it as attendees × per-person cost.
+  return event.venueCost ?? event.attendees * (event.venueCostPerAttendee ?? 0);
+}
+
 export function calcEventNetProfit(event: BusinessEvent): number {
-  return calcEventTicketRevenue(event) - (event.attendees * event.venueCostPerAttendee) - event.otherExpenses;
+  return calcEventTicketRevenue(event) - calcEventVenueCost(event) - event.otherExpenses;
 }
 
 export function calcEventRevenue(events: BusinessEvent[]): number {

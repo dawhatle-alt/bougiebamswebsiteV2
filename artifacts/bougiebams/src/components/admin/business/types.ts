@@ -39,7 +39,10 @@ export interface BusinessEvent {
   // Real ticket revenue (paid registrations × price) for store events;
   // absent for manual events, where it's attendees × ticketPrice.
   revenue?: number;
-  venueCostPerAttendee: number;
+  // Manual planning events estimate venue cost per person…
+  venueCostPerAttendee?: number;
+  // …store events carry the real total venue bill (flat dollars, owner-entered).
+  venueCost?: number;
   otherExpenses: number;
   emailSignups: number;
   instagramFollowersGained: number;

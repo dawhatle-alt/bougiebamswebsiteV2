@@ -205,6 +205,15 @@ The custom set-building experience where shoppers hand-pick pieces into a bundle
 
 ---
 
+# Business HQ
+
+Planning and real-performance tools for the business (Admin → Business HQ). Most tabs mix **actuals** (real orders, registrations, subscribers) with **plan numbers** from the Assumptions tab.
+
+- **Event Profit Engine** — store events appear automatically with real attendance and ticket revenue. Enter each event's **Venue Cost as the total bill for that event** (e.g. $475 for the whole night — *not* per person); Net Profit is then ticket revenue − venue cost − other expenses. Manual planning events you add by hand still use a per-person venue estimate, shown with "/pp".
+- **Product Catalog** — your real catalog with actual units sold and revenue; margins appear once each product's **Unit Cost** is set in Products.
+
+---
+
 # Behind the Scenes (quick reference)
 
 | What | Where it goes |

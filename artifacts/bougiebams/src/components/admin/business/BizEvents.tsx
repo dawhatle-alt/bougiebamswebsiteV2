@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { BusinessEvent } from "./types";
-import { calcEventNetProfit, calcEventTicketRevenue } from "./calculations";
+import { calcEventNetProfit, calcEventTicketRevenue, calcEventVenueCost } from "./calculations";
 import { bizFetch, bizJson } from "./api";
 import { Plus, X, Store } from "lucide-react";
 
@@ -25,7 +25,7 @@ async function deleteEvent(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete event");
 }
 
-type CostField = "venueCostPerAttendee" | "emailSignups" | "instagramFollowersGained";
+type CostField = "venueCost" | "emailSignups" | "instagramFollowersGained";
 
 async function updateEventCosts(sourceEventId: number, data: Partial<Record<CostField, number>>): Promise<void> {
   const res = await bizFetch(`/events/store/${sourceEventId}/costs`, {
@@ -44,12 +44,13 @@ function EventRow({ event, onDelete, onCostChange }: EventRowProps) {
   const isStore = event.source === "store";
   const netProfit = calcEventNetProfit(event);
   const ticketRevenue = calcEventTicketRevenue(event);
-  const cac = event.emailSignups > 0 ? (event.attendees * event.venueCostPerAttendee + event.otherExpenses) / event.emailSignups : null;
+  const cac = event.emailSignups > 0 ? (calcEventVenueCost(event) + event.otherExpenses) / event.emailSignups : null;
 
-  const costInput = (field: CostField, width: string, step?: number) => (
+  const costInput = (field: CostField, width: string, step?: number, title?: string) => (
     <input
       type="number"
-      value={event[field]}
+      value={event[field] ?? 0}
+      title={title}
       min={0}
       step={step ?? 1}
       onChange={(e) => onCostChange(event, field, parseFloat(e.target.value) || 0)}
@@ -72,7 +73,9 @@ function EventRow({ event, onDelete, onCostChange }: EventRowProps) {
       <td className="px-4 py-3 tabular-nums">{event.attendees}</td>
       <td className="px-4 py-3 tabular-nums">{fmt(event.ticketPrice)}</td>
       <td className="px-4 py-3 tabular-nums text-muted-foreground">
-        {isStore ? costInput("venueCostPerAttendee", "w-20", 1) : `${fmt(event.venueCostPerAttendee)}/pp`}
+        {isStore
+          ? costInput("venueCost", "w-20", 1, "Total venue cost for this event (not per person)")
+          : `${fmt(event.venueCostPerAttendee ?? 0)}/pp`}
       </td>
       <td className="px-4 py-3 tabular-nums font-medium">{fmt(ticketRevenue)}</td>
       <td className="px-4 py-3 tabular-nums font-semibold text-foreground">
@@ -220,7 +223,7 @@ export default function BizEvents() {
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Event Profit Engine</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Store events sync automatically with real attendance and ticket revenue — enter venue costs and marketing outcomes to complete the ROI picture
+            Store events sync automatically with real attendance and ticket revenue — enter each event's total venue cost and marketing outcomes to complete the ROI picture
           </p>
         </div>
         <button

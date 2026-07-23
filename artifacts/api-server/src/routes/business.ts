@@ -177,7 +177,7 @@ router.get("/admin/business/events", requireAdmin, async (_req, res): Promise<vo
           attendees: regs.confirmed,
           ticketPrice: price,
           revenue: regs.paid * price,
-          venueCostPerAttendee: cost?.venueCostPerAttendee ?? 0,
+          venueCost: cost?.venueCost ?? 0,
           otherExpenses: cost?.otherExpenses ?? 0,
           emailSignups: cost?.emailSignups ?? 0,
           instagramFollowersGained: cost?.instagramFollowersGained ?? 0,
@@ -197,7 +197,8 @@ router.get("/admin/business/events", requireAdmin, async (_req, res): Promise<vo
 
 const eventCostsUpdateSchema = z
   .object({
-    venueCostPerAttendee: money,
+    // Total venue bill for the event (flat dollars, not per attendee).
+    venueCost: money,
     otherExpenses: money,
     emailSignups: count,
     instagramFollowersGained: count,

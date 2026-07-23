@@ -85,7 +85,9 @@ export const bizScenariosTable = pgTable("biz_scenarios", {
 // come from registrations; costs and marketing outcomes are hand-entered.
 export const bizEventCostsTable = pgTable("biz_event_costs", {
   sourceEventId: integer("source_event_id").primaryKey(),
-  venueCostPerAttendee: num("venue_cost_per_attendee").notNull().default(0),
+  // Total venue bill for the whole event, NOT per person — the column name is
+  // historical (kept to avoid a production rename).
+  venueCost: num("venue_cost_per_attendee").notNull().default(0),
   otherExpenses: num("other_expenses").notNull().default(0),
   emailSignups: integer("email_signups").notNull().default(0),
   instagramFollowersGained: integer("instagram_followers_gained").notNull().default(0),
