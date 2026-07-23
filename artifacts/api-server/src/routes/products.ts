@@ -165,6 +165,8 @@ router.get("/admin/products", requireAdmin, async (req, res): Promise<void> => {
     shippingIncluded: r.shippingIncluded,
     tabs: r.tabs ?? null,
     affiliateUrl: r.affiliateUrl ?? null,
+    // Admin-only: cost stays off the public endpoints.
+    unitCost: r.unitCost != null ? Number(r.unitCost) : null,
   }));
   res.json(ListProductsResponse.parse({ products }));
 });
@@ -185,6 +187,7 @@ router.post("/products", requireAdmin, async (req, res): Promise<void> => {
       name: parsed.data.name,
       description: parsed.data.description ?? "",
       price: String(parsed.data.price),
+      unitCost: parsed.data.unitCost != null ? String(parsed.data.unitCost) : null,
       category: parsed.data.category,
       inStock: parsed.data.inStock,
       shippingIncluded: parsed.data.shippingIncluded ?? false,
@@ -237,6 +240,7 @@ router.patch("/products/:id", requireAdmin, async (req, res): Promise<void> => {
   if (parsed.data.buildYourSet !== undefined) updateData.buildYourSet = parsed.data.buildYourSet;
   if (parsed.data.shippingIncluded !== undefined) updateData.shippingIncluded = parsed.data.shippingIncluded;
   if (parsed.data.tabs !== undefined) updateData.tabs = parsed.data.tabs ?? null;
+  if ("unitCost" in parsed.data) updateData.unitCost = parsed.data.unitCost != null ? String(parsed.data.unitCost) : null;
 
   const [row] = await db
     .update(productsTable)

@@ -60,12 +60,24 @@ function KpiCard({ label, value, sub, icon, highlight }: KpiCardProps) {
   );
 }
 
+interface ActualsSummary {
+  products: { revenueCents: number; orderCount: number; unitsSold: number };
+  events: { revenueCents: number; orderCount: number };
+  subscribers: { total: number; last30: number };
+}
+
 export default function BizDashboard() {
   const { assumptions } = useAssumptions();
 
   const { data: events = [] } = useQuery({
     queryKey: ["biz-events"],
     queryFn: () => bizJson<BusinessEvent[]>("/events"),
+    retry: 1,
+  });
+
+  const { data: actuals } = useQuery({
+    queryKey: ["biz-actuals"],
+    queryFn: () => bizJson<ActualsSummary>("/actuals"),
     retry: 1,
   });
 
@@ -109,10 +121,45 @@ export default function BizDashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-foreground tracking-tight">Executive Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Year 1 forecast — all figures based on current assumptions</p>
+        <p className="text-sm text-muted-foreground mt-1">Real store performance to date, followed by the Year 1 plan from your assumptions</p>
       </div>
 
+      {/* Actuals to date — real numbers from orders, registrations, subscribers */}
+      {actuals && (
+        <div>
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">Actuals to Date</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard
+              label="Actual Revenue"
+              value={fmt((actuals.products.revenueCents + actuals.events.revenueCents) / 100)}
+              sub={`${fmt(actuals.products.revenueCents / 100)} products · ${fmt(actuals.events.revenueCents / 100)} events`}
+              icon={<DollarSign size={16} />}
+              highlight
+            />
+            <KpiCard
+              label="Orders & Tickets"
+              value={`${actuals.products.orderCount + actuals.events.orderCount}`}
+              sub={`${actuals.products.orderCount} orders · ${actuals.events.orderCount} paid seats`}
+              icon={<TrendingUp size={16} />}
+            />
+            <KpiCard
+              label="Units Sold"
+              value={actuals.products.unitsSold.toLocaleString()}
+              sub="Across all products"
+              icon={<Layers size={16} />}
+            />
+            <KpiCard
+              label="Subscribers"
+              value={actuals.subscribers.total.toLocaleString()}
+              sub={`+${actuals.subscribers.last30} in the last 30 days`}
+              icon={<Megaphone size={16} />}
+            />
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
+      <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider -mb-4">Year 1 Plan (from Assumptions)</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Total Revenue" value={fmt(revenue)} sub="Year 1 projected" icon={<DollarSign size={16} />} highlight />
         <KpiCard label="Gross Profit" value={fmt(grossProfit)} sub="After COGS" icon={<TrendingUp size={16} />} />

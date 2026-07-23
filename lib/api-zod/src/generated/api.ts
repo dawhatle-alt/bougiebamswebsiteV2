@@ -51,7 +51,8 @@ export const ListProductsResponse = zod.object({
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish(),
-  "images": zod.array(zod.string()).optional()
+  "images": zod.array(zod.string()).optional(),
+  "unitCost": zod.number().nullish()
 }))
 })
 
@@ -67,7 +68,8 @@ export const CreateProductBody = zod.object({
   "category": zod.string(),
   "inStock": zod.boolean(),
   "shippingIncluded": zod.boolean().optional(),
-  "tabs": ProductTabsSchema.optional()
+  "tabs": ProductTabsSchema.optional(),
+  "unitCost": zod.number().nullish()
 })
 
 export const CreateProductResponse = zod.object({
@@ -86,7 +88,8 @@ export const CreateProductResponse = zod.object({
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish(),
-  "images": zod.array(zod.string()).optional()
+  "images": zod.array(zod.string()).optional(),
+  "unitCost": zod.number().nullish()
 })
 })
 
@@ -110,7 +113,8 @@ export const ListFeaturedProductsResponse = zod.object({
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish(),
-  "images": zod.array(zod.string()).optional()
+  "images": zod.array(zod.string()).optional(),
+  "unitCost": zod.number().nullish()
 }))
 })
 
@@ -138,7 +142,8 @@ export const GetProductResponse = zod.object({
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish(),
-  "images": zod.array(zod.string()).optional()
+  "images": zod.array(zod.string()).optional(),
+  "unitCost": zod.number().nullish()
 })
 })
 
@@ -159,7 +164,8 @@ export const UpdateProductBody = zod.object({
   "published": zod.boolean().optional(),
   "buildYourSet": zod.boolean().optional(),
   "shippingIncluded": zod.boolean().optional(),
-  "tabs": ProductTabsSchema.optional()
+  "tabs": ProductTabsSchema.optional(),
+  "unitCost": zod.number().nullish()
 })
 
 export const UpdateProductResponse = zod.object({
@@ -178,7 +184,8 @@ export const UpdateProductResponse = zod.object({
   "shippingIncluded": zod.boolean().optional(),
   "tabs": ProductTabsSchema,
   "affiliateUrl": zod.string().nullish(),
-  "images": zod.array(zod.string()).optional()
+  "images": zod.array(zod.string()).optional(),
+  "unitCost": zod.number().nullish()
 })
 })
 

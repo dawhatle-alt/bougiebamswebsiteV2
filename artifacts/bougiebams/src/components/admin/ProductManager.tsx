@@ -67,6 +67,7 @@ interface ApiProduct {
   shippingIncluded: boolean;
   imagePath?: string | null;
   tabs?: ProductTabs | null;
+  unitCost?: number | null;
 }
 
 interface ProductForm {
@@ -74,6 +75,7 @@ interface ProductForm {
   name: string;
   description: string;
   price: string;
+  unitCost: string;
   category: string;
   inStock: boolean;
   shippingIncluded: boolean;
@@ -93,6 +95,7 @@ const EMPTY_FORM: ProductForm = {
   name: "",
   description: "",
   price: "",
+  unitCost: "",
   category: CATEGORIES[0],
   inStock: true,
   shippingIncluded: false,
@@ -371,6 +374,7 @@ export default function ProductManager({ onAuthError }: Props) {
       name: p.name,
       description: p.description,
       price: String(p.price),
+      unitCost: p.unitCost != null ? String(p.unitCost) : "",
       category: p.category,
       inStock: p.inStock,
       shippingIncluded: p.shippingIncluded,
@@ -398,6 +402,7 @@ export default function ProductManager({ onAuthError }: Props) {
             name: form.name.trim(),
             description: form.description.trim(),
             price: priceNum,
+            unitCost: form.unitCost.trim() !== "" && !isNaN(parseFloat(form.unitCost)) ? parseFloat(form.unitCost) : null,
             category: form.category,
             inStock: form.inStock,
             shippingIncluded: form.shippingIncluded,
@@ -421,6 +426,7 @@ export default function ProductManager({ onAuthError }: Props) {
             name: form.name.trim(),
             description: form.description.trim(),
             price: priceNum,
+            unitCost: form.unitCost.trim() !== "" && !isNaN(parseFloat(form.unitCost)) ? parseFloat(form.unitCost) : null,
             category: form.category,
             inStock: form.inStock,
             shippingIncluded: form.shippingIncluded,
@@ -832,7 +838,7 @@ export default function ProductManager({ onAuthError }: Props) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Price ($) *</label>
                 <input
@@ -843,6 +849,18 @@ export default function ProductManager({ onAuthError }: Props) {
                   value={form.price}
                   onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                   placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1" title="What this product costs you per unit — powers real margins in Business HQ. Never shown to shoppers.">Unit Cost ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full border border-[#E2DBCD] rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1E2A5A]"
+                  value={form.unitCost}
+                  onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))}
+                  placeholder="Optional"
                 />
               </div>
               <div>

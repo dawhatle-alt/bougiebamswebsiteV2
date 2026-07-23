@@ -22,6 +22,9 @@ export const productsTable = pgTable("products", {
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  // What the product costs the business per unit — powers real margins in
+  // Business HQ. Never exposed on public endpoints.
+  unitCost: numeric("unit_cost", { precision: 10, scale: 2 }),
   category: text("category").notNull(),
   inStock: boolean("in_stock").notNull().default(true),
   imagePath: text("image_path"),

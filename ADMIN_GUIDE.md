@@ -107,6 +107,7 @@ The shop catalog. Each row has three quick toggles:
 
 - **Edit** (pencil icon) opens the full form: name, description, price, category, in-stock, and **"Shipping included in price"** — turning that on shows a gold *Shipping included* badge next to the price on the product page and quick view.
 - **Detail Page Tabs** (in the edit form): each product has three optional tabs on its page — *Product Details*, *Care Instructions*, and *Shipping & Returns*. Write your own content for each (line breaks are kept), and use the small toggle to hide a tab. A tab that is switched off **or left empty** doesn't appear; if all three are empty, the whole tab section is hidden. New products start with all three empty.
+- **Unit Cost** (in the edit form, next to Price): what the product costs *you* per unit. Optional and never shown to shoppers — it powers real gross-profit and margin figures in **Business HQ → Product Catalog**. Fill it in for every product to see true margins.
 - **Photo Gallery** (gallery icon on each row): each product can have **multiple photos**. Click the icon to expand the gallery panel — add photos, remove them, and arrange the order with the arrows. **The first photo is the main image** used on the shop grid, Facebook catalog, and link previews; the rest appear as thumbnails on the product page. Shoppers can click any product photo to zoom into a full-screen view.
 - The small image square on each row also adds a photo to the gallery (quick path for the first photo).
 - Deleting a product removes it permanently.

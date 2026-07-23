@@ -11,6 +11,7 @@ import {
   bizEventCostsTable,
   eventsTable,
   registrationsTable,
+  productsTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middleware/auth";
 import { ensureBusinessTables, ensureEventCostsTable } from "../lib/businessBootstrap";
@@ -298,14 +299,42 @@ router.put("/admin/business/marketing-channels/:id", requireAdmin, async (req, r
   }
 });
 
+// The four ids seeded from the original business plan before the real catalog
+// existed; pruned automatically once they're untouched placeholders.
+const PLACEHOLDER_INVENTORY_IDS = ["tile-set", "mat", "luxury-box", "rack-set"];
+
 router.get("/admin/business/inventory", requireAdmin, async (_req, res): Promise<void> => {
   try {
     await ensureBusinessTables();
+    // Keep the tracked item list in sync with the real catalog: every current
+    // product gets a row (quantities stay manual — they describe the physical
+    // world), and untouched plan-era placeholders are dropped. Sequential
+    // queries on purpose (transaction pooler).
+    const products = await db.select().from(productsTable);
     const rows = await db
       .select()
       .from(bizInventoryItemsTable)
       .orderBy(asc(bizInventoryItemsTable.productId));
-    res.json(rows.map(({ updatedAt: _updatedAt, ...row }) => row));
+    const known = new Set(rows.map((r) => r.productId));
+    for (const p of products) {
+      if (!known.has(p.id)) {
+        await db
+          .insert(bizInventoryItemsTable)
+          .values({ productId: p.id, productName: p.name, onHand: 0, ordered: 0, inProduction: 0, leadTimeWeeks: 0, reorderPoint: 0, reorderQty: 0 })
+          .onConflictDoNothing({ target: bizInventoryItemsTable.productId });
+      }
+    }
+    for (const row of rows) {
+      const untouched = row.onHand === 0 && row.ordered === 0 && row.inProduction === 0;
+      if (PLACEHOLDER_INVENTORY_IDS.includes(row.productId) && untouched) {
+        await db.delete(bizInventoryItemsTable).where(eq(bizInventoryItemsTable.productId, row.productId));
+      }
+    }
+    const fresh = await db
+      .select()
+      .from(bizInventoryItemsTable)
+      .orderBy(asc(bizInventoryItemsTable.productId));
+    res.json(fresh.map(({ updatedAt: _updatedAt, ...row }) => row));
   } catch (err) {
     logger.error({ err }, "Failed to fetch business inventory");
     res.status(500).json({ error: "Failed to fetch inventory" });

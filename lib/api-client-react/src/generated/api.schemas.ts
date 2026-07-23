@@ -23,6 +23,8 @@ export interface ApiProduct {
   /** @nullable */
   affiliateUrl?: string | null;
   images?: string[];
+  /** @nullable */
+  unitCost?: number | null;
 }
 
 export interface ProductInput {
