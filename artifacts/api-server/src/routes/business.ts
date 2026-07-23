@@ -9,13 +9,15 @@ import {
   bizInventoryItemsTable,
   bizScenariosTable,
   bizEventCostsTable,
+  bizExpensesTable,
   eventsTable,
   registrationsTable,
   productsTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middleware/auth";
-import { ensureBusinessTables, ensureEventCostsTable } from "../lib/businessBootstrap";
+import { ensureBusinessTables, ensureEventCostsTable, ensureExpensesTable } from "../lib/businessBootstrap";
 import { computeActuals } from "../lib/businessActuals";
+import { computePnl, EXPENSE_CATEGORIES } from "../lib/businessPnl";
 import { logger } from "../lib/logger";
 
 // Business HQ (forecasting/planning) endpoints, ported from the
@@ -353,6 +355,103 @@ router.get("/admin/business/scenarios", requireAdmin, async (_req, res): Promise
   } catch (err) {
     logger.error({ err }, "Failed to fetch scenarios");
     res.status(500).json({ error: "Failed to fetch scenarios" });
+  }
+});
+
+// ---------- Monthly P&L + expense ledger ----------
+
+const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+function prevMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 2, 1));
+  return d.toISOString().slice(0, 7);
+}
+
+const expenseCreateSchema = z.object({
+  month: z.string().regex(MONTH_RE),
+  category: z.enum(EXPENSE_CATEGORIES),
+  description: z.string().trim().max(200).default(""),
+  amountCents: z.number().int().nonnegative(),
+});
+
+router.get("/admin/business/pnl", requireAdmin, async (req, res): Promise<void> => {
+  const month = typeof req.query.month === "string" ? req.query.month : "";
+  if (!MONTH_RE.test(month)) {
+    res.status(400).json({ error: "month must be YYYY-MM" });
+    return;
+  }
+  try {
+    const [current, prior] = await computePnl([month, prevMonth(month)]);
+    res.json({ current, prior });
+  } catch (err) {
+    logger.error({ err }, "Failed to compute P&L");
+    res.status(500).json({ error: "Failed to compute P&L" });
+  }
+});
+
+router.post("/admin/business/expenses", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = expenseCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
+    return;
+  }
+  try {
+    await ensureExpensesTable();
+    const [row] = await db.insert(bizExpensesTable).values(parsed.data).returning();
+    res.status(201).json(row);
+  } catch (err) {
+    logger.error({ err }, "Failed to create expense");
+    res.status(500).json({ error: "Failed to create expense" });
+  }
+});
+
+router.delete("/admin/business/expenses/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid expense id" });
+    return;
+  }
+  try {
+    await ensureExpensesTable();
+    await db.delete(bizExpensesTable).where(eq(bizExpensesTable.id, id));
+    res.status(204).send();
+  } catch (err) {
+    logger.error({ err }, "Failed to delete expense");
+    res.status(500).json({ error: "Failed to delete expense" });
+  }
+});
+
+// Copies the prior month's recurring expenses into the given month.
+// Processing fees are skipped (they're month-specific actuals), as are rows
+// the month already has (same category + description).
+router.post("/admin/business/expenses/copy-previous", requireAdmin, async (req, res): Promise<void> => {
+  const month = typeof req.body?.month === "string" ? req.body.month : "";
+  if (!MONTH_RE.test(month)) {
+    res.status(400).json({ error: "month must be YYYY-MM" });
+    return;
+  }
+  try {
+    await ensureExpensesTable();
+    const source = await db.select().from(bizExpensesTable).where(eq(bizExpensesTable.month, prevMonth(month)));
+    const existing = await db.select().from(bizExpensesTable).where(eq(bizExpensesTable.month, month));
+    const seen = new Set(existing.map((r) => `${r.category}|${r.description}`));
+    let copied = 0;
+    for (const row of source) {
+      if (row.category === "processing-fees") continue;
+      if (seen.has(`${row.category}|${row.description}`)) continue;
+      await db.insert(bizExpensesTable).values({
+        month,
+        category: row.category,
+        description: row.description,
+        amountCents: row.amountCents,
+      });
+      copied += 1;
+    }
+    res.json({ copied });
+  } catch (err) {
+    logger.error({ err }, "Failed to copy expenses");
+    res.status(500).json({ error: "Failed to copy expenses" });
   }
 });
 

@@ -201,6 +201,36 @@ export function ensureEventCostsTable(): Promise<void> {
   return eventCostsReady;
 }
 
+// P&L expense ledger ships after the phase-1 tables — own guard for the same
+// reason as biz_event_costs.
+let expensesReady: Promise<void> | null = null;
+
+export function ensureExpensesTable(): Promise<void> {
+  if (!expensesReady) {
+    expensesReady = tableExists("biz_expenses")
+      .then(async (exists) => {
+        if (exists) return;
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS biz_expenses (
+            id serial PRIMARY KEY,
+            month text NOT NULL,
+            category text NOT NULL,
+            description text NOT NULL DEFAULT '',
+            amount_cents integer NOT NULL DEFAULT 0,
+            created_at timestamptz NOT NULL DEFAULT now()
+          )
+        `);
+        await db.execute(sql`ALTER TABLE biz_expenses ENABLE ROW LEVEL SECURITY`);
+        await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_biz_expenses_month ON biz_expenses (month)`);
+      })
+      .catch((err) => {
+        expensesReady = null;
+        throw err;
+      });
+  }
+  return expensesReady;
+}
+
 // Advisor chat tables ship after the phase-1 tables, so they need their own
 // guard — environments that already have biz_assumptions would otherwise
 // never create them.

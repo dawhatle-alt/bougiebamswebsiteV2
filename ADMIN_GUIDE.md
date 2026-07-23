@@ -211,6 +211,12 @@ Planning and real-performance tools for the business (Admin → Business HQ). Mo
 
 - **Event Profit Engine** — store events appear automatically with real attendance and ticket revenue. Enter each event's **Venue Cost as the total bill for that event** (e.g. $475 for the whole night — *not* per person); Net Profit is then ticket revenue − venue cost − other expenses. Manual planning events you add by hand still use a per-person venue estimate, shown with "/pp".
 - **Product Catalog** — your real catalog with actual units sold and revenue; margins appear once each product's **Unit Cost** is set in Products.
+- **P&L** — a monthly Profit & Loss statement for reconciling the books. Revenue (product sales + event tickets) and cost of goods (unit costs × units sold, plus per-event venue/other costs from the Event Profit Engine) are computed automatically from real sales. You enter the month's **operating expenses** below the statement — categories: Processing Fees, Software & Tools, Marketing, Shipping & Supplies, Travel, Event Fees, Event Food & Beverage, Insurance, Other. Notes:
+  - **Processing fees** are auto-estimated at Square's 2.9% + 30¢ per payment until you add a Processing Fees expense row with the real monthly total from your Square dashboard — then your number replaces the estimate.
+  - **Copy last month's recurring** pulls forward the prior month's expenses (skipping processing fees and anything already entered) so subscriptions only need typing once.
+  - Use the **CSV** button to download the statement plus expense detail for your accountant.
+  - Monthly reconciliation routine: check Total Revenue against Square, enter/adjust expenses, download the CSV — done.
+  - This is a cash-basis operating P&L: it doesn't cover inventory purchases as assets, owner draws, or taxes — that's your accountant's side, and the CSV hands it to them.
 
 ---
 

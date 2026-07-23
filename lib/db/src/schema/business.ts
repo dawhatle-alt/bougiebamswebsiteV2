@@ -94,6 +94,18 @@ export const bizEventCostsTable = pgTable("biz_event_costs", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 }).enableRLS();
 
+// Owner-entered monthly operating expenses for the P&L tab (software,
+// marketing, travel, event food, …). Month is "YYYY-MM". Amounts in cents,
+// matching how order revenue is stored.
+export const bizExpensesTable = pgTable("biz_expenses", {
+  id: serial("id").primaryKey(),
+  month: text("month").notNull(),
+  category: text("category").notNull(),
+  description: text("description").notNull().default(""),
+  amountCents: integer("amount_cents").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
 // AI advisor chat threads (separate from the storefront chatbot's
 // conversations/messages tables).
 export const bizConversationsTable = pgTable("biz_conversations", {
