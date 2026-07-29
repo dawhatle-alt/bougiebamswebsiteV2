@@ -41,6 +41,7 @@ interface FormState {
   collectRegistrationDetails: boolean;
   compCode: string;
   compCodeLimit: string;
+  allowWelcomeCode: boolean;
   sortOrder: string;
 }
 
@@ -76,6 +77,7 @@ const emptyForm: FormState = {
   collectRegistrationDetails: false,
   compCode: "",
   compCodeLimit: "",
+  allowWelcomeCode: true,
   sortOrder: "",
 };
 
@@ -100,6 +102,7 @@ function eventToForm(e: ApiEvent): FormState {
     collectRegistrationDetails: e.collectRegistrationDetails ?? false,
     compCode: e.compCode ?? "",
     compCodeLimit: e.compCodeLimit != null ? String(e.compCodeLimit) : "",
+    allowWelcomeCode: e.allowWelcomeCode !== false,
     sortOrder: e.sortOrder != null ? String(e.sortOrder) : "",
   };
 }
@@ -229,6 +232,7 @@ export default function EventsManager({ onAuthError }: Props) {
       collectRegistrationDetails: form.collectRegistrationDetails,
       compCode: form.compCode.trim() || null,
       compCodeLimit: parseInt(form.compCodeLimit) > 0 ? parseInt(form.compCodeLimit) : null,
+      allowWelcomeCode: form.allowWelcomeCode,
       sortOrder: form.sortOrder.trim() !== "" && Number.isFinite(Number(form.sortOrder)) ? Math.floor(Number(form.sortOrder)) : null,
     };
     const isEdit = form.id !== null;
@@ -426,13 +430,29 @@ export default function EventsManager({ onAuthError }: Props) {
               <div className="col-span-2">
                 <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Comp Code(s)</label>
                 <Input value={form.compCode} onChange={(e) => field("compCode", e.target.value)} placeholder="e.g. HOSTESS2026, VIP-GUEST" />
-                <p className="text-xs text-[#9A8F7E] mt-1.5">Paid events only: guests entering one of these codes (separate several with commas, not case-sensitive) register free and skip payment. The registration form shows a coupon field only when a code is set here. Leave empty for none.</p>
+                <p className="text-xs text-[#9A8F7E] mt-1.5">Paid events only: guests entering one of these codes (separate several with commas, not case-sensitive) register free and skip payment. Leave empty for none. The registration form's coupon field also accepts percentage discount codes (Admin → Discount Codes, set to "Events" or "Both").</p>
               </div>
               <div>
                 <label className="text-xs font-semibold uppercase tracking-widest text-[#5A6178] block mb-1.5">Use Limit</label>
                 <Input type="number" min="1" value={form.compCodeLimit} onChange={(e) => field("compCodeLimit", e.target.value)} placeholder="e.g. 5" />
                 <p className="text-xs text-[#9A8F7E] mt-1.5">Max free registrations per code. Empty = unlimited.</p>
               </div>
+            </div>
+            <div className="flex items-center justify-between gap-4 pt-1 border-t border-[#E2DBCD]">
+              <div>
+                <div className="text-sm font-medium text-[#1E2A5A]">Accept the welcome discount code</div>
+                <div className="text-xs text-[#9A8F7E]">Paid events only: when off, the welcome-popup code (and subscribers' personal codes for the same offer) is rejected for this event. Other discount codes set to "Events" or "Both" under Discount Codes still work.</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => field("allowWelcomeCode", !form.allowWelcomeCode)}
+                className={`relative inline-flex items-center px-0.5 w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  form.allowWelcomeCode ? "bg-emerald-500" : "bg-[#D0CCBF]"
+                }`}
+                title={form.allowWelcomeCode ? "Accepted — click to reject it for this event" : "Rejected — click to accept it"}
+              >
+                <span className={`w-5 h-5 rounded-full bg-white transition-transform shadow-sm ${form.allowWelcomeCode ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
             </div>
           </div>
 

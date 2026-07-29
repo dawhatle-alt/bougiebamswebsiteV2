@@ -40,6 +40,7 @@ export interface ApiEvent {
   hasCompCode?: boolean;
   compCode?: string | null;
   compCodeLimit?: number | null;
+  allowWelcomeCode?: boolean;
   sortOrder?: number | null;
 }
 

@@ -40,13 +40,13 @@ export async function ensureWelcomeCodeRow(code: string): Promise<void> {
 export interface ResolvedDiscount {
   code: string;
   percent: number;
+  /** True when this is the welcome-popup offer — the configured welcome code
+   * or a subscriber's personal code for the same offer. Events can opt out of
+   * accepting it (events.allowWelcomeCode). */
+  isWelcomeOffer: boolean;
 }
 
-/**
- * Resolves a shopper-entered discount code to a percentage for product checkout.
- * Returns null when the code is unknown, inactive, or events-only.
- */
-export async function resolveProductDiscount(raw: string): Promise<ResolvedDiscount | null> {
+async function resolveDiscount(raw: string, kind: "products" | "events"): Promise<ResolvedDiscount | null> {
   const code = raw.trim().toUpperCase();
   if (!code) return null;
 
@@ -55,24 +55,24 @@ export async function resolveProductDiscount(raw: string): Promise<ResolvedDisco
     .from(discountCodesTable)
     .where(eq(discountCodesTable.code, code))
     .limit(1);
+  const welcomeCode = await getWelcomeCode();
 
   if (row) {
     if (!row.active) return null;
-    if (row.appliesTo !== "both" && row.appliesTo !== "products") return null;
-    return { code, percent: row.discountPercent };
+    if (row.appliesTo !== "both" && row.appliesTo !== kind) return null;
+    return { code, percent: row.discountPercent, isWelcomeOffer: code === welcomeCode };
   }
 
   // The welcome popup hands out a configurable code. If nobody has created it
   // in admin yet, seed it so the advertised offer always works — and becomes
   // visible/manageable under Admin → Discount Codes.
-  const welcomeCode = await getWelcomeCode();
   if (code === welcomeCode) {
     try {
       await ensureWelcomeCodeRow(welcomeCode);
     } catch (err) {
       logger.error({ err }, "Failed to seed welcome discount code");
     }
-    return { code, percent: WELCOME_PERCENT };
+    return { code, percent: WELCOME_PERCENT, isWelcomeOffer: true };
   }
 
   // Personal codes stored on a subscriber record (same offer as the popup).
@@ -81,9 +81,25 @@ export async function resolveProductDiscount(raw: string): Promise<ResolvedDisco
     .from(subscribersTable)
     .where(eq(subscribersTable.discountCode, code))
     .limit(1);
-  if (subscriber) return { code, percent: WELCOME_PERCENT };
+  if (subscriber) return { code, percent: WELCOME_PERCENT, isWelcomeOffer: true };
 
   return null;
+}
+
+/**
+ * Resolves a shopper-entered discount code to a percentage for product checkout.
+ * Returns null when the code is unknown, inactive, or events-only.
+ */
+export function resolveProductDiscount(raw: string): Promise<ResolvedDiscount | null> {
+  return resolveDiscount(raw, "products");
+}
+
+/**
+ * Resolves a guest-entered discount code for event registration checkout.
+ * Returns null when the code is unknown, inactive, or products-only.
+ */
+export function resolveEventDiscount(raw: string): Promise<ResolvedDiscount | null> {
+  return resolveDiscount(raw, "events");
 }
 
 // --- Single-use-per-email enforcement ---------------------------------------

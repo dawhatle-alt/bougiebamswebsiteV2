@@ -80,6 +80,7 @@ export async function computePnl(months: string[]): Promise<PnlStatement[]> {
         .select({
           kind: ordersTable.kind,
           totalCents: ordersTable.totalCents,
+          discountCents: ordersTable.discountCents,
           items: ordersTable.items,
           createdAt: ordersTable.createdAt,
         })
@@ -125,9 +126,15 @@ export async function computePnl(months: string[]): Promise<PnlStatement[]> {
     let productOrders = 0;
     let productCogsCents = 0;
     let unmatchedUnits = 0;
+    let eventDiscountCents = 0;
     for (const order of orders) {
       if (order.createdAt.toISOString().slice(0, 7) !== month) continue;
-      if (order.kind === "event") continue; // counted from registrations below
+      if (order.kind === "event") {
+        // Seats are counted from registrations at full price below; subtract
+        // coupon discounts Square applied to event checkouts.
+        eventDiscountCents += order.discountCents ?? 0;
+        continue;
+      }
       productCents += order.totalCents;
       productOrders += 1;
       if (order.items) {
@@ -157,6 +164,7 @@ export async function computePnl(months: string[]): Promise<PnlStatement[]> {
         paidSeats += 1;
       }
     }
+    eventCents -= eventDiscountCents;
 
     // Event direct costs land in the month the event happens
     let eventCostsCents = 0;

@@ -71,8 +71,10 @@ Create and manage the events shown on the site.
 - When editing an event, **Spots Left** is the remaining availability (not the registration count). If you raise Total Spots on an existing event, raise Spots Left by the same amount.
 - **External Registration Link** (optional): paste a URL (e.g. an Eventbrite page) and the event's Register button will send guests there instead of the built-in registration and payment flow. Guests don't need to sign in, and the built-in checkout is disabled for that event. Note that spots and the registration list are *not* tracked for external registrations — manage attendance on the external site. Clear the field to switch back to built-in registration.
 - **Collect registration details** (toggle): when on, the registration form also asks three standard questions — *sit with someone you know?* (names), *play with blanks and 10 jokers?* (Yes / No / Open to either), and *skill level* (learn / still learning / intermediate / advanced). Answers appear under each guest's name in **Registrations** and in its CSV export.
-- **Comp Code(s)**: for paid events, enter one or more codes (comma-separated, not case-sensitive, e.g. `HOSTESS2026, VIP-GUEST`). The registration form then shows an optional **Coupon Code** field; a guest entering a valid code registers **free** (confirmed instantly, no Square checkout) and the code used is recorded on their registration. A wrong code shows an error rather than charging them. Leave empty for no comp codes.
+- **Coupon field on registration**: every *paid* event with built-in registration shows an optional **Coupon Code** field. It accepts two kinds of codes — the event's **comp codes** (below), which register the guest completely free, and **percentage discount codes** from Admin → Discount Codes (any code set to apply to *Events* or *Both*), which take that percent off the ticket on the Square payment page. A wrong code shows an error rather than charging full price.
+- **Comp Code(s)**: for paid events, enter one or more codes (comma-separated, not case-sensitive, e.g. `HOSTESS2026, VIP-GUEST`). A guest entering a valid code registers **free** (confirmed instantly, no Square checkout) and the code used is recorded on their registration. Leave empty for no comp codes.
 - **Use Limit** (next to Comp Codes): caps how many free registrations *each* code allows for this event — e.g. limit 5 with two codes means each code works 5 times. Once a code hits its limit, further guests see "already been used the maximum number of times." Removing a registration that used a comp code gives that redemption back. Empty = unlimited.
+- **Accept the welcome discount code** (toggle, on by default): turn it **off** to reject the welcome-popup code (and subscribers' personal codes for the same offer) for this specific event — guests see "That code can't be used for this event." Other discount codes still work; use each code's *Applies To* setting in Discount Codes to control those.
 - **Display Order**: controls the event's position on the public Events page — 1 shows first, 2 second, and so on. Events without a number appear after all numbered ones, sorted by date. Leave empty for automatic date order.
 
 ## Education
@@ -115,9 +117,10 @@ The shop catalog. Each row has three quick toggles:
 
 ## Discount Codes
 
-Create and manage promo codes customers enter in the cart.
+Create and manage promo codes customers enter in the cart — and, for codes set to *Events* or *Both*, in the event registration form's coupon field.
 
 - Each code has a **percent off**, what it **applies to** (products, events, or both), an optional description, and an **active** toggle to turn it off without deleting it.
+- **Events too**: a code that applies to events takes its percent off the ticket price on the Square payment page. Individual events can additionally refuse the welcome code via the **Accept the welcome discount code** toggle in the event's edit form.
 - **BOUGIE15** is the welcome-popup code (15% off). It creates itself automatically the first time someone uses it, and then appears here where you can manage it like any other code.
 - **Single-use per email**: when a customer applies a code they must enter the email they claimed it with. Once they complete a *paid* order with that code, the same code + same email combination is blocked from reuse. Abandoned checkouts don't burn the code, and a different email can still use a shared code like BOUGIE15.
 - The discount appears as a line item on the Square payment page and the customer's receipt.

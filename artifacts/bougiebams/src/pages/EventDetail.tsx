@@ -434,7 +434,7 @@ export default function EventDetail() {
                     </>
                   )}
 
-                  {event.priceCents && event.hasCompCode ? (
+                  {event.priceCents ? (
                     <div className="space-y-2">
                       <Label htmlFor="coupon">
                         Coupon Code
@@ -442,7 +442,7 @@ export default function EventDetail() {
                       </Label>
                       <Input
                         id="coupon"
-                        placeholder="Enter code for free registration"
+                        placeholder="Discount or comp code"
                         value={formData.couponCode}
                         onChange={e => setFormData({ ...formData, couponCode: e.target.value })}
                         className="bg-background"

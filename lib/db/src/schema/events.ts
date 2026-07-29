@@ -32,6 +32,10 @@ export const eventsTable = pgTable("events", {
   compCode: text("comp_code"),
   // Max redemptions per comp code for this event; null = unlimited.
   compCodeLimit: integer("comp_code_limit"),
+  // When false, the welcome-popup discount code (and subscribers' personal
+  // codes for the same offer) is rejected at registration for this event.
+  // Other event-applicable discount codes still work.
+  allowWelcomeCode: boolean("allow_welcome_code").notNull().default(true),
   // Manual position on the public Events page: lower numbers first, ties and
   // unnumbered events fall back to date order.
   sortOrder: integer("sort_order"),

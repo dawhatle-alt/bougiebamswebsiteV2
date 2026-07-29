@@ -7,6 +7,7 @@ import { requireAnyAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured, isSandboxMode } from "../lib/square";
 import { recordSquareOrder } from "../lib/orders";
+import { resolveEventDiscount, hasRedeemed, recordPendingRedemption, type ResolvedDiscount } from "../lib/discounts";
 
 const router: IRouter = Router();
 
@@ -29,7 +30,8 @@ const RegistrationCheckoutBody = z.object({
   seatingPreference: z.string().max(300).optional(),
   tilePreference: z.string().max(50).optional(),
   skillLevel: z.string().max(50).optional(),
-  // Comp code — a match against the event's comp codes registers free.
+  // Coupon — a match against the event's comp codes registers free; otherwise
+  // it's resolved as a percentage discount code (Admin → Discount Codes).
   couponCode: z.string().max(100).optional(),
 });
 
@@ -90,10 +92,12 @@ router.post(
     const origin = getOrigin(req);
 
     // A coupon matching one of the event's comp codes (comma-separated,
-    // case-insensitive) registers free; any other non-empty coupon is
-    // rejected so nobody gets silently charged after a typo.
+    // case-insensitive) registers free. Otherwise it's checked against the
+    // store discount codes (percentage off the ticket). Anything else is
+    // rejected so nobody gets silently charged full price after a typo.
     const coupon = (couponCode ?? "").trim();
     let compApplied = false;
+    let discount: ResolvedDiscount | null = null;
     if (priceInCents > 0 && coupon) {
       const validCodes = (event.compCode ?? "")
         .split(",")
@@ -114,8 +118,19 @@ router.post(
         }
         compApplied = true;
       } else {
-        res.status(400).json({ error: "That coupon code isn't valid for this event." });
-        return;
+        discount = await resolveEventDiscount(coupon);
+        if (!discount) {
+          res.status(400).json({ error: "That coupon code isn't valid for this event." });
+          return;
+        }
+        if (discount.isWelcomeOffer && !event.allowWelcomeCode) {
+          res.status(400).json({ error: "That code can't be used for this event." });
+          return;
+        }
+        if (await hasRedeemed(discount.code, email)) {
+          res.status(400).json({ error: "This discount code has already been used with that email address." });
+          return;
+        }
       }
     }
     const requiresPayment = priceInCents > 0 && !compApplied;
@@ -157,6 +172,20 @@ router.post(
               },
             ],
             referenceId: String(registration.id),
+            // Same shape as product checkout: Square shows the discounted
+            // total, and the order sync parses the code back out of the name.
+            ...(discount
+              ? {
+                  discounts: [
+                    {
+                      name: `${discount.code} (${discount.percent}% off)`,
+                      type: "FIXED_PERCENTAGE" as const,
+                      percentage: String(discount.percent),
+                      scope: "ORDER" as const,
+                    },
+                  ],
+                }
+              : {}),
           },
           checkoutOptions: {
             // Embed the registration id ourselves so the confirmation page can
@@ -179,6 +208,17 @@ router.post(
           .update(registrationsTable)
           .set({ paymentSessionId: response.paymentLink?.id ?? null })
           .where(eq(registrationsTable.id, registration.id));
+
+        // Tie the discount to the Square order; it's marked consumed when the
+        // payment is captured (abandoned checkouts don't burn the code).
+        const linkOrderId = response.paymentLink?.orderId;
+        if (discount && linkOrderId) {
+          try {
+            await recordPendingRedemption(discount.code, email, linkOrderId);
+          } catch (err) {
+            logger.error({ err, code: discount.code }, "Failed to record pending discount redemption");
+          }
+        }
 
         res.json({ url });
       } else {

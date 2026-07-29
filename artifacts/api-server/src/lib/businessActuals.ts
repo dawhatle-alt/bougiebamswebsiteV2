@@ -114,7 +114,14 @@ export async function computeActuals(): Promise<BusinessActuals> {
       // Event money is counted from paid registrations below — registrations
       // are the complete record (Square event orders only exist for payments
       // captured since the July 2026 webhook fix, so counting them here would
-      // undercount and double-count at the same time).
+      // undercount and double-count at the same time). But registrations count
+      // every seat at full ticket price, so coupon discounts Square applied to
+      // event checkouts are subtracted here to keep the totals honest.
+      const disc = order.discountCents ?? 0;
+      if (disc > 0) {
+        eventRevenueCents -= disc;
+        bucket.eventCents -= disc;
+      }
     } else {
       productRevenueCents += order.totalCents;
       productOrderCount += 1;
