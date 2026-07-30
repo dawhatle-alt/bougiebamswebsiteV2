@@ -566,7 +566,9 @@ export default function RegistrationsManager({ onAuthError }: Props) {
             <TableBody>
               {visible.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell className="font-medium text-[#1E2A5A] max-w-[180px] truncate">
+                  {/* Titles wrap instead of truncating — several events share a
+                      long prefix, so a cut-off title is ambiguous. */}
+                  <TableCell className="font-medium text-[#1E2A5A] max-w-[260px] whitespace-normal break-words leading-snug">
                     {r.eventTitle}
                   </TableCell>
                   <TableCell className="text-[#1E2A5A]">

@@ -214,7 +214,7 @@ export default function DashboardStats({ onAuthError, onNavigate }: Props) {
                 return (
                   <div key={e.id}>
                     <div className="flex items-baseline justify-between gap-2 mb-1">
-                      <span className="text-sm font-medium text-[#1E2A5A] truncate">
+                      <span className="text-sm font-medium text-[#1E2A5A] min-w-0">
                         {e.title}
                         {!e.published && <span className="ml-2 text-[10px] uppercase tracking-wider text-[#9A8F7E]">draft</span>}
                       </span>

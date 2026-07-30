@@ -612,7 +612,7 @@ export default function EventsManager({ onAuthError }: Props) {
             <TableBody>
               {visibleEvents.map((e) => (
                 <TableRow key={e.id} className={e.archived ? "opacity-60" : undefined}>
-                  <TableCell className="font-medium text-[#1E2A5A] max-w-[200px] truncate">{e.title}</TableCell>
+                  <TableCell className="font-medium text-[#1E2A5A] max-w-[280px] whitespace-normal break-words leading-snug">{e.title}</TableCell>
                   <TableCell className="text-[#5A6178] whitespace-nowrap">{e.date}</TableCell>
                   <TableCell className="text-[#5A6178]">{e.category}</TableCell>
                   <TableCell className="text-[#5A6178]">{formatPrice(e)}</TableCell>
