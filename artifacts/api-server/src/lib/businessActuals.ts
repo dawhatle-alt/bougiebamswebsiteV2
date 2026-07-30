@@ -79,6 +79,7 @@ export async function computeActuals(): Promise<BusinessActuals> {
       status: registrationsTable.status,
       paymentSessionId: registrationsTable.paymentSessionId,
       createdAt: registrationsTable.createdAt,
+      seats: registrationsTable.seats,
     })
     .from(registrationsTable);
 
@@ -153,18 +154,20 @@ export async function computeActuals(): Promise<BusinessActuals> {
   const regsByEvent = new Map<number, { confirmed: number; paid: number }>();
   for (const reg of registrations) {
     const entry = regsByEvent.get(reg.eventId) ?? { confirmed: 0, paid: 0 };
-    if (reg.status === "confirmed") entry.confirmed += 1;
+    // Seat-weighted: one registration can cover several attendees.
+    const seats = Math.max(1, reg.seats ?? 1);
+    if (reg.status === "confirmed") entry.confirmed += seats;
     // A payment reference on a still-pending registration is just an opened
     // checkout page — only confirmed ones represent money that arrived.
     if (reg.paymentSessionId && reg.status === "confirmed") {
-      entry.paid += 1;
+      entry.paid += seats;
       const priceCents = priceByEvent.get(reg.eventId) ?? 0;
       if (priceCents > 0) {
-        eventRevenueCents += priceCents;
-        eventOrderCount += 1;
+        eventRevenueCents += priceCents * seats;
+        eventOrderCount += seats;
         const month = reg.createdAt.toISOString().slice(0, 7);
         const bucket = monthly.get(month) ?? { productCents: 0, eventCents: 0 };
-        bucket.eventCents += priceCents;
+        bucket.eventCents += priceCents * seats;
         monthly.set(month, bucket);
       }
     }

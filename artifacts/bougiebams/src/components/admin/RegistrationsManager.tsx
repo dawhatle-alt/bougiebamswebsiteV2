@@ -25,6 +25,8 @@ interface Registration {
   tilePreference?: string | null;
   skillLevel?: string | null;
   compCodeUsed?: string | null;
+  seats?: number;
+  guestNames?: string | null;
 }
 
 interface Props {
@@ -49,7 +51,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   const [verifyingId, setVerifyingId] = useState<number | null>(null);
   const [allEvents, setAllEvents] = useState<{ id: number; title: string; date: string }[]>([]);
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ eventId: "", name: "", email: "", notes: "", paid: true });
+  const [addForm, setAddForm] = useState({ eventId: "", name: "", email: "", notes: "", paid: true, seats: "1", guestNames: "" });
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
@@ -204,6 +206,8 @@ export default function RegistrationsManager({ onAuthError }: Props) {
           email: addForm.email.trim(),
           notes: addForm.notes.trim() || undefined,
           paid: addForm.paid,
+          seats: Math.max(1, parseInt(addForm.seats) || 1),
+          guestNames: addForm.guestNames.trim() || undefined,
         }),
       });
       if (res.status === 401 || res.status === 403) { onAuthError(); return; }
@@ -214,7 +218,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
       const { registration } = await res.json() as { registration: Registration };
       setRegistrations((prev) => [registration, ...prev]);
       setAddOpen(false);
-      setAddForm({ eventId: "", name: "", email: "", notes: "", paid: true });
+      setAddForm({ eventId: "", name: "", email: "", notes: "", paid: true, seats: "1", guestNames: "" });
     } catch (err) {
       setAddError(err instanceof Error ? err.message : "Could not add the registration.");
     } finally {
@@ -295,7 +299,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   }
 
   function handleExport() {
-    const header = ["ID", "Event", "Name", "Email", "Status", "Paid", "Notes", "Sit With", "Blanks & Jokers", "Skill Level", "Comp Code", "Date"];
+    const header = ["ID", "Event", "Name", "Email", "Status", "Paid", "Seats", "Guest Names", "Notes", "Sit With", "Blanks & Jokers", "Skill Level", "Comp Code", "Date"];
     const rows = visible.map((r) => [
       String(r.id),
       r.eventTitle,
@@ -303,6 +307,8 @@ export default function RegistrationsManager({ onAuthError }: Props) {
       r.email,
       r.status,
       r.paid ? "Yes" : "No",
+      String(r.seats ?? 1),
+      r.guestNames ?? "",
       r.notes ?? "",
       r.seatingPreference ?? "",
       r.tilePreference ?? "",
@@ -420,6 +426,26 @@ export default function RegistrationsManager({ onAuthError }: Props) {
                 onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
                 placeholder="guest@example.com"
               />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Seats</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={addForm.seats}
+                  onChange={(e) => setAddForm((f) => ({ ...f, seats: e.target.value }))}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Guest Names</label>
+                <Input
+                  value={addForm.guestNames}
+                  onChange={(e) => setAddForm((f) => ({ ...f, guestNames: e.target.value }))}
+                  placeholder="Only if more than 1 seat"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-[#5A6178] uppercase tracking-wider mb-1">Notes</label>
@@ -545,9 +571,20 @@ export default function RegistrationsManager({ onAuthError }: Props) {
                   </TableCell>
                   <TableCell className="text-[#1E2A5A]">
                     {r.name}
-                    {(r.skillLevel || r.tilePreference || r.seatingPreference || r.compCodeUsed) && (
+                    {(r.seats ?? 1) > 1 && (
+                      <span
+                        className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded bg-[#1E2A5A]/10 text-[#1E2A5A] text-[10px] font-bold align-middle"
+                        title={`${r.seats} seats in one registration`}
+                      >
+                        ×{r.seats}
+                      </span>
+                    )}
+                    {((r.seats ?? 1) > 1 || r.skillLevel || r.tilePreference || r.seatingPreference || r.compCodeUsed) && (
                       <div className="text-[11px] text-[#9A8F7E] mt-0.5 max-w-[240px]">
                         {[
+                          (r.seats ?? 1) > 1
+                            ? `${r.seats} seats${r.guestNames ? ` with ${r.guestNames}` : ""}`
+                            : null,
                           r.skillLevel,
                           r.tilePreference ? `Blanks/jokers: ${r.tilePreference}` : null,
                           r.seatingPreference ? `Sit with: ${r.seatingPreference}` : null,

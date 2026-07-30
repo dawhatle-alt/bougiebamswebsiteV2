@@ -499,6 +499,8 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
       tilePreference: registrationsTable.tilePreference,
       skillLevel: registrationsTable.skillLevel,
       compCodeUsed: registrationsTable.compCodeUsed,
+      seats: registrationsTable.seats,
+      guestNames: registrationsTable.guestNames,
     })
     .from(registrationsTable)
     .leftJoin(eventsTable, eq(registrationsTable.eventId, eventsTable.id))
@@ -522,6 +524,8 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
       tilePreference: r.tilePreference ?? null,
       skillLevel: r.skillLevel ?? null,
       compCodeUsed: r.compCodeUsed ?? null,
+      seats: r.seats ?? 1,
+      guestNames: r.guestNames ?? null,
     })),
   });
 });
@@ -541,6 +545,10 @@ router.post("/admin/registrations", requireAdmin, async (req, res): Promise<void
     res.status(400).json({ error: "eventId (number), name and email are required" });
     return;
   }
+  const seatsRaw = Number((req.body as { seats?: unknown }).seats ?? 1);
+  const seats = Number.isFinite(seatsRaw) ? Math.min(20, Math.max(1, Math.floor(seatsRaw))) : 1;
+  const guestNamesRaw = (req.body as { guestNames?: unknown }).guestNames;
+  const guestNames = typeof guestNamesRaw === "string" && guestNamesRaw.trim() ? guestNamesRaw.trim().slice(0, 500) : null;
 
   const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId)).limit(1);
   if (!event) {
@@ -557,12 +565,14 @@ router.post("/admin/registrations", requireAdmin, async (req, res): Promise<void
       notes: typeof notes === "string" && notes.trim() ? notes.trim().slice(0, 500) : null,
       status: "confirmed",
       paymentSessionId: paid === true ? `manual-${Date.now()}` : null,
+      seats,
+      guestNames,
     })
     .returning();
 
   await db
     .update(eventsTable)
-    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - ${seats})` })
     .where(eq(eventsTable.id, eventId));
 
   res.status(201).json({
@@ -576,6 +586,8 @@ router.post("/admin/registrations", requireAdmin, async (req, res): Promise<void
       status: row.status,
       paid: !!row.paymentSessionId,
       createdAt: row.createdAt.toISOString(),
+      seats: row.seats,
+      guestNames: row.guestNames ?? null,
     },
   });
 });
@@ -602,6 +614,7 @@ router.patch("/admin/registrations/:id/paid", requireAdmin, async (req, res): Pr
       eventId: registrationsTable.eventId,
       status: registrationsTable.status,
       paymentSessionId: registrationsTable.paymentSessionId,
+      seats: registrationsTable.seats,
     })
     .from(registrationsTable)
     .where(eq(registrationsTable.id, id))
@@ -635,7 +648,7 @@ router.patch("/admin/registrations/:id/paid", requireAdmin, async (req, res): Pr
   if (confirmToo) {
     await db
       .update(eventsTable)
-      .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+      .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - ${existing.seats})` })
       .where(eq(eventsTable.id, existing.eventId));
   }
 
@@ -707,6 +720,7 @@ router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> =>
         status: registrationsTable.status,
         paymentSessionId: registrationsTable.paymentSessionId,
         createdAt: registrationsTable.createdAt,
+        seats: registrationsTable.seats,
       })
       .from(registrationsTable);
     const latestSubs = await db.select().from(subscribersTable).orderBy(desc(subscribersTable.createdAt)).limit(10);
@@ -729,11 +743,13 @@ router.get("/admin/dashboard", requireAdmin, async (_req, res): Promise<void> =>
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const confirmedByEvent = new Map<number, { confirmed: number; paid: number }>();
+    // Seat-weighted: one registration can cover several attendees.
     for (const r of regs) {
       if (r.status !== "confirmed") continue;
       const e = confirmedByEvent.get(r.eventId) ?? { confirmed: 0, paid: 0 };
-      e.confirmed += 1;
-      if (r.paymentSessionId) e.paid += 1;
+      const seats = Math.max(1, r.seats ?? 1);
+      e.confirmed += seats;
+      if (r.paymentSessionId) e.paid += seats;
       confirmedByEvent.set(r.eventId, e);
     }
     const upcomingEvents = eventsRows
@@ -826,23 +842,41 @@ async function buildCheckinReport(eventId: number) {
     .where(eq(registrationsTable.eventId, eventId))
     .orderBy(asc(registrationsTable.name));
 
-  const participants = regs.map((r) => ({
-    name: r.name,
-    email: r.email,
-    status: r.status,
-    paid: !!r.paymentSessionId,
-    notes: r.notes ?? "",
-    registered: r.createdAt.toISOString().slice(0, 10),
-  }));
+  // One line per ATTENDEE, not per registration: a multi-seat registration
+  // brings extra guests through the door, so each gets their own row to check
+  // off. Named guests use their own name; unnamed ones read "Guest of X".
+  const participants = regs.flatMap((r) => {
+    const base = {
+      email: r.email,
+      status: r.status,
+      paid: !!r.paymentSessionId,
+      notes: r.notes ?? "",
+      registered: r.createdAt.toISOString().slice(0, 10),
+    };
+    const seats = Math.max(1, r.seats ?? 1);
+    if (seats === 1) return [{ ...base, name: r.name, seatOf: "" }];
+
+    const guests = (r.guestNames ?? "")
+      .split(/[\n,;]+/)
+      .map((g) => g.trim())
+      .filter(Boolean);
+    return Array.from({ length: seats }, (_, i) => ({
+      ...base,
+      name: i === 0 ? r.name : guests[i - 1] ?? `Guest of ${r.name}`,
+      seatOf: i === 0 ? `1 of ${seats}` : `${i + 1} of ${seats} — with ${r.name}`,
+    }));
+  });
+  participants.sort((a, b) => a.name.localeCompare(b.name));
 
   const csvEscape = (s: string) => `"${s.replace(/"/g, '""')}"`;
-  const header = ["#", "Name", "Email", "Status", "Paid", "Notes", "Registered", "Checked In"];
+  const header = ["#", "Name", "Email", "Status", "Paid", "Seat", "Notes", "Registered", "Checked In"];
   const rows = participants.map((p, i) => [
     String(i + 1),
     p.name,
     p.email,
     p.status,
     p.paid ? "Yes" : "No",
+    p.seatOf,
     p.notes,
     p.registered,
     "", // blank column to tick off at the door
@@ -926,7 +960,7 @@ router.delete("/admin/registrations/:id", requireAdmin, async (req, res): Promis
   if (row.status === "confirmed") {
     await db
       .update(eventsTable)
-      .set({ spotsLeft: sql`LEAST(${eventsTable.totalSpots}, ${eventsTable.spotsLeft} + 1)` })
+      .set({ spotsLeft: sql`LEAST(${eventsTable.totalSpots}, ${eventsTable.spotsLeft} + ${row.seats})` })
       .where(eq(eventsTable.id, row.eventId));
   }
 

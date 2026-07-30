@@ -149,6 +149,7 @@ router.get("/admin/business/events", requireAdmin, async (_req, res): Promise<vo
         eventId: registrationsTable.eventId,
         status: registrationsTable.status,
         paymentSessionId: registrationsTable.paymentSessionId,
+        seats: registrationsTable.seats,
       })
       .from(registrationsTable);
     const costs = await db.select().from(bizEventCostsTable);
@@ -157,10 +158,12 @@ router.get("/admin/business/events", requireAdmin, async (_req, res): Promise<vo
     for (const reg of registrations) {
       const entry = regsByEvent.get(reg.eventId) ?? { confirmed: 0, paid: 0 };
       if (reg.status === "confirmed") {
-        entry.confirmed += 1;
+        // Seat-weighted: one registration can cover several attendees.
+        const seats = Math.max(1, reg.seats ?? 1);
+        entry.confirmed += seats;
         // Only confirmed registrations count as paid — a payment reference on
         // a pending one is just an opened checkout page.
-        if (reg.paymentSessionId) entry.paid += 1;
+        if (reg.paymentSessionId) entry.paid += seats;
       }
       regsByEvent.set(reg.eventId, entry);
     }

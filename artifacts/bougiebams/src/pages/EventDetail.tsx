@@ -32,6 +32,9 @@ export default function EventDetail() {
   const [formData, setFormData] = useState({
     name: "", email: "", notes: "",
     seatingPreference: "", tilePreference: "", skillLevel: "", couponCode: "",
+    // One registration can cover several attendees (e.g. a mother buying a
+    // seat for her daughter) — paid as a single transaction.
+    seats: 1, guestNames: "",
   });
 
   useEffect(() => {
@@ -137,6 +140,8 @@ export default function EventDetail() {
           tilePreference: formData.tilePreference || undefined,
           skillLevel: formData.skillLevel || undefined,
           couponCode: formData.couponCode.trim() || undefined,
+          seats: formData.seats > 1 ? formData.seats : undefined,
+          guestNames: formData.seats > 1 && formData.guestNames.trim() ? formData.guestNames.trim() : undefined,
           redirectBase: window.location.origin + (import.meta.env.BASE_URL ?? "/").replace(/\/$/, ""),
         }),
       });
@@ -357,6 +362,48 @@ export default function EventDetail() {
                       className="bg-background"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="seats">How many seats?</Label>
+                    <select
+                      id="seats"
+                      value={formData.seats}
+                      onChange={e => setFormData({ ...formData, seats: Number(e.target.value) })}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {Array.from({ length: Math.min(10, Math.max(1, event.spotsLeft)) }, (_, i) => i + 1).map(n => (
+                        <option key={n} value={n}>
+                          {n === 1 ? "Just me" : `${n} seats`}
+                          {event.priceCents ? ` — $${((event.priceCents * n) / 100).toFixed(0)}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {formData.seats > 1 && (
+                      <p className="text-xs text-muted-foreground">
+                        Booking {formData.seats} seats for {event.priceCents ? `$${((event.priceCents * formData.seats) / 100).toFixed(0)} total` : "free"} — one payment, {formData.seats} spots held.
+                      </p>
+                    )}
+                  </div>
+
+                  {formData.seats > 1 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="guestNames">
+                        Who's coming with you?
+                        <span className="text-xs font-normal text-muted-foreground ml-1">(optional)</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        Names of your {formData.seats - 1} guest{formData.seats - 1 !== 1 ? "s" : ""}, so we can have the table ready
+                      </p>
+                      <Textarea
+                        id="guestNames"
+                        placeholder="e.g. Jasmine Christenson"
+                        value={formData.guestNames}
+                        onChange={e => setFormData({ ...formData, guestNames: e.target.value })}
+                        className="bg-background resize-none"
+                        rows={2}
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="notes">
                       Notes

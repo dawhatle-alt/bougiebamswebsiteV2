@@ -103,6 +103,7 @@ export async function computePnl(months: string[]): Promise<PnlStatement[]> {
       status: registrationsTable.status,
       paymentSessionId: registrationsTable.paymentSessionId,
       createdAt: registrationsTable.createdAt,
+      seats: registrationsTable.seats,
     })
     .from(registrationsTable);
   const hasEventCosts = await tableExists("biz_event_costs");
@@ -163,8 +164,9 @@ export async function computePnl(months: string[]): Promise<PnlStatement[]> {
       if (reg.createdAt.toISOString().slice(0, 7) !== month) continue;
       const priceCents = priceByEvent.get(reg.eventId) ?? 0;
       if (priceCents > 0) {
-        eventCents += priceCents;
-        paidSeats += 1;
+        const seats = Math.max(1, reg.seats ?? 1);
+        eventCents += priceCents * seats;
+        paidSeats += seats;
       }
     }
     eventCents -= eventDiscountCents;

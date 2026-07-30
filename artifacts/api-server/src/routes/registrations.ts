@@ -29,6 +29,8 @@ router.post("/registrations", requireAnyAuth, async (req, res): Promise<void> =>
   }
 
   const { eventId, name, email, notes } = parsed.data;
+  const seats = parsed.data.seats ?? 1;
+  const guestNames = parsed.data.guestNames?.trim() || null;
 
   const [event] = await db
     .select()
@@ -50,6 +52,13 @@ router.post("/registrations", requireAnyAuth, async (req, res): Promise<void> =>
     return;
   }
 
+  if (seats > event.spotsLeft) {
+    res.status(400).json({
+      error: `Only ${event.spotsLeft} spot${event.spotsLeft === 1 ? "" : "s"} left for this event — reduce the number of seats.`,
+    });
+    return;
+  }
+
   if (event.priceCents !== null && event.priceCents > 0) {
     res.status(400).json({
       error: "This is a paid event. Use POST /registrations/checkout to register.",
@@ -66,12 +75,14 @@ router.post("/registrations", requireAnyAuth, async (req, res): Promise<void> =>
       notes: notes ?? null,
       status: "confirmed",
       userId: req.isAuthenticated() ? req.user!.id : (req.shopperUser?.sub ?? null),
+      seats,
+      guestNames,
     })
     .returning();
 
   await db
     .update(eventsTable)
-    .set({ spotsLeft: event.spotsLeft - 1 })
+    .set({ spotsLeft: Math.max(0, event.spotsLeft - seats) })
     .where(eq(eventsTable.id, eventId));
 
   await sendRegistrationConfirmationEmail({
@@ -82,6 +93,8 @@ router.post("/registrations", requireAnyAuth, async (req, res): Promise<void> =>
     eventTime: event.time,
     eventLocation: event.location,
     eventHost: event.host,
+    seats,
+    guestNames,
   });
 
   res.status(201).json({ registration: toRegResponse(reg) });
@@ -312,7 +325,7 @@ router.post("/registrations/:id/verify-payment", async (req, res): Promise<void>
 
       await db
         .update(eventsTable)
-        .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+        .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - ${reg.seats})` })
         .where(eq(eventsTable.id, reg.eventId));
 
       await sendRegistrationConfirmationEmail({
@@ -323,6 +336,8 @@ router.post("/registrations/:id/verify-payment", async (req, res): Promise<void>
         eventTime: evt.time,
         eventLocation: evt.location,
         eventHost: evt.host,
+        seats: reg.seats,
+        guestNames: reg.guestNames,
       });
 
       logger.info({ registrationId: id, orderId }, "Registration confirmed via payment verification");

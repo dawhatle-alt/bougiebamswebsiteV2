@@ -304,7 +304,7 @@ async function repairRegistrationFromOrder(
         .where(eq(registrationsTable.id, reg.id));
       await db
         .update(eventsTable)
-        .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+        .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - ${reg.seats})` })
         .where(eq(eventsTable.id, reg.eventId));
       logger.warn({ registrationId: reg.id, orderId: order.id }, "Reconciled paid-but-pending registration from Square order");
 
@@ -319,6 +319,8 @@ async function repairRegistrationFromOrder(
             eventTime: evt.time,
             eventLocation: evt.location,
             eventHost: evt.host,
+            seats: reg.seats,
+            guestNames: reg.guestNames,
           });
         } catch (err) {
           logger.error({ err, registrationId: reg.id }, "Reconciliation confirmation email failed");
@@ -355,6 +357,9 @@ async function repairRegistrationFromOrder(
     return;
   }
 
+  // The line-item quantity is how many seats the guest paid for.
+  const paidSeats = Math.max(1, Math.round(Number(order.lineItems?.[0]?.quantity ?? "1")) || 1);
+
   await db.insert(registrationsTable).values({
     eventId: evt.id,
     name: buyer.buyerName ?? "Guest (restored from Square)",
@@ -362,10 +367,11 @@ async function repairRegistrationFromOrder(
     notes: restoreNote,
     status: "confirmed",
     paymentSessionId: paymentRef,
+    seats: paidSeats,
   });
   await db
     .update(eventsTable)
-    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - ${paidSeats})` })
     .where(eq(eventsTable.id, evt.id));
   logger.warn({ orderId: order.id, eventId: evt.id }, "Restored missing registration from paid Square order — check name/email against Square");
 }

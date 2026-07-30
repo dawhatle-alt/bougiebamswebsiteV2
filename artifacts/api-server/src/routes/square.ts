@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, desc } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAnyAuth } from "../middleware/auth";
@@ -33,6 +33,10 @@ const RegistrationCheckoutBody = z.object({
   // Coupon — a match against the event's comp codes registers free; otherwise
   // it's resolved as a percentage discount code (Admin → Discount Codes).
   couponCode: z.string().max(100).optional(),
+  // Seats covered by this one registration/payment, plus the other attendees'
+  // names (e.g. a mother buying a seat for her daughter).
+  seats: z.number().int().min(1).max(20).optional(),
+  guestNames: z.string().max(500).optional(),
 });
 
 router.post(
@@ -68,6 +72,8 @@ router.post(
     }
 
     const { eventId, name, email, notes, redirectBase, seatingPreference, tilePreference, skillLevel, couponCode } = parsed.data;
+    const seats = parsed.data.seats ?? 1;
+    const guestNames = parsed.data.guestNames?.trim() || null;
 
     const [event] = await db
       .select()
@@ -85,6 +91,12 @@ router.post(
     }
     if (event.spotsLeft <= 0) {
       res.status(409).json({ error: "This event is sold out" });
+      return;
+    }
+    if (seats > event.spotsLeft) {
+      res.status(409).json({
+        error: `Only ${event.spotsLeft} spot${event.spotsLeft === 1 ? "" : "s"} left for this event — reduce the number of seats.`,
+      });
       return;
     }
 
@@ -107,11 +119,12 @@ router.post(
         // Enforce the per-code redemption cap (cancelled registrations give
         // their redemption back).
         if (event.compCodeLimit != null) {
+          // Seat-weighted: a 3-seat comp registration consumes 3 of the limit.
           const [row] = await db
-            .select({ used: sql<number>`count(*)` })
+            .select({ used: sql<number>`coalesce(sum(${registrationsTable.seats}), 0)` })
             .from(registrationsTable)
             .where(sql`${registrationsTable.eventId} = ${eventId} AND lower(${registrationsTable.compCodeUsed}) = ${coupon.toLowerCase()} AND ${registrationsTable.status} != 'cancelled'`);
-          if (Number(row?.used ?? 0) >= event.compCodeLimit) {
+          if (Number(row?.used ?? 0) + seats > event.compCodeLimit) {
             res.status(400).json({ error: "That coupon code has already been used the maximum number of times for this event." });
             return;
           }
@@ -136,21 +149,46 @@ router.post(
     const requiresPayment = priceInCents > 0 && !compApplied;
 
     try {
-      const [registration] = await db
-        .insert(registrationsTable)
-        .values({
-          eventId,
-          name,
-          email,
-          notes: notes ?? null,
-          status: requiresPayment ? "pending" : "confirmed",
-          userId: req.isAuthenticated() ? req.user!.id : (req.shopperUser?.sub ?? null),
-          seatingPreference: seatingPreference?.trim() || null,
-          tilePreference: tilePreference?.trim() || null,
-          skillLevel: skillLevel?.trim() || null,
-          compCodeUsed: compApplied ? coupon : null,
-        })
-        .returning();
+      const values = {
+        eventId,
+        name,
+        email,
+        notes: notes ?? null,
+        status: requiresPayment ? "pending" : "confirmed",
+        userId: req.isAuthenticated() ? req.user!.id : (req.shopperUser?.sub ?? null),
+        seatingPreference: seatingPreference?.trim() || null,
+        tilePreference: tilePreference?.trim() || null,
+        skillLevel: skillLevel?.trim() || null,
+        compCodeUsed: compApplied ? coupon : null,
+        seats,
+        guestNames,
+      };
+
+      // Re-clicking Register used to leave a new pending row (and a new dead
+      // payment link) behind on every attempt. Reuse an existing *pending* row
+      // for the same event + name + email instead — an exact repeat of the same
+      // person. A different name (registering someone else, even under the same
+      // email) or an already-confirmed seat always gets its own row.
+      const [duplicate] = await db
+        .select({ id: registrationsTable.id })
+        .from(registrationsTable)
+        .where(sql`${registrationsTable.eventId} = ${eventId}
+          AND ${registrationsTable.status} = 'pending'
+          AND lower(trim(${registrationsTable.email})) = ${email.trim().toLowerCase()}
+          AND lower(trim(${registrationsTable.name})) = ${name.trim().toLowerCase()}`)
+        .orderBy(desc(registrationsTable.createdAt))
+        .limit(1);
+
+      const [registration] = duplicate
+        ? await db
+            .update(registrationsTable)
+            .set(values)
+            .where(eq(registrationsTable.id, duplicate.id))
+            .returning()
+        : await db.insert(registrationsTable).values(values).returning();
+      if (duplicate) {
+        logger.info({ registrationId: registration.id, eventId }, "Reused pending registration for a repeat checkout attempt");
+      }
 
       if (requiresPayment) {
         const idempotencyKey = `reg-${registration.id}-${Date.now()}`;
@@ -164,7 +202,9 @@ router.post(
               {
                 name: event.title,
                 note: `${event.date} · ${event.location}`,
-                quantity: "1",
+                // Square multiplies base price by quantity, so a 2-seat
+                // registration charges two tickets in one transaction.
+                quantity: String(seats),
                 basePriceMoney: {
                   amount: BigInt(priceInCents),
                   currency: "USD",
@@ -224,7 +264,7 @@ router.post(
       } else {
         await db
           .update(eventsTable)
-          .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+          .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - ${seats})` })
           .where(eq(eventsTable.id, eventId));
 
         await sendRegistrationConfirmationEmail({
@@ -235,6 +275,8 @@ router.post(
           eventTime: event.time,
           eventLocation: event.location,
           eventHost: event.host,
+          seats,
+          guestNames,
         });
 
         res.json({ url: `${origin}/events?registration=success` });
@@ -268,7 +310,7 @@ async function confirmRegistration(registrationId: number, paymentId: string | n
 
   await db
     .update(eventsTable)
-    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+    .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - ${reg.seats})` })
     .where(eq(eventsTable.id, eventId));
 
   if (evt) {
@@ -280,6 +322,8 @@ async function confirmRegistration(registrationId: number, paymentId: string | n
       eventTime: evt.time,
       eventLocation: evt.location,
       eventHost: evt.host,
+      seats: reg.seats,
+      guestNames: reg.guestNames,
     });
   }
 

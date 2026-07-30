@@ -68,11 +68,40 @@ export async function sendRegistrationConfirmationEmail(opts: {
   eventTime: string;
   eventLocation: string;
   eventHost: string;
+  // Multi-seat registrations (one transaction covering several attendees).
+  seats?: number;
+  guestNames?: string | null;
 }): Promise<void> {
   const client = getClient();
   if (!client) return;
 
   const { registrantName, registrantEmail, eventTitle, eventDate, eventTime, eventLocation, eventHost } = opts;
+  const seats = opts.seats && opts.seats > 1 ? opts.seats : 1;
+  const guestNames = opts.guestNames?.trim() || "";
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const spotLine =
+    seats > 1
+      ? `Your <strong>${seats} spots</strong> are confirmed for <strong>${eventTitle}</strong>.`
+      : `Your spot is confirmed for <strong>${eventTitle}</strong>.`;
+  const spotLineText =
+    seats > 1
+      ? `Your ${seats} spots are confirmed for ${eventTitle}.`
+      : `Your spot is confirmed for ${eventTitle}.`;
+  const seatsRowHtml =
+    seats > 1
+      ? `<tr><td style="padding:4px 12px 4px 0;color:#666">Seats</td><td style="padding:4px 0"><strong>${seats}</strong></td></tr>`
+      : "";
+  const guestsRowHtml =
+    seats > 1 && guestNames
+      ? `<tr><td style="padding:4px 12px 4px 0;color:#666">Attending with</td><td style="padding:4px 0"><strong>${esc(guestNames)}</strong></td></tr>`
+      : "";
+  const seatsTextLines = [
+    seats > 1 ? `Seats: ${seats}` : "",
+    seats > 1 && guestNames ? `Attending with: ${guestNames}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const { error } = await client.emails.send({
     from: FROM_EMAIL,
@@ -82,17 +111,19 @@ export async function sendRegistrationConfirmationEmail(opts: {
     html: `${logoHeader}
       <h2>You're registered! 🎉</h2>
       <p>Hi ${registrantName},</p>
-      <p>Your spot is confirmed for <strong>${eventTitle}</strong>.</p>
+      <p>${spotLine}</p>
       <table style="border-collapse:collapse;margin:16px 0">
         <tr><td style="padding:4px 12px 4px 0;color:#666">Date</td><td style="padding:4px 0"><strong>${eventDate}</strong></td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#666">Time</td><td style="padding:4px 0"><strong>${eventTime}</strong></td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#666">Location</td><td style="padding:4px 0"><strong>${eventLocation}</strong></td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#666">Host</td><td style="padding:4px 0"><strong>${eventHost}</strong></td></tr>
+        ${seatsRowHtml}
+        ${guestsRowHtml}
       </table>
       <p>If you have any questions, reply to this email or reach us at <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
       <p>See you there!<br/>— The BougieBams Team</p>
     `,
-    text: `Hi ${registrantName},\n\nYour spot is confirmed for ${eventTitle}.\n\nDate: ${eventDate}\nTime: ${eventTime}\nLocation: ${eventLocation}\nHost: ${eventHost}\n\nQuestions? Email us at ${CONTACT_EMAIL}.\n\nSee you there!\n— The BougieBams Team`,
+    text: `Hi ${registrantName},\n\n${spotLineText}\n\nDate: ${eventDate}\nTime: ${eventTime}\nLocation: ${eventLocation}\nHost: ${eventHost}${seatsTextLines ? `\n${seatsTextLines}` : ""}\n\nQuestions? Email us at ${CONTACT_EMAIL}.\n\nSee you there!\n— The BougieBams Team`,
   });
 
   if (error) {
@@ -209,7 +240,9 @@ export async function sendCheckinReportEmail(opts: {
   eventDate: string;
   eventTime: string;
   eventLocation: string;
-  participants: { name: string; email: string; status: string; paid: boolean }[];
+  // seatOf marks attendees who came in on a multi-seat registration
+  // ("2 of 3 — with Cyndi Christenson"); blank for single-seat registrations.
+  participants: { name: string; email: string; status: string; paid: boolean; seatOf?: string }[];
   csv: string;
   csvFilename: string;
 }): Promise<void> {
@@ -224,7 +257,9 @@ export async function sendCheckinReportEmail(opts: {
       (p, i) =>
         `<tr>
           <td style="padding:4px 10px;border-bottom:1px solid #eee">${i + 1}</td>
-          <td style="padding:4px 10px;border-bottom:1px solid #eee"><strong>${esc(p.name)}</strong></td>
+          <td style="padding:4px 10px;border-bottom:1px solid #eee"><strong>${esc(p.name)}</strong>${
+            p.seatOf ? `<br/><span style="color:#888;font-size:12px">${esc(p.seatOf)}</span>` : ""
+          }</td>
           <td style="padding:4px 10px;border-bottom:1px solid #eee">${esc(p.email)}</td>
           <td style="padding:4px 10px;border-bottom:1px solid #eee">${esc(p.status)}</td>
           <td style="padding:4px 10px;border-bottom:1px solid #eee">${p.paid ? "Paid" : "Free"}</td>

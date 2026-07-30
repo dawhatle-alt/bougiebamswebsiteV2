@@ -378,7 +378,9 @@ export const CreateRegistrationBody = zod.object({
   "eventId": zod.number(),
   "name": zod.string(),
   "email": zod.string().email(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "seats": zod.number().int().min(1).max(20).optional(),
+  "guestNames": zod.string().max(500).optional()
 })
 
 export const CreateRegistrationResponse = zod.object({
