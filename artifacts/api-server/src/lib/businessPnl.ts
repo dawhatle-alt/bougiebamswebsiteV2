@@ -100,6 +100,7 @@ export async function computePnl(months: string[]): Promise<PnlStatement[]> {
   const registrations = await db
     .select({
       eventId: registrationsTable.eventId,
+      status: registrationsTable.status,
       paymentSessionId: registrationsTable.paymentSessionId,
       createdAt: registrationsTable.createdAt,
     })
@@ -156,7 +157,9 @@ export async function computePnl(months: string[]): Promise<PnlStatement[]> {
     let eventCents = 0;
     let paidSeats = 0;
     for (const reg of registrations) {
-      if (!reg.paymentSessionId) continue;
+      // Confirmed + payment reference = money arrived; a reference on a
+      // pending registration is just an opened checkout page.
+      if (!reg.paymentSessionId || reg.status !== "confirmed") continue;
       if (reg.createdAt.toISOString().slice(0, 7) !== month) continue;
       const priceCents = priceByEvent.get(reg.eventId) ?? 0;
       if (priceCents > 0) {

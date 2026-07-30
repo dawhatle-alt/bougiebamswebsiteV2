@@ -513,7 +513,10 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
       email: r.email,
       notes: r.notes ?? null,
       status: r.status,
-      paid: !!r.paymentSessionId,
+      // A payment reference alone isn't payment — it's stamped when the Square
+      // checkout page is created. Paid means the money actually arrived (the
+      // registration was confirmed by webhook/verify/reconciliation or by hand).
+      paid: r.status === "confirmed" && !!r.paymentSessionId,
       createdAt: r.createdAt.toISOString(),
       seatingPreference: r.seatingPreference ?? null,
       tilePreference: r.tilePreference ?? null,
@@ -594,7 +597,12 @@ router.patch("/admin/registrations/:id/paid", requireAdmin, async (req, res): Pr
   }
 
   const [existing] = await db
-    .select({ id: registrationsTable.id, paymentSessionId: registrationsTable.paymentSessionId })
+    .select({
+      id: registrationsTable.id,
+      eventId: registrationsTable.eventId,
+      status: registrationsTable.status,
+      paymentSessionId: registrationsTable.paymentSessionId,
+    })
     .from(registrationsTable)
     .where(eq(registrationsTable.id, id))
     .limit(1);
@@ -604,7 +612,9 @@ router.patch("/admin/registrations/:id/paid", requireAdmin, async (req, res): Pr
   }
 
   // Never clobber a real Square payment reference when un-marking; only
-  // manual markers ("manual-...") may be removed.
+  // manual markers ("manual-...") may be removed. (Abandoned-checkout link ids
+  // on pending registrations may be overwritten by marking paid — the guest
+  // paid out-of-band, so the old link is dead.)
   if (!paid && existing.paymentSessionId && !existing.paymentSessionId.startsWith("manual-")) {
     res.status(409).json({
       error: "This registration has a Square payment reference; it can't be marked unpaid from here.",
@@ -612,12 +622,24 @@ router.patch("/admin/registrations/:id/paid", requireAdmin, async (req, res): Pr
     return;
   }
 
+  // Marking a pending registration paid means the money arrived out-of-band —
+  // confirm it and take the spot, same as the verify flow.
+  const confirmToo = paid && existing.status === "pending";
   await db
     .update(registrationsTable)
-    .set({ paymentSessionId: paid ? `manual-${Date.now()}` : null })
+    .set({
+      paymentSessionId: paid ? `manual-${Date.now()}` : null,
+      ...(confirmToo ? { status: "confirmed" as const } : {}),
+    })
     .where(eq(registrationsTable.id, id));
+  if (confirmToo) {
+    await db
+      .update(eventsTable)
+      .set({ spotsLeft: sql`GREATEST(0, ${eventsTable.spotsLeft} - 1)` })
+      .where(eq(eventsTable.id, existing.eventId));
+  }
 
-  res.json({ success: true, paid });
+  res.json({ success: true, paid, status: confirmToo ? "confirmed" : existing.status });
 });
 
 // --- Dashboard -------------------------------------------------------------

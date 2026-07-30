@@ -259,7 +259,15 @@ export default function RegistrationsManager({ onAuthError }: Props) {
         const d = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(d.error ?? "Failed");
       }
-      setRegistrations((prev) => prev.map((r) => (r.id === reg.id ? { ...r, paid: !reg.paid } : r)));
+      // Marking paid also confirms a pending registration server-side (the
+      // money arrived out-of-band) — mirror that here.
+      setRegistrations((prev) =>
+        prev.map((r) =>
+          r.id === reg.id
+            ? { ...r, paid: !reg.paid, status: !reg.paid ? "confirmed" : r.status }
+            : r,
+        ),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update the paid flag.");
     } finally {

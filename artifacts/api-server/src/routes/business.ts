@@ -156,8 +156,12 @@ router.get("/admin/business/events", requireAdmin, async (_req, res): Promise<vo
     const regsByEvent = new Map<number, { confirmed: number; paid: number }>();
     for (const reg of registrations) {
       const entry = regsByEvent.get(reg.eventId) ?? { confirmed: 0, paid: 0 };
-      if (reg.status === "confirmed") entry.confirmed += 1;
-      if (reg.paymentSessionId) entry.paid += 1;
+      if (reg.status === "confirmed") {
+        entry.confirmed += 1;
+        // Only confirmed registrations count as paid — a payment reference on
+        // a pending one is just an opened checkout page.
+        if (reg.paymentSessionId) entry.paid += 1;
+      }
       regsByEvent.set(reg.eventId, entry);
     }
     const costsByEvent = new Map(costs.map((c) => [c.sourceEventId, c]));

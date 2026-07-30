@@ -154,7 +154,9 @@ export async function computeActuals(): Promise<BusinessActuals> {
   for (const reg of registrations) {
     const entry = regsByEvent.get(reg.eventId) ?? { confirmed: 0, paid: 0 };
     if (reg.status === "confirmed") entry.confirmed += 1;
-    if (reg.paymentSessionId) {
+    // A payment reference on a still-pending registration is just an opened
+    // checkout page — only confirmed ones represent money that arrived.
+    if (reg.paymentSessionId && reg.status === "confirmed") {
       entry.paid += 1;
       const priceCents = priceByEvent.get(reg.eventId) ?? 0;
       if (priceCents > 0) {
