@@ -17,6 +17,10 @@ export const SHOP_CATEGORIES: ShopCategory[] = [
     description: "Individual tile sets, racks, pushers, and more.",
   },
   {
+    name: "Floating Mahjong",
+    description: "Boards and tiles that float — mahjong made for the pool.",
+  },
+  {
     name: "Gift Sets",
     description: "Beautifully curated gift sets for every occasion.",
   },
