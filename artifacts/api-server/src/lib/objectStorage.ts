@@ -43,6 +43,24 @@ export class ObjectStorageService {
   }
 
   /**
+   * Uploads bytes the server itself produced (e.g. an AI-generated tablescape)
+   * and returns the internal /objects/... path to store on the row.
+   */
+  async uploadBuffer(buffer: Buffer, contentType: string, prefix = "uploads"): Promise<string> {
+    const client = getServiceClient();
+    const ext = contentType.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
+    const filePath = `${prefix}/${randomUUID()}.${ext}`;
+    const { error } = await client.storage.from(BUCKET).upload(filePath, buffer, {
+      contentType,
+      upsert: false,
+    });
+    if (error) {
+      throw new Error(error.message ?? "Could not upload file to Supabase Storage");
+    }
+    return `/objects/${filePath}`;
+  }
+
+  /**
    * Converts a Supabase signed upload URL to an internal /objects/... path for DB storage.
    * e.g. https://xxx.supabase.co/storage/v1/object/upload/sign/media/uploads/uuid → /objects/uploads/uuid
    */

@@ -16,6 +16,7 @@ import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import ProductDetail from "@/pages/ProductDetail";
 import BuildYourSet from "@/pages/BuildYourSet";
+import Tablescape from "@/pages/Tablescape";
 import About from "@/pages/About";
 import Founder from "@/pages/Founder";
 import Learn from "@/pages/Learn";
@@ -68,6 +69,7 @@ function AnimatedRoutes() {
           <Route path="/shop/:id" component={ProductDetail} />
           <Route path="/build" component={BuildYourSet} />
           <Route path="/build-your-set" component={BuildYourSet} />
+          <Route path="/design-your-table" component={Tablescape} />
           <Route path="/about" component={About} />
           <Route path="/founder" component={Founder} />
           <Route path="/learn" component={Learn} />
@@ -107,6 +109,7 @@ const ROUTE_TITLES: Record<string, string | null> = {
   "/shop": "Shop Mahjong Sets & Accessories",
   "/build": "Build Your Set",
   "/build-your-set": "Build Your Set",
+  "/design-your-table": "Design Your Table",
   "/about": "About Us",
   "/founder": "Our Founder",
   "/learn": "Learn Mahjong",

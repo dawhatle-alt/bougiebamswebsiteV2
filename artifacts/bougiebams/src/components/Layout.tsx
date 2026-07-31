@@ -8,6 +8,7 @@ import SearchDialog from "@/components/SearchDialog";
 import { SHOP_CATEGORIES } from "@/data/categories";
 import { useProducts } from "@/hooks/useProducts";
 import { useBuildYourSetEnabled } from "@/hooks/useBuildYourSet";
+import { useTablescapeConfig } from "@/hooks/useTablescape";
 import shopMenuImg from "@assets/images/mahjong-lifestyle.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -66,6 +67,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
   const [announcement, setAnnouncement] = useState<{ enabled: boolean; text: string } | null>(null);
   const buildYourSetEnabled = useBuildYourSetEnabled() === true;
+  const tablescapeEnabled = useTablescapeConfig()?.enabled === true;
 
   useEffect(() => {
     let active = true;
@@ -710,23 +712,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </div>
                     ))}
                   </div>
-                  {buildYourSetEnabled && (
-                  <div className="col-span-4">
+                  {(buildYourSetEnabled || tablescapeEnabled) && (
+                  <div className="col-span-4 flex flex-col gap-4">
+                    {tablescapeEnabled && (
+                    <Link
+                      href="/design-your-table"
+                      onClick={() => setShopMenuOpen(false)}
+                      className="relative block flex-1 overflow-hidden rounded-md group min-h-[220px]"
+                    >
+                      <img src={shopMenuImg} alt="Design your mahjong tablescape" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-6 text-white">
+                        <span className="text-[11px] tracking-[0.2em] uppercase text-white/80">New</span>
+                        <p className="font-serif text-2xl mt-1">Design Your Table</p>
+                        <span className="inline-flex items-center gap-1 text-sm text-white/90 mt-1">
+                          See it before you buy it <ArrowRight className="w-4 h-4" />
+                        </span>
+                      </div>
+                    </Link>
+                    )}
+                    {buildYourSetEnabled && (
                     <Link
                       href="/build"
                       onClick={() => setShopMenuOpen(false)}
-                      className="relative block overflow-hidden rounded-md group h-full min-h-[220px]"
+                      className="relative block flex-1 overflow-hidden rounded-md group min-h-[220px]"
                     >
                       <img src={shopMenuImg} alt="Build your own mahjong set" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
                       <div className="absolute bottom-0 left-0 p-6 text-white">
-                        <span className="text-[11px] tracking-[0.2em] uppercase text-white/80">New</span>
+                        <span className="text-[11px] tracking-[0.2em] uppercase text-white/80">Made Your Way</span>
                         <p className="font-serif text-2xl mt-1">Build Your Set</p>
                         <span className="inline-flex items-center gap-1 text-sm text-white/90 mt-1">
                           Start customizing <ArrowRight className="w-4 h-4" />
                         </span>
                       </div>
                     </Link>
+                    )}
                   </div>
                   )}
                 </div>
@@ -779,6 +800,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     {cat.name}
                   </Link>
                 ))}
+                {tablescapeEnabled && (
+                  <Link
+                    href="/design-your-table"
+                    className="font-sans text-base text-primary font-medium hover:opacity-80 transition-opacity"
+                  >
+                    Design Your Table
+                  </Link>
+                )}
               </div>
             )}
             <Link href="/about" className="font-serif text-3xl hover:text-primary transition-colors">Community</Link>

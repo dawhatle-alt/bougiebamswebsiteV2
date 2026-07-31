@@ -17,3 +17,4 @@ export * from "./site_settings";
 export * from "./orders";
 export * from "./discount_redemptions";
 export * from "./business";
+export * from "./tablescape_generations";

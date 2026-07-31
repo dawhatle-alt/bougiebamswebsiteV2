@@ -34,6 +34,12 @@ export const productsTable = pgTable("products", {
   shippingIncluded: boolean("shipping_included").notNull().default(false),
   tabs: jsonb("tabs").$type<ProductTabs>(),
   affiliateUrl: text("affiliate_url"),
+  // Which position this product fills in the AI tablescape builder (mat, tiles,
+  // rack, brags, brag_dish, accessory). NULL keeps a product out of the builder.
+  tablescapeSlot: text("tablescape_slot"),
+  // Optional cleaner photo used only as the AI reference. Falls back to
+  // image_path, which is styled for the storefront and can confuse the model.
+  tablescapeImagePath: text("tablescape_image_path"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -33,6 +33,7 @@ import {
   Menu,
   X,
   Blocks,
+  Sparkles,
   Gift,
   Trash2,
 } from "lucide-react";
@@ -50,6 +51,7 @@ import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import PressBarManager from "@/components/admin/PressBarManager";
 import ChatbotManager from "@/components/admin/ChatbotManager";
 import BuildYourSetManager from "@/components/admin/BuildYourSetManager";
+import TablescapeManager from "@/components/admin/TablescapeManager";
 import WelcomePopupManager from "@/components/admin/WelcomePopupManager";
 import CuratedCollectionsManager from "@/components/admin/CuratedCollectionsManager";
 import OrdersManager from "@/components/admin/OrdersManager";
@@ -74,6 +76,7 @@ type AdminView =
   | "chatbot"
   | "welcomepopup"
   | "buildyourset"
+  | "tablescape"
   | "curated"
   | "orders"
   | "business";
@@ -163,6 +166,7 @@ const NAV_GROUPS = [
       { key: "orders" as AdminView, label: "Orders", icon: Receipt },
       { key: "products" as AdminView, label: "Products", icon: Package },
       { key: "buildyourset" as AdminView, label: "Build Your Set", icon: Blocks },
+      { key: "tablescape" as AdminView, label: "Design Your Table", icon: Sparkles },
       { key: "discounts" as AdminView, label: "Discount Codes", icon: Tag },
       { key: "favorites" as AdminView, label: "Favorites", icon: Heart },
     ],
@@ -198,6 +202,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   chatbot: "Chat Assistant",
   welcomepopup: "Welcome Popup",
   buildyourset: "Build Your Set",
+  tablescape: "Design Your Table",
   curated: "Curated Collections",
   orders: "Orders",
   business: "Business HQ",
@@ -537,6 +542,8 @@ export default function Admin() {
             <WelcomePopupManager onAuthError={handleAuthError} />
           ) : view === "buildyourset" ? (
             <BuildYourSetManager onAuthError={handleAuthError} />
+          ) : view === "tablescape" ? (
+            <TablescapeManager onAuthError={handleAuthError} />
           ) : view === "curated" ? (
             <CuratedCollectionsManager onAuthError={handleAuthError} />
           ) : view === "orders" ? (

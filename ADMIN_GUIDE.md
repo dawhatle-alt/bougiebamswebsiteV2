@@ -209,6 +209,21 @@ The custom set-building experience where shoppers hand-pick pieces into a bundle
 - Use this while inventory or marketing collateral isn't ready — flip it back on when you're ready for folks to curate sets.
 - Which products appear inside Build Your Set is controlled separately, per product, via the **Build Set** toggle in Products.
 
+## Design Your Table (under Shop)
+
+The AI tablescape studio. A shopper picks a mat, a tile set, and any extras, then gets one photo of how the whole table would look together.
+
+**Before you turn it on**, tag your products in the list on this page — tell it which product is the **Mat**, which is the **Tiles**, and so on. Mat and Tiles are required (the AI needs both); racks, brags, brag dish and accessories are optional. Anything left as *Not in builder* never appears. Only published, in-stock products are shown to shoppers.
+
+- **Show Design Your Table** — the on/off switch. When off, the page and every menu link disappear, and anyone visiting directly sees a "coming soon" message.
+- **Free images per visitor per day** — how many tablescapes a guest can create before we ask them to sign in (3 is a good starting point; 0 requires sign-in from the start).
+- **Images per signed-in shopper per day** — a ceiling so a single account can't run up the bill.
+- **Recent tablescapes** — the last 60 images shoppers made. Worth scanning: it shows which mats and tile sets people keep pairing together.
+
+> **This one costs money.** Every image spends roughly 5–7¢ of Google AI credit, billed to the Google Cloud project behind the `GEMINI_API_KEY` server setting. The two daily limits are your spending guardrails — at 500 images a month you're looking at about $25–35. If the feature starts erroring with an "out of quota" message, that billing account needs a top-up.
+
+Shoppers always see an "AI visualization" note under the image, and the real product photos stay beside it, so nobody mistakes the preview for the actual products.
+
 ---
 
 # Business HQ
