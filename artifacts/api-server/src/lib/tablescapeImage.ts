@@ -14,6 +14,8 @@ export interface ReferenceImage {
   label: string;
   data: Buffer;
   mimeType: string;
+  /** Product is from the Floating Mahjong line, which stages in a pool. */
+  floating?: boolean;
 }
 
 export interface ComposedImage {
@@ -56,27 +58,41 @@ export function sniffImageMime(buf: Buffer): string {
  * the model lifted the mat's painted characters out of the artwork and staged
  * them as real objects (Monroe the monkey vanished into a set of ginger jars),
  * and without "flat mat, not a tablecloth" it draped the mat over the table.
+ *
+ * A Floating Mahjong board swaps the whole scene to a pool. The trigger is the
+ * board itself, not the tiles: floating tiles pair fine with a fabric mat
+ * indoors, but a fabric mat in a swimming pool reads as a mistake.
  */
 export function buildTablescapePrompt(refs: ReferenceImage[]): string {
   const mat = refs.find((r) => r.slot === "mat");
   const tiles = refs.find((r) => r.slot === "tiles");
   const extras = refs.filter((r) => r.slot !== "mat" && r.slot !== "tiles");
+  const inPool = mat?.floating === true;
 
   const lines: string[] = [
-    "Photorealistic lifestyle product photo for a luxury mahjong brand, shot from a high three-quarter angle over an elegant table.",
+    inPool
+      ? "Photorealistic summer lifestyle product photo for a luxury mahjong brand, shot from a high three-quarter angle looking down at a floating mahjong board on the water of a sunlit swimming pool."
+      : "Photorealistic lifestyle product photo for a luxury mahjong brand, shot from a high three-quarter angle over an elegant table.",
     "",
   ];
 
   if (mat) {
+    const surface = inPool
+      ? `Floating on the surface of the pool is EXACTLY the square floating mahjong board shown in the reference image titled "${mat.label}": a buoyant square board resting flat on the water, level and fully visible with all four edges above the waterline, water lapping gently against its sides.`
+      : `On the table lies EXACTLY the square mahjong mat shown in the reference image titled "${mat.label}": a flat, thin square game mat with a stitched border, lying perfectly flat with all four edges visible on the tabletop. It is NOT a tablecloth and does not drape over the sides.`;
     lines.push(
-      `On the table lies EXACTLY the square mahjong mat shown in the reference image titled "${mat.label}": a flat, thin square game mat with a stitched border, lying perfectly flat with all four edges visible on the tabletop. It is NOT a tablecloth and does not drape over the sides. Reproduce the mat's printed artwork with complete fidelity — same composition, colors, border and details, including any animal characters, figures and objects that are part of the print. Every element of the artwork stays PRINTED FLAT ON THE MAT SURFACE: never remove one, and never turn a printed element into a real three-dimensional object in the scene. Do not simplify, restyle or re-imagine the artwork. Remove any repeated watermark text overlay so the mat shows only its artwork.`,
+      `${surface} Reproduce its printed artwork with complete fidelity — same composition, colors, border and details, including any animal characters, figures and objects that are part of the print. Every element of the artwork stays PRINTED FLAT ON THE ${
+        inPool ? "BOARD" : "MAT"
+      } SURFACE: never remove one, and never turn a printed element into a real three-dimensional object in the scene. Do not simplify, restyle or re-imagine the artwork. Remove any repeated watermark text overlay so it shows only its artwork.`,
       "",
     );
   }
 
   if (tiles) {
     lines.push(
-      `The mahjong tiles are EXACTLY the tiles shown in the reference image titled "${tiles.label}". Reproduce their real colors, materials and face designs — tile backs, tile faces and the engraved motifs must match that photo. Do not substitute generic ivory mahjong tiles. Arrange them naturally: some face-up near the center of the mat, the rest lined up in the racks.`,
+      `The mahjong tiles are EXACTLY the tiles shown in the reference image titled "${tiles.label}". Reproduce their real colors, materials and face designs — tile backs, tile faces and the engraved motifs must match that photo. Do not substitute generic ivory mahjong tiles. Arrange them naturally: some face-up near the center of the ${
+        inPool ? "board, the rest standing in neat rows along its edges — the tiles sit securely on the board and none are sinking or drifting in the water" : "mat, the rest lined up in the racks"
+      }.`,
       "",
     );
   }
@@ -90,12 +106,15 @@ export function buildTablescapePrompt(refs: ReferenceImage[]): string {
     );
   }
 
-  if (!refs.some((r) => r.slot === "rack")) {
+  // Racks would drift away on open water, so only the tabletop scene gets them.
+  if (!inPool && !refs.some((r) => r.slot === "rack")) {
     lines.push("Add four simple, elegant clear acrylic tile racks with pushers, one on each side of the mat.", "");
   }
 
   lines.push(
-    "Setting: a bright, styled home interior — soft natural window light, a hint of florals and a cocktail at the edge of frame, shallow depth of field. High-end editorial quality, like a brand photo shoot. No text, no logos and no watermarks anywhere in the image.",
+    inPool
+      ? "Setting: a bright resort-style swimming pool on a sunny afternoon — clear turquoise water with gentle ripples and dappled light, a frozen cocktail and sunglasses resting on the pool coping at the edge of frame, palm shadows, shallow depth of field. High-end editorial quality, like a summer brand campaign. No people in the water. No text, no logos and no watermarks anywhere in the image."
+      : "Setting: a bright, styled home interior — soft natural window light, a hint of florals and a cocktail at the edge of frame, shallow depth of field. High-end editorial quality, like a brand photo shoot. No text, no logos and no watermarks anywhere in the image.",
   );
 
   return lines.join("\n");

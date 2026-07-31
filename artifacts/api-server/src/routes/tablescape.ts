@@ -32,6 +32,10 @@ export const TABLESCAPE_SLOTS = [
 const SLOT_IDS = TABLESCAPE_SLOTS.map((s) => s.slot) as string[];
 const REQUIRED_SLOTS = TABLESCAPE_SLOTS.filter((s) => s.required).map((s) => s.slot);
 
+// Products in this category stage in a swimming pool instead of on a table.
+// Must match SHOP_CATEGORIES in artifacts/bougiebams/src/data/categories.ts.
+const FLOATING_CATEGORY = "Floating Mahjong";
+
 const SETTINGS_KEY = "tablescape";
 const DEFAULTS = { enabled: false, guestLimit: 3, memberLimit: 20 };
 
@@ -151,7 +155,12 @@ router.get("/tablescape/products", async (_req, res): Promise<void> => {
 });
 
 /** Downloads a product photo to hand the model as a reference. */
-async function fetchReference(imagePath: string, slot: string, label: string): Promise<ReferenceImage> {
+async function fetchReference(
+  imagePath: string,
+  slot: string,
+  label: string,
+  floating: boolean,
+): Promise<ReferenceImage> {
   const { path: filePath } = await objectStorage.getObjectEntityFile(imagePath);
   // Ask Supabase's image CDN for a 1024px variant: the originals run several MB
   // and the upload time counts against the function's ceiling.
@@ -166,7 +175,7 @@ async function fetchReference(imagePath: string, slot: string, label: string): P
     throw new TablescapeGenerationError(`Could not load the photo for ${label}.`, 502);
   }
   const data = Buffer.from(await response.arrayBuffer());
-  return { slot, label, data, mimeType: sniffImageMime(data) };
+  return { slot, label, data, mimeType: sniffImageMime(data), floating };
 }
 
 // Public: compose one tablescape image from the shopper's selections.
@@ -253,7 +262,9 @@ router.post("/tablescape/generate", async (req, res): Promise<void> => {
         res.status(400).json({ error: `${product.name} has no photo to work from.` });
         return;
       }
-      refs.push(await fetchReference(imagePath, slotDef.slot, product.name));
+      refs.push(
+        await fetchReference(imagePath, slotDef.slot, product.name, product.category === FLOATING_CATEGORY),
+      );
     }
 
     const composed = await composeTablescape(refs);
