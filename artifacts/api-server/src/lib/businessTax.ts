@@ -91,6 +91,74 @@ export const PURPOSES = [
 
 export const isPurpose = (k: string): boolean => PURPOSES.some((p) => p.key === k);
 
+// --- Venue distance book -----------------------------------------------------
+// Driving distances can't be computed without a maps API key, so each venue's
+// one-way distance is remembered the first time it's entered and reused for
+// every later event at the same place.
+
+const VENUE_KEY = "mileage_venue_distances";
+const ORIGIN_KEY = "mileage_origin_address";
+
+export const normalizeVenue = (s: string): string =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+export async function getVenueDistances(): Promise<Record<string, number>> {
+  try {
+    const [row] = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, VENUE_KEY));
+    const parsed = row?.value ? (JSON.parse(row.value) as Record<string, number>) : {};
+    return typeof parsed === "object" && parsed ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveVenueDistances(entries: Record<string, number>): Promise<void> {
+  const book = { ...(await getVenueDistances()), ...entries };
+  await db
+    .insert(siteSettingsTable)
+    .values({ key: VENUE_KEY, value: JSON.stringify(book) })
+    .onConflictDoUpdate({ target: siteSettingsTable.key, set: { value: JSON.stringify(book) } });
+}
+
+/** Finds a known distance for a venue. Event locations are free text — the same
+ * place appears as "Cork2Glass" and "Cork2Glass Wine Bar — 601 East Whitestone
+ * blvd…" — so a containment match either way beats exact matching. */
+export function lookupVenueMiles(book: Record<string, number>, location: string): number | null {
+  const n = normalizeVenue(location ?? "");
+  if (!n) return null;
+  if (book[n] != null) return book[n];
+  for (const [key, miles] of Object.entries(book)) {
+    if (key.length >= 5 && (n.includes(key) || key.includes(n))) return miles;
+  }
+  return null;
+}
+
+export async function getMileageOrigin(): Promise<string> {
+  try {
+    const [row] = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, ORIGIN_KEY));
+    if (row?.value?.trim()) return row.value.trim();
+  } catch {
+    // fall through
+  }
+  return "";
+}
+
+export async function saveMileageOrigin(address: string): Promise<void> {
+  await db
+    .insert(siteSettingsTable)
+    .values({ key: ORIGIN_KEY, value: address.trim() })
+    .onConflictDoUpdate({ target: siteSettingsTable.key, set: { value: address.trim() } });
+}
+
+/** Event dates are free text ("2026-07-14" or "August 3, 2026"). */
+export function parseEventDate(d: string): string | null {
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(d ?? "");
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const t = Date.parse(d ?? "");
+  if (Number.isNaN(t)) return null;
+  return new Date(t).toISOString().slice(0, 10);
+}
+
 /** Everything owned for events, across every year — the "what do we own and
  * what did it cost" view that a single year's ledger can't answer. */
 export async function eventKitRollup(): Promise<

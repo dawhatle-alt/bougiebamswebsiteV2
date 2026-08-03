@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, X, Download, Car, Package, Receipt, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, X, Download, Car, Package, Receipt, AlertTriangle, CalendarPlus } from "lucide-react";
 import { bizFetch, bizJson } from "./api";
 
 // Tax records: dated expenses, business mileage, and inventory bought for
@@ -34,6 +34,16 @@ interface TaxSummary {
 }
 
 interface PurposeDef { key: string; label: string; treatment: string }
+
+interface ImportableEvent {
+  eventId: number;
+  title: string;
+  date: string;
+  drivenOn: string;
+  location: string;
+  suggestedMiles: number | null;
+  imported: boolean;
+}
 
 interface Trip {
   id: number;
@@ -86,6 +96,68 @@ export default function BizTaxCenter() {
     purchasedOn: todayISO(), purpose: "event-equipment", itemName: "", vendor: "", quantity: "1", unitCost: "", shipping: "", tax: "",
   });
   const [rateInput, setRateInput] = useState("");
+
+  // Import past events as trips. Distances come from the venue book, which
+  // learns each venue the first time a distance is entered.
+  const [importOpen, setImportOpen] = useState(false);
+  const [importOrigin, setImportOrigin] = useState("");
+  const [importable, setImportable] = useState<ImportableEvent[]>([]);
+  const [importMiles, setImportMiles] = useState<Record<number, string>>({});
+  const [importPicked, setImportPicked] = useState<Record<number, boolean>>({});
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState("");
+
+  const loadImportable = useCallback(async () => {
+    try {
+      const d = await bizJson<{ origin: string; events: ImportableEvent[] }>("/mileage/importable");
+      setImportable(d.events ?? []);
+      setImportOrigin((prev) => prev || d.origin || "");
+      const miles: Record<number, string> = {};
+      const picked: Record<number, boolean> = {};
+      for (const e of d.events ?? []) {
+        if (e.imported) continue;
+        miles[e.eventId] = e.suggestedMiles != null ? String(e.suggestedMiles) : "";
+        picked[e.eventId] = e.suggestedMiles != null;
+      }
+      setImportMiles(miles);
+      setImportPicked(picked);
+    } catch {
+      setError("Could not load events to import.");
+    }
+  }, []);
+
+  async function runImport() {
+    const trips = importable
+      .filter((e) => !e.imported && importPicked[e.eventId])
+      .map((e) => ({
+        eventId: e.eventId,
+        drivenOn: e.drivenOn,
+        purpose: e.title,
+        toLocation: e.location || undefined,
+        miles: parseFloat(importMiles[e.eventId] ?? ""),
+        roundTrip: true,
+      }))
+      .filter((t) => Number.isFinite(t.miles) && t.miles > 0);
+    if (trips.length === 0) {
+      setImportMsg("Enter a mileage for at least one selected event.");
+      return;
+    }
+    setImporting(true);
+    setImportMsg("");
+    try {
+      const r = await bizJson<{ created: number }>("/mileage/import", {
+        method: "POST",
+        body: JSON.stringify({ origin: importOrigin.trim() || undefined, trips }),
+      });
+      setImportMsg(`Imported ${r.created} trip${r.created === 1 ? "" : "s"} as round trips.`);
+      await load();
+      await loadImportable();
+    } catch {
+      setImportMsg("Import failed. Please try again.");
+    } finally {
+      setImporting(false);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -356,6 +428,12 @@ export default function BizTaxCenter() {
                 <span className="text-xs text-muted-foreground">{year} IRS rate $/mile</span>
                 <input value={rateInput} onChange={(e) => setRateInput(e.target.value)} placeholder="0.000" className={`${input} w-24 text-right tabular-nums`} />
                 <button onClick={() => void saveRate()} disabled={saving} className="border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60">Save</button>
+                <button
+                  onClick={() => { setImportOpen((o) => !o); if (!importOpen) void loadImportable(); }}
+                  className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                >
+                  <CalendarPlus size={13} /> Import from events
+                </button>
                 <button onClick={() => exportCsv("mileage")} className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60">
                   <Download size={13} /> CSV
                 </button>
@@ -366,6 +444,69 @@ export default function BizTaxCenter() {
               <p className="px-5 pt-3 text-xs text-amber-800">
                 Set the IRS standard mileage rate for {year} to compute the deduction — confirm the current figure on irs.gov or with your accountant, since it changes annually.
               </p>
+            )}
+
+            {importOpen && (
+              <div className="mx-5 my-3 rounded-lg border border-border bg-muted/20 p-4">
+                <div className="flex flex-wrap items-end gap-2 mb-3">
+                  <div className="flex flex-col gap-1 flex-1 min-w-[16rem]">
+                    <label className={label}>Starting point (used as "from" for every trip)</label>
+                    <input value={importOrigin} onChange={(e) => setImportOrigin(e.target.value)} className={input} placeholder="3400 Prairie Heights Dr, Leander, TX 78641" />
+                  </div>
+                  <button onClick={() => void runImport()} disabled={importing} className="h-[34px] flex items-center gap-1 bg-primary text-primary-foreground rounded-lg px-3 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
+                    {importing ? <Loader2 size={14} className="animate-spin" /> : <CalendarPlus size={14} />} Import selected
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Enter each venue's <strong>one-way</strong> distance — it's saved and reused for every future event at the same place. All imports are logged as round trips.
+                </p>
+                {importable.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-3">No past events found.</p>
+                ) : (
+                  <div className="max-h-80 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-border/40">
+                        {importable.map((e) => (
+                          <tr key={e.eventId} className={e.imported ? "opacity-50" : ""}>
+                            <td className="py-2 pr-2 w-8">
+                              <input
+                                type="checkbox"
+                                disabled={e.imported}
+                                checked={!!importPicked[e.eventId] && !e.imported}
+                                onChange={(ev) => setImportPicked((p) => ({ ...p, [e.eventId]: ev.target.checked }))}
+                                className="accent-primary"
+                              />
+                            </td>
+                            <td className="py-2 pr-3">
+                              <div className="font-medium text-foreground">{e.title}</div>
+                              <div className="text-xs text-muted-foreground">{e.date} · {e.location || "no address on the event"}</div>
+                            </td>
+                            <td className="py-2 pr-2 w-32 text-right">
+                              {e.imported ? (
+                                <span className="text-xs text-muted-foreground">already logged</span>
+                              ) : (
+                                <div className="flex items-center gap-1 justify-end">
+                                  <input
+                                    type="number"
+                                    step={0.1}
+                                    min={0}
+                                    value={importMiles[e.eventId] ?? ""}
+                                    onChange={(ev) => setImportMiles((m) => ({ ...m, [e.eventId]: ev.target.value }))}
+                                    className={`${input} w-20 text-right tabular-nums`}
+                                    placeholder="mi"
+                                  />
+                                  <span className="text-xs text-muted-foreground">mi</span>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {importMsg && <p className="text-xs text-foreground mt-2">{importMsg}</p>}
+              </div>
             )}
 
             <div className="px-5 py-3 flex flex-wrap items-end gap-2 border-b border-border/60">

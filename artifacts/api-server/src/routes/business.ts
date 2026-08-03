@@ -21,7 +21,20 @@ import { requireAdmin } from "../middleware/auth";
 import { ensureBusinessTables, ensureEventCostsTable, ensureExpensesTable, ensureTaxTables } from "../lib/businessBootstrap";
 import { computeActuals } from "../lib/businessActuals";
 import { computePnl, EXPENSE_CATEGORIES } from "../lib/businessPnl";
-import { computeTaxSummary, taxCsv, isPurpose, PURPOSES } from "../lib/businessTax";
+import {
+  computeTaxSummary,
+  taxCsv,
+  isPurpose,
+  PURPOSES,
+  getVenueDistances,
+  saveVenueDistances,
+  lookupVenueMiles,
+  normalizeVenue,
+  getMileageOrigin,
+  saveMileageOrigin,
+  parseEventDate,
+} from "../lib/businessTax";
+import { getBusinessAddress as getBusinessAddressForOrigin } from "../lib/marketingList";
 import { TAX_CATEGORIES } from "../lib/taxCategories";
 import { logger } from "../lib/logger";
 
@@ -555,6 +568,97 @@ router.delete("/admin/business/mileage/:id", requireAdmin, async (req, res): Pro
   } catch (err) {
     logger.error({ err }, "Failed to delete mileage entry");
     res.status(500).json({ error: "Failed to delete the trip" });
+  }
+});
+
+// Past events that could become mileage entries, with a suggested distance
+// from the venue distance book (learned from trips already logged).
+router.get("/admin/business/mileage/importable", requireAdmin, async (_req, res): Promise<void> => {
+  try {
+    await ensureTaxTables();
+    const events = await db.select().from(eventsTable).where(eq(eventsTable.archived, false));
+    const logged = await db.select({ eventId: bizMileageTable.eventId }).from(bizMileageTable);
+    const book = await getVenueDistances();
+    const origin = (await getMileageOrigin()) || (await getBusinessAddressForOrigin());
+    const importedIds = new Set(logged.map((l) => l.eventId).filter((x): x is number => x != null));
+    const today = new Date().toISOString().slice(0, 10);
+
+    const rows = events
+      .map((e) => {
+        const drivenOn = parseEventDate(e.date);
+        return {
+          eventId: e.id,
+          title: e.title,
+          date: e.date,
+          drivenOn,
+          location: e.location ?? "",
+          suggestedMiles: lookupVenueMiles(book, e.location ?? ""),
+          imported: importedIds.has(e.id),
+        };
+      })
+      .filter((e) => e.drivenOn && e.drivenOn <= today)
+      .sort((a, b) => (a.drivenOn! < b.drivenOn! ? 1 : -1));
+
+    res.json({ origin, events: rows });
+  } catch (err) {
+    logger.error({ err }, "Failed to list importable events");
+    res.status(500).json({ error: "Failed to load events" });
+  }
+});
+
+const importSchema = z.object({
+  origin: z.string().trim().max(300).optional(),
+  trips: z
+    .array(
+      z.object({
+        eventId: z.number().int().positive(),
+        drivenOn: z.string().regex(DATE_RE),
+        purpose: z.string().trim().min(1).max(200),
+        toLocation: z.string().trim().max(300).optional(),
+        miles: z.number().finite().positive().max(10000),
+        roundTrip: z.boolean().default(true),
+      }),
+    )
+    .min(1)
+    .max(200),
+});
+
+router.post("/admin/business/mileage/import", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = importSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
+    return;
+  }
+  try {
+    await ensureTaxTables();
+    if (parsed.data.origin) await saveMileageOrigin(parsed.data.origin);
+
+    // Never double-log an event that already has a trip.
+    const logged = await db.select({ eventId: bizMileageTable.eventId }).from(bizMileageTable);
+    const already = new Set(logged.map((l) => l.eventId).filter((x): x is number => x != null));
+
+    const learned: Record<string, number> = {};
+    let created = 0;
+    for (const t of parsed.data.trips) {
+      if (already.has(t.eventId)) continue;
+      await db.insert(bizMileageTable).values({
+        drivenOn: t.drivenOn,
+        purpose: t.purpose,
+        fromLocation: parsed.data.origin ?? null,
+        toLocation: t.toLocation ?? null,
+        miles: t.miles,
+        roundTrip: t.roundTrip,
+        eventId: t.eventId,
+      });
+      created += 1;
+      // Remember this venue's distance for next time.
+      if (t.toLocation) learned[normalizeVenue(t.toLocation)] = t.miles;
+    }
+    if (Object.keys(learned).length > 0) await saveVenueDistances(learned);
+    res.json({ created });
+  } catch (err) {
+    logger.error({ err }, "Failed to import event mileage");
+    res.status(500).json({ error: "Failed to import trips" });
   }
 });
 
