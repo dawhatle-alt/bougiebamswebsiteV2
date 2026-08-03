@@ -57,13 +57,61 @@ export interface TaxSummary {
     purchaseCount: number;
     unitsPurchased: number;
     totalCents: number;
+    /** Split by what the stock is for — each is deducted differently. */
+    byPurpose: { purpose: string; label: string; treatment: string; units: number; totalCents: number }[];
   };
+  /** Durable kit owned for events, rolled up by item across all years. */
+  eventKit: { itemName: string; units: number; totalCents: number; lastPurchased: string }[];
   revenue: { productCents: number; eventCents: number; totalCents: number };
   /** Cost of goods actually sold this year, from unit costs × units sold. */
   estimatedCogsCents: number;
 }
 
 const yearBounds = (year: string) => ({ start: `${year}-01-01`, end: `${year}-12-31` });
+
+/** What purchased stock is for. The tax treatment differs for each, which is
+ * why event kit and giveaways can't just be logged as resale inventory. */
+export const PURPOSES = [
+  {
+    key: "resale",
+    label: "For resale",
+    treatment: "Cost of goods sold (Schedule C Part III) — deducted as items sell.",
+  },
+  {
+    key: "event-equipment",
+    label: "Event kit (reused)",
+    treatment: "Equipment you keep and reuse — Line 13/22 depending on cost and useful life. Ask your accountant about Section 179.",
+  },
+  {
+    key: "giveaway",
+    label: "Giveaways & prizes",
+    treatment: "Promotional items handed out — advertising expense (Line 8) in the year given.",
+  },
+] as const;
+
+export const isPurpose = (k: string): boolean => PURPOSES.some((p) => p.key === k);
+
+/** Everything owned for events, across every year — the "what do we own and
+ * what did it cost" view that a single year's ledger can't answer. */
+export async function eventKitRollup(): Promise<
+  { itemName: string; units: number; totalCents: number; lastPurchased: string }[]
+> {
+  await ensureTaxTables();
+  const rows = await db
+    .select()
+    .from(bizInventoryPurchasesTable)
+    .where(sql`coalesce(${bizInventoryPurchasesTable.purpose}, 'resale') <> 'resale'`);
+  const byItem = new Map<string, { itemName: string; units: number; totalCents: number; lastPurchased: string }>();
+  for (const r of rows) {
+    const key = r.itemName.trim().toLowerCase();
+    const entry = byItem.get(key) ?? { itemName: r.itemName, units: 0, totalCents: 0, lastPurchased: "" };
+    entry.units += r.quantity;
+    entry.totalCents += r.totalCents;
+    if (r.purchasedOn > entry.lastPurchased) entry.lastPurchased = r.purchasedOn;
+    byItem.set(key, entry);
+  }
+  return [...byItem.values()].sort((a, b) => b.totalCents - a.totalCents);
+}
 
 export async function computeTaxSummary(year: string): Promise<TaxSummary> {
   await ensureExpensesTable();
@@ -145,7 +193,18 @@ export async function computeTaxSummary(year: string): Promise<TaxSummary> {
       purchaseCount: purchases.length,
       unitsPurchased: purchases.reduce((s, p) => s + p.quantity, 0),
       totalCents: purchases.reduce((s, p) => s + p.totalCents, 0),
+      byPurpose: PURPOSES.map((def) => {
+        const rows = purchases.filter((p) => (p.purpose ?? "resale") === def.key);
+        return {
+          purpose: def.key,
+          label: def.label,
+          treatment: def.treatment,
+          units: rows.reduce((s, p) => s + p.quantity, 0),
+          totalCents: rows.reduce((s, p) => s + p.totalCents, 0),
+        };
+      }).filter((p) => p.units > 0 || p.totalCents > 0),
     },
+    eventKit: await eventKitRollup(),
     revenue: { productCents, eventCents, totalCents: productCents + eventCents },
     estimatedCogsCents: 0,
   };
@@ -221,19 +280,24 @@ export async function taxCsv(year: string, type: "expenses" | "mileage" | "inven
       .from(bizInventoryPurchasesTable)
       .where(and(gte(bizInventoryPurchasesTable.purchasedOn, start), lte(bizInventoryPurchasesTable.purchasedOn, end)))
       .orderBy(bizInventoryPurchasesTable.purchasedOn);
-    const header = ["Date", "Item", "Vendor", "Quantity", "Unit Cost", "Shipping", "Tax", "Total", "Receipt", "Notes"];
-    const lines = rows.map((r) => [
-      r.purchasedOn,
-      r.itemName,
-      r.vendor ?? "",
-      r.quantity,
-      money(r.unitCostCents),
-      money(r.shippingCents),
-      money(r.taxCents),
-      money(r.totalCents),
-      r.receiptRef ?? "",
-      r.notes ?? "",
-    ]);
+    const header = ["Date", "Purpose", "Tax Treatment", "Item", "Vendor", "Quantity", "Unit Cost", "Shipping", "Tax", "Total", "Receipt", "Notes"];
+    const lines = rows.map((r) => {
+      const def = PURPOSES.find((p) => p.key === (r.purpose ?? "resale")) ?? PURPOSES[0];
+      return [
+        r.purchasedOn,
+        def.label,
+        def.treatment,
+        r.itemName,
+        r.vendor ?? "",
+        r.quantity,
+        money(r.unitCostCents),
+        money(r.shippingCents),
+        money(r.taxCents),
+        money(r.totalCents),
+        r.receiptRef ?? "",
+        r.notes ?? "",
+      ];
+    });
     return [header, ...lines].map((l) => l.map(csvEsc).join(",")).join("\n");
   }
 
@@ -248,10 +312,14 @@ export async function taxCsv(year: string, type: "expenses" | "mileage" | "inven
     ["Event ticket sales", money(s.revenue.eventCents)],
     ["Total revenue", money(s.revenue.totalCents)],
     [],
-    ["INVENTORY PURCHASED FOR RESALE (Schedule C Part III)"],
-    ["Purchases", s.inventory.purchaseCount],
-    ["Units", s.inventory.unitsPurchased],
-    ["Total cost", money(s.inventory.totalCents)],
+    ["STOCK PURCHASED — each line is deducted differently"],
+    ["Purpose", "Treatment", "Units", "Total cost"],
+    ...s.inventory.byPurpose.map((p) => [p.label, p.treatment, p.units, money(p.totalCents)]),
+    ["Total", "", s.inventory.unitsPurchased, money(s.inventory.totalCents)],
+    [],
+    ["EVENT KIT OWNED (all years, non-resale purchases)"],
+    ["Item", "Units", "Total cost", "Last purchased"],
+    ...s.eventKit.map((k) => [k.itemName, k.units, money(k.totalCents), k.lastPurchased]),
     [],
     ["EXPENSES BY SCHEDULE C LINE"],
     ["Category", "Schedule C", "Entries", "Amount", "Deductible %", "Deductible Amount"],

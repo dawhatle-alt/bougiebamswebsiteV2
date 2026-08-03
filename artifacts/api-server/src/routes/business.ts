@@ -21,7 +21,7 @@ import { requireAdmin } from "../middleware/auth";
 import { ensureBusinessTables, ensureEventCostsTable, ensureExpensesTable, ensureTaxTables } from "../lib/businessBootstrap";
 import { computeActuals } from "../lib/businessActuals";
 import { computePnl, EXPENSE_CATEGORIES } from "../lib/businessPnl";
-import { computeTaxSummary, taxCsv } from "../lib/businessTax";
+import { computeTaxSummary, taxCsv, isPurpose, PURPOSES } from "../lib/businessTax";
 import { TAX_CATEGORIES } from "../lib/taxCategories";
 import { logger } from "../lib/logger";
 
@@ -496,6 +496,7 @@ const mileageSchema = z.object({
 
 const purchaseSchema = z.object({
   purchasedOn: z.string().regex(DATE_RE),
+  purpose: z.string().refine(isPurpose, "Unknown purpose").default("resale"),
   productId: z.string().trim().max(120).nullable().optional(),
   itemName: z.string().trim().min(1).max(200),
   vendor: z.string().trim().max(200).optional(),
@@ -617,7 +618,7 @@ router.get("/admin/business/tax-summary", requireAdmin, async (req, res): Promis
     ? req.query.year
     : String(new Date().getFullYear());
   try {
-    res.json({ summary: await computeTaxSummary(year), categories: TAX_CATEGORIES });
+    res.json({ summary: await computeTaxSummary(year), categories: TAX_CATEGORIES, purposes: PURPOSES });
   } catch (err) {
     logger.error({ err }, "Failed to compute tax summary");
     res.status(500).json({ error: "Failed to compute the tax summary" });

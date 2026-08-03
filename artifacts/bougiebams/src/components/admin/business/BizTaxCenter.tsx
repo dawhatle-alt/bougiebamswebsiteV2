@@ -23,9 +23,17 @@ interface TaxSummary {
     missingReceipts: number;
   };
   mileage: { trips: number; miles: number; rateCents: number; deductionCents: number; rateConfigured: boolean };
-  inventory: { purchaseCount: number; unitsPurchased: number; totalCents: number };
+  inventory: {
+    purchaseCount: number;
+    unitsPurchased: number;
+    totalCents: number;
+    byPurpose: { purpose: string; label: string; treatment: string; units: number; totalCents: number }[];
+  };
+  eventKit: { itemName: string; units: number; totalCents: number; lastPurchased: string }[];
   revenue: { productCents: number; eventCents: number; totalCents: number };
 }
+
+interface PurposeDef { key: string; label: string; treatment: string }
 
 interface Trip {
   id: number;
@@ -41,6 +49,7 @@ interface Trip {
 interface Purchase {
   id: number;
   purchasedOn: string;
+  purpose: string;
   itemName: string;
   vendor: string | null;
   quantity: number;
@@ -60,6 +69,7 @@ export default function BizTaxCenter() {
   const [year, setYear] = useState(thisYear);
   const [summary, setSummary] = useState<TaxSummary | null>(null);
   const [categories, setCategories] = useState<TaxCategoryDef[]>([]);
+  const [purposes, setPurposes] = useState<PurposeDef[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +83,7 @@ export default function BizTaxCenter() {
     drivenOn: todayISO(), purpose: "", fromLocation: "", toLocation: "", miles: "", roundTrip: true,
   });
   const [purchaseForm, setPurchaseForm] = useState({
-    purchasedOn: todayISO(), itemName: "", vendor: "", quantity: "1", unitCost: "", shipping: "", tax: "",
+    purchasedOn: todayISO(), purpose: "event-equipment", itemName: "", vendor: "", quantity: "1", unitCost: "", shipping: "", tax: "",
   });
   const [rateInput, setRateInput] = useState("");
 
@@ -81,9 +91,10 @@ export default function BizTaxCenter() {
     setLoading(true);
     setError("");
     try {
-      const s = await bizJson<{ summary: TaxSummary; categories: TaxCategoryDef[] }>(`/tax-summary?year=${year}`);
+      const s = await bizJson<{ summary: TaxSummary; categories: TaxCategoryDef[]; purposes: PurposeDef[] }>(`/tax-summary?year=${year}`);
       setSummary(s.summary);
       setCategories(s.categories);
+      setPurposes(s.purposes ?? []);
       setRateInput(s.summary.mileage.rateConfigured ? (s.summary.mileage.rateCents / 100).toFixed(3) : "");
       const m = await bizJson<{ trips: Trip[] }>(`/mileage?year=${year}`);
       setTrips(m.trips ?? []);
@@ -153,6 +164,7 @@ export default function BizTaxCenter() {
     if (!Number.isFinite(unit) || unit < 0 || !purchaseForm.itemName.trim()) return;
     const ok = await post("/inventory-purchases", {
       purchasedOn: purchaseForm.purchasedOn,
+      purpose: purchaseForm.purpose,
       itemName: purchaseForm.itemName.trim(),
       vendor: purchaseForm.vendor.trim() || undefined,
       quantity: qty,
@@ -421,24 +433,30 @@ export default function BizTaxCenter() {
             <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Package size={15} className="text-primary" />
-                <h2 className="text-sm font-semibold text-foreground">Inventory purchased for resale</h2>
+                <h2 className="text-sm font-semibold text-foreground">Stock purchased — resale, event kit &amp; giveaways</h2>
               </div>
               <button onClick={() => exportCsv("inventory")} className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60">
                 <Download size={13} /> CSV
               </button>
             </div>
             <p className="px-5 pt-3 text-xs text-muted-foreground">
-              Stock you buy to sell on — tiles, mats, racks, boxes. This is cost of goods sold, not an expense, and it's deducted as items sell rather than when you buy them.
+              Log everything you buy as stock and mark what it's for — the three are deducted differently, so keeping them apart here is what makes the year-end numbers right.
             </p>
 
-            <div className="px-5 py-3 grid grid-cols-2 md:grid-cols-7 gap-2 items-end border-b border-border/60">
+            <div className="px-5 py-3 grid grid-cols-2 md:grid-cols-8 gap-2 items-end border-b border-border/60">
               <div className="flex flex-col gap-1">
                 <label className={label}>Date</label>
                 <input type="date" value={purchaseForm.purchasedOn} onChange={(e) => setPurchaseForm((f) => ({ ...f, purchasedOn: e.target.value }))} className={input} />
               </div>
+              <div className="flex flex-col gap-1">
+                <label className={label}>What for</label>
+                <select value={purchaseForm.purpose} onChange={(e) => setPurchaseForm((f) => ({ ...f, purpose: e.target.value }))} className={input}>
+                  {purposes.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+                </select>
+              </div>
               <div className="flex flex-col gap-1 md:col-span-2">
                 <label className={label}>Item</label>
-                <input value={purchaseForm.itemName} onChange={(e) => setPurchaseForm((f) => ({ ...f, itemName: e.target.value }))} className={input} placeholder="e.g. Trellis mats" />
+                <input value={purchaseForm.itemName} onChange={(e) => setPurchaseForm((f) => ({ ...f, itemName: e.target.value }))} className={input} placeholder="e.g. Racks, winner brags" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className={label}>Vendor</label>
@@ -466,8 +484,26 @@ export default function BizTaxCenter() {
               </div>
             </div>
 
+            {purposes.find((p) => p.key === purchaseForm.purpose) && (
+              <p className="px-5 pt-2 text-xs text-muted-foreground">
+                {purposes.find((p) => p.key === purchaseForm.purpose)!.treatment}
+              </p>
+            )}
+
+            {summary.inventory.byPurpose.length > 0 && (
+              <div className="px-5 pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {summary.inventory.byPurpose.map((p) => (
+                  <div key={p.purpose} className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+                    <div className="text-xs font-semibold text-foreground">{p.label}</div>
+                    <div className="text-lg font-bold text-foreground tabular-nums">{fmt(p.totalCents)}</div>
+                    <div className="text-[11px] text-muted-foreground">{p.units} units in {year}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {purchases.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-muted-foreground text-center">No inventory purchases recorded for {year}.</p>
+              <p className="px-5 py-6 text-sm text-muted-foreground text-center">No purchases recorded for {year}.</p>
             ) : (
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-border/40">
@@ -476,6 +512,9 @@ export default function BizTaxCenter() {
                       <td className="px-5 py-2 text-muted-foreground whitespace-nowrap">{p.purchasedOn}</td>
                       <td className="px-4 py-2 text-foreground">
                         {p.itemName}
+                        <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold align-middle">
+                          {purposes.find((x) => x.key === (p.purpose ?? "resale"))?.label ?? p.purpose}
+                        </span>
                         {p.vendor && <span className="block text-xs text-muted-foreground">{p.vendor}</span>}
                       </td>
                       <td className="px-4 py-2 tabular-nums text-muted-foreground whitespace-nowrap">{p.quantity} × {fmt(p.unitCostCents)}</td>
@@ -491,6 +530,48 @@ export default function BizTaxCenter() {
               </table>
             )}
           </div>
+
+          {/* What we own for events, across every year — a single year's
+              ledger can't answer "how many racks do we have?" */}
+          {summary.eventKit.length > 0 && (
+            <div className="bg-card border border-card-border rounded-xl shadow-sm">
+              <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+                <Package size={15} className="text-primary" />
+                <h2 className="text-sm font-semibold text-foreground">Event kit owned</h2>
+                <span className="text-xs text-muted-foreground">— all years, everything not bought for resale</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/60">
+                    {["Item", "Units bought", "Total spent", "Last purchased"].map((h) => (
+                      <th key={h} className="px-5 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {summary.eventKit.map((k) => (
+                    <tr key={k.itemName} className="hover:bg-muted/30">
+                      <td className="px-5 py-2 font-medium text-foreground">{k.itemName}</td>
+                      <td className="px-5 py-2 tabular-nums text-foreground">{k.units}</td>
+                      <td className="px-5 py-2 tabular-nums text-foreground">{fmt(k.totalCents)}</td>
+                      <td className="px-5 py-2 text-muted-foreground">{k.lastPurchased}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border bg-muted/40">
+                    <td className="px-5 py-2 font-bold text-foreground">Total</td>
+                    <td className="px-5 py-2 tabular-nums font-bold text-foreground">{summary.eventKit.reduce((s, k) => s + k.units, 0)}</td>
+                    <td className="px-5 py-2 tabular-nums font-bold text-foreground">{fmt(summary.eventKit.reduce((s, k) => s + k.totalCents, 0))}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+              <p className="px-5 py-3 text-xs text-muted-foreground">
+                Counts what you've bought. Anything lost, broken or given away needs a note in the purchase entry for now — retirement tracking isn't built yet.
+              </p>
+            </div>
+          )}
 
           <p className="text-xs text-muted-foreground">
             These are your records, totalled — not tax advice. Category-to-Schedule-C mappings follow the published line descriptions; confirm anything unusual with your accountant.

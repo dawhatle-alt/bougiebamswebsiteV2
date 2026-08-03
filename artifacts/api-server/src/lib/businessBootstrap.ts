@@ -260,6 +260,7 @@ export function ensureTaxTables(): Promise<void> {
           CREATE TABLE IF NOT EXISTS biz_inventory_purchases (
             id serial PRIMARY KEY,
             purchased_on date NOT NULL,
+            purpose text NOT NULL DEFAULT 'resale',
             product_id text,
             item_name text NOT NULL,
             vendor text,
@@ -275,6 +276,10 @@ export function ensureTaxTables(): Promise<void> {
         `);
         await db.execute(sql`ALTER TABLE biz_inventory_purchases ENABLE ROW LEVEL SECURITY`);
         await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_biz_inv_purchases_on ON biz_inventory_purchases (purchased_on)`);
+      })
+      .then(async () => {
+        // Purpose shipped after the table; harmless no-op where it exists.
+        await db.execute(sql`ALTER TABLE biz_inventory_purchases ADD COLUMN IF NOT EXISTS purpose text NOT NULL DEFAULT 'resale'`);
       })
       .catch((err) => {
         taxTablesReady = null;

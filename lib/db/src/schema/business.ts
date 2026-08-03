@@ -136,6 +136,11 @@ export const bizMileageTable = pgTable("biz_mileage", {
 export const bizInventoryPurchasesTable = pgTable("biz_inventory_purchases", {
   id: serial("id").primaryKey(),
   purchasedOn: date("purchased_on").notNull(),
+  // What the stock is for, which decides how it's deducted:
+  //   resale          → cost of goods sold as items sell
+  //   event-equipment → kit reused at events (tiles, mats, racks)
+  //   giveaway        → prizes and promo items handed out (winner brags)
+  purpose: text("purpose").notNull().default("resale"),
   // Optional link to a catalog product (products.id).
   productId: text("product_id"),
   itemName: text("item_name").notNull(),
