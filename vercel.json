@@ -38,6 +38,10 @@
       "destination": "/api/index"
     },
     {
+      "source": "/unsubscribe/:token",
+      "destination": "/api/index"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

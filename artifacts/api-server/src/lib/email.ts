@@ -26,6 +26,50 @@ function getClient(): Resend | null {
   return new Resend(RESEND_API_KEY);
 }
 
+// --- Commercial email compliance -------------------------------------------
+// CAN-SPAM requires every commercial message to carry a working opt-out and a
+// physical mailing address. Transactional mail (receipts, event confirmations)
+// is exempt and deliberately doesn't use any of this.
+
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+export interface MarketingFooterOpts {
+  unsubscribeToken: string;
+  /** Physical mailing address — required; the footer says so if it's missing. */
+  postalAddress?: string;
+}
+
+export function unsubscribeUrl(token: string): string {
+  return `${WEB_ORIGIN}/unsubscribe/${encodeURIComponent(token)}`;
+}
+
+export function marketingFooterHtml(opts: MarketingFooterOpts): string {
+  const url = unsubscribeUrl(opts.unsubscribeToken);
+  const address = opts.postalAddress?.trim();
+  return `
+      <hr style="border:0;border-top:1px solid #E2DBCD;margin:28px 0 14px" />
+      <div style="color:#9A8F7E;font-size:12px;line-height:1.6;text-align:center">
+        <p style="margin:4px 0">You're receiving this because you signed up or registered for a BougieBams event.</p>
+        <p style="margin:4px 0"><a href="${url}" style="color:#8A6D1A">Unsubscribe</a> from marketing emails at any time.</p>
+        ${address ? `<p style="margin:4px 0">${escapeHtml(address)}</p>` : ""}
+      </div>`;
+}
+
+export function marketingFooterText(opts: MarketingFooterOpts): string {
+  const address = opts.postalAddress?.trim();
+  return `\n\n—\nYou're receiving this because you signed up or registered for a BougieBams event.\nUnsubscribe: ${unsubscribeUrl(opts.unsubscribeToken)}${address ? `\n${address}` : ""}`;
+}
+
+/** Headers that let Gmail/Yahoo show a native one-click unsubscribe (RFC 8058),
+ * which materially improves inbox placement for bulk sends. */
+export function marketingHeaders(token: string): Record<string, string> {
+  return {
+    "List-Unsubscribe": `<${WEB_ORIGIN}/api/unsubscribe/${encodeURIComponent(token)}>, <mailto:${CONTACT_EMAIL}?subject=unsubscribe>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+}
+
 export async function sendContactEmail(opts: {
   name: string;
   email: string;
@@ -139,17 +183,24 @@ export async function sendWelcomeOfferEmail(opts: {
   email: string;
   discountCode: string;
   discountPercent: number | null;
+  // Carries a discount offer, so this counts as commercial email: it needs the
+  // opt-out footer and one-click headers.
+  unsubscribeToken?: string;
+  postalAddress?: string;
 }): Promise<void> {
   const client = getClient();
   if (!client) return;
 
-  const { email, discountCode, discountPercent } = opts;
+  const { email, discountCode, discountPercent, unsubscribeToken, postalAddress } = opts;
   const offer = discountPercent ? `${discountPercent}% off your first order` : "a discount on your first order";
+  const footerHtml = unsubscribeToken ? marketingFooterHtml({ unsubscribeToken, postalAddress }) : "";
+  const footerText = unsubscribeToken ? marketingFooterText({ unsubscribeToken, postalAddress }) : "";
 
   const { error } = await client.emails.send({
     from: FROM_EMAIL,
     to: [email],
     replyTo: CONTACT_EMAIL,
+    ...(unsubscribeToken ? { headers: marketingHeaders(unsubscribeToken) } : {}),
     subject: discountPercent ? `Your ${discountPercent}% off code is inside` : "Your BougieBams welcome code",
     html: `${logoHeader}
       <h2>Welcome to BougieBams! 🀄</h2>
@@ -159,8 +210,9 @@ export async function sendWelcomeOfferEmail(opts: {
       </div>
       <p>Enter it at checkout at <a href="https://bougiebams.com/shop">bougiebams.com</a>. Good for one use per email address.</p>
       <p>See you at the table!<br/>— The BougieBams Team</p>
+      ${footerHtml}
     `,
-    text: `Welcome to BougieBams!\n\nHere's ${offer}: ${discountCode}\n\nEnter it at checkout at bougiebams.com/shop. Good for one use per email address.\n\nSee you at the table!\n— The BougieBams Team`,
+    text: `Welcome to BougieBams!\n\nHere's ${offer}: ${discountCode}\n\nEnter it at checkout at bougiebams.com/shop. Good for one use per email address.\n\nSee you at the table!\n— The BougieBams Team${footerText}`,
   });
 
   if (error) {

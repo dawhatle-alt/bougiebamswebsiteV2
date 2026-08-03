@@ -8,6 +8,7 @@ import { sendRegistrationConfirmationEmail } from "../lib/email";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured, isSandboxMode } from "../lib/square";
 import { recordSquareOrder } from "../lib/orders";
 import { resolveEventDiscount, hasRedeemed, recordPendingRedemption, type ResolvedDiscount } from "../lib/discounts";
+import { subscribeEmail } from "../lib/marketingList";
 
 const router: IRouter = Router();
 
@@ -37,6 +38,8 @@ const RegistrationCheckoutBody = z.object({
   // names (e.g. a mother buying a seat for her daughter).
   seats: z.number().int().min(1).max(20).optional(),
   guestNames: z.string().max(500).optional(),
+  // "Keep me posted about future events" — adds them to the marketing list.
+  marketingOptIn: z.boolean().optional(),
 });
 
 router.post(
@@ -74,6 +77,7 @@ router.post(
     const { eventId, name, email, notes, redirectBase, seatingPreference, tilePreference, skillLevel, couponCode } = parsed.data;
     const seats = parsed.data.seats ?? 1;
     const guestNames = parsed.data.guestNames?.trim() || null;
+    const marketingOptIn = parsed.data.marketingOptIn === true;
 
     const [event] = await db
       .select()
@@ -188,6 +192,15 @@ router.post(
         : await db.insert(registrationsTable).values(values).returning();
       if (duplicate) {
         logger.info({ registrationId: registration.id, eventId }, "Reused pending registration for a repeat checkout attempt");
+      }
+
+      // Opting in is never worth failing a registration over.
+      if (marketingOptIn) {
+        try {
+          await subscribeEmail({ email, name, source: "event_registration" });
+        } catch (err) {
+          logger.error({ err, eventId }, "Failed to add event registrant to the marketing list");
+        }
       }
 
       if (requiresPayment) {

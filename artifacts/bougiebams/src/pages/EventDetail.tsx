@@ -35,6 +35,10 @@ export default function EventDetail() {
     // One registration can cover several attendees (e.g. a mother buying a
     // seat for her daughter) — paid as a single transaction.
     seats: 1, guestNames: "",
+    // Opt-in for event news. Checked by default — most people registering for
+    // an event do want to hear about the next one — but always visible and
+    // one click to turn off.
+    marketingOptIn: true,
   });
 
   useEffect(() => {
@@ -140,6 +144,7 @@ export default function EventDetail() {
           tilePreference: formData.tilePreference || undefined,
           skillLevel: formData.skillLevel || undefined,
           couponCode: formData.couponCode.trim() || undefined,
+          marketingOptIn: formData.marketingOptIn,
           seats: formData.seats > 1 ? formData.seats : undefined,
           guestNames: formData.seats > 1 && formData.guestNames.trim() ? formData.guestNames.trim() : undefined,
           redirectBase: window.location.origin + (import.meta.env.BASE_URL ?? "/").replace(/\/$/, ""),
@@ -504,6 +509,19 @@ export default function EventDetail() {
                       />
                     </div>
                   ) : null}
+
+                  <label className="flex items-start gap-2.5 cursor-pointer text-sm text-muted-foreground pt-1">
+                    <input
+                      type="checkbox"
+                      checked={formData.marketingOptIn}
+                      onChange={e => setFormData({ ...formData, marketingOptIn: e.target.checked })}
+                      className="mt-0.5 w-4 h-4 rounded border-muted-foreground/40 accent-primary flex-shrink-0"
+                    />
+                    <span>
+                      Keep me posted about future events and offers.
+                      <span className="block text-xs mt-0.5">Unsubscribe any time — we never share your email.</span>
+                    </span>
+                  </label>
 
                   {submitError && (
                     <p className="text-xs text-destructive">{submitError}</p>

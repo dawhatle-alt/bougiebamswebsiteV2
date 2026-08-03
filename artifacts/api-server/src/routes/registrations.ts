@@ -5,6 +5,7 @@ import { CreateRegistrationBody } from "@workspace/api-zod";
 import { requireAuth, requireAnyAuth } from "../middleware/auth";
 import { sendRegistrationConfirmationEmail } from "../lib/email";
 import { getSquareClient } from "../lib/square";
+import { subscribeEmail } from "../lib/marketingList";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -31,6 +32,7 @@ router.post("/registrations", requireAnyAuth, async (req, res): Promise<void> =>
   const { eventId, name, email, notes } = parsed.data;
   const seats = parsed.data.seats ?? 1;
   const guestNames = parsed.data.guestNames?.trim() || null;
+  const marketingOptIn = parsed.data.marketingOptIn === true;
 
   const [event] = await db
     .select()
@@ -84,6 +86,14 @@ router.post("/registrations", requireAnyAuth, async (req, res): Promise<void> =>
     .update(eventsTable)
     .set({ spotsLeft: Math.max(0, event.spotsLeft - seats) })
     .where(eq(eventsTable.id, eventId));
+
+  if (marketingOptIn) {
+    try {
+      await subscribeEmail({ email, name, source: "event_registration" });
+    } catch (err) {
+      logger.error({ err, eventId }, "Failed to add event registrant to the marketing list");
+    }
+  }
 
   await sendRegistrationConfirmationEmail({
     registrantName: name,

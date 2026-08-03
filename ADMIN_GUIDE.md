@@ -30,6 +30,17 @@ Your at-a-glance business pulse. Everything on it is clickable and jumps to the 
 
 # Community
 
+## Email Marketing & Unsubscribes
+
+Before sending any promotional email, know how consent works here:
+
+- **Transactional email always sends** — order receipts, event confirmations, reminders, password resets. Unsubscribing never blocks these, and the law doesn't govern them.
+- **Marketing email requires an opt-out link and your physical mailing address** in the footer (US CAN-SPAM). Both are built in: every subscriber has a private unsubscribe link, and the address comes from a site setting (**tell Claude your business mailing address so it can be set — the footer is incomplete until then**).
+- **How people opt in**: the welcome popup, or the **"Keep me posted about future events and offers"** checkbox on the event registration form (ticked by default, one click to turn off). Registrants who tick it are added with source `event_registration`.
+- **How people opt out**: the Unsubscribe link in any marketing email. It opens a confirmation page — a single click on that page opts them out. Gmail and Yahoo also show their own one-click unsubscribe button, which works too and *improves your inbox placement*.
+- Someone who unsubscribes and later signs up again is automatically opted back in — a fresh signup is fresh consent.
+- Unsubscribed people stay in the Subscribers list marked **Unsubscribed** rather than being deleted, so they're never accidentally re-added by an import.
+
 ## Subscribers
 
 Everyone who joined the mailing list (mostly via the 15%-off welcome popup).

@@ -8,6 +8,7 @@ import {
 import { requireAdmin } from "../middleware/auth";
 import { resolveProductDiscount } from "../lib/discounts";
 import { sendWelcomeOfferEmail } from "../lib/email";
+import { subscribeEmail, getBusinessAddress } from "../lib/marketingList";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -16,13 +17,23 @@ const router: IRouter = Router();
 // table, so an arbitrary client-supplied string can never reach an email.
 // Repeat signups get the email again (the popup is how people ask for a
 // resend). Never blocks the signup response on email failures.
-async function emailWelcomeCode(email: string, rawCode: string | null | undefined): Promise<void> {
+async function emailWelcomeCode(
+  email: string,
+  rawCode: string | null | undefined,
+  unsubscribeToken: string,
+): Promise<void> {
   const code = (rawCode ?? "").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 30);
   if (!code) return;
   try {
     const resolved = await resolveProductDiscount(code);
     if (resolved) {
-      await sendWelcomeOfferEmail({ email, discountCode: resolved.code, discountPercent: resolved.percent });
+      await sendWelcomeOfferEmail({
+        email,
+        discountCode: resolved.code,
+        discountPercent: resolved.percent,
+        unsubscribeToken,
+        postalAddress: await getBusinessAddress(),
+      });
     }
   } catch (err) {
     logger.error({ err, email }, "Failed to send welcome offer email");
@@ -39,22 +50,18 @@ router.post("/subscribe", async (req, res): Promise<void> => {
   const { email, source, discountCode } = parsed.data;
 
   try {
-    await db.insert(subscribersTable).values({
-      email,
-      source: source ?? "website",
+    // Signing up again after opting out counts as fresh consent, so this also
+    // clears a previous unsubscribe.
+    const result = await subscribeEmail({ email, source: source ?? "website", discountCode });
+    await emailWelcomeCode(email, discountCode, result.token);
+    res.status(result.created ? 201 : 200).json({
+      message: result.created ? "Subscribed successfully" : "Already subscribed",
       discountCode: discountCode ?? null,
     });
-  } catch {
-    // Duplicate email — they're already on the list. Treat it as success so
-    // the welcome popup shows the code again instead of erroring on repeat
-    // visitors (the per-email single-use rule is enforced at checkout).
-    await emailWelcomeCode(email, discountCode);
-    res.status(200).json({ message: "Already subscribed", discountCode: discountCode ?? null });
-    return;
+  } catch (err) {
+    logger.error({ err, email }, "Subscribe failed");
+    res.status(500).json({ error: "Could not subscribe. Please try again." });
   }
-
-  await emailWelcomeCode(email, discountCode);
-  res.status(201).json({ message: "Subscribed successfully", discountCode: discountCode ?? null });
 });
 
 router.delete("/admin/subscribers/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -77,17 +84,24 @@ router.get("/admin/subscribers", requireAdmin, async (_req, res): Promise<void> 
     .from(subscribersTable)
     .orderBy(subscribersTable.createdAt);
 
-  res.json(
-    ListSubscribersResponse.parse({
-      subscribers: rows.map((r) => ({
-        id: r.id,
-        email: r.email,
-        source: r.source ?? null,
-        discountCode: r.discountCode ?? null,
-        createdAt: r.createdAt.toISOString(),
-      })),
-    }),
-  );
+  // Parsed response drops unknown keys, so the opt-out state is merged back on
+  // after validation.
+  const parsedBody = ListSubscribersResponse.parse({
+    subscribers: rows.map((r) => ({
+      id: r.id,
+      email: r.email,
+      source: r.source ?? null,
+      discountCode: r.discountCode ?? null,
+      createdAt: r.createdAt.toISOString(),
+    })),
+  });
+  const unsubById = new Map(rows.map((r) => [r.id, r.unsubscribedAt]));
+  res.json({
+    subscribers: parsedBody.subscribers.map((s) => ({
+      ...s,
+      unsubscribedAt: unsubById.get(s.id)?.toISOString() ?? null,
+    })),
+  });
 });
 
 export default router;
