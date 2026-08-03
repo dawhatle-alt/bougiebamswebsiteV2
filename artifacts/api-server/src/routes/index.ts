@@ -24,6 +24,7 @@ import businessAdvisorRouter from "./businessAdvisor";
 import catalogFeedRouter from "./catalogFeed";
 import tablescapeRouter from "./tablescape";
 import unsubscribeRouter from "./unsubscribe";
+import marketingRouter from "./marketing";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(businessAdvisorRouter);
 router.use(catalogFeedRouter);
 router.use(tablescapeRouter);
 router.use(unsubscribeRouter);
+router.use(marketingRouter);
 
 export default router;

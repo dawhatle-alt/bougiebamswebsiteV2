@@ -38,6 +38,7 @@ import {
   Trash2,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
+import SegmentExport from "@/components/admin/SegmentExport";
 import ProductManager from "@/components/admin/ProductManager";
 import EventsManager from "@/components/admin/EventsManager";
 import DashboardStats from "@/components/admin/DashboardStats";
@@ -587,6 +588,8 @@ export default function Admin() {
                   {loadError}
                 </div>
               )}
+
+              <SegmentExport onAuthError={handleAuthError} />
 
               <div className="rounded-md border border-[#E2DBCD] bg-white overflow-hidden">
                 {loading && subscribers.length === 0 ? (

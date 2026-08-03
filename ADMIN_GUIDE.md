@@ -41,6 +41,21 @@ Before sending any promotional email, know how consent works here:
 - Someone who unsubscribes and later signs up again is automatically opted back in — a fresh signup is fresh consent.
 - Unsubscribed people stay in the Subscribers list marked **Unsubscribed** rather than being deleted, so they're never accidentally re-added by an import.
 
+### Campaign segments (Subscribers page)
+
+Pick an audience, see how many people it contains, and download it as a CSV to paste into Resend Broadcasts, Mailchimp, or whatever you send with. **Anyone who unsubscribed is stripped from every export automatically** — including segments built from event registrations and orders, where they'd otherwise still appear.
+
+| Segment | Who's in it |
+|---|---|
+| **All subscribers** | Everyone on the list who hasn't opted out |
+| **Attendees not on the list** | Came to an event, never joined the list — your biggest growth pool |
+| **Repeat attendees** | Two or more events; your most loyal guests |
+| **Attendees who never bought** | Played at an event but never purchased — prime cross-sell |
+| **Buyers who never attended** | Bought a product but never came to an event |
+| **Attendees of one event** | Everyone confirmed for a chosen event, for follow-ups |
+
+Each row carries name, email, events attended, last event and its date, product orders, total spent, whether they're on the email list, and their signup source — enough to personalise a campaign ("you were at Rabbit Hole in July…").
+
 ## Subscribers
 
 Everyone who joined the mailing list (mostly via the 15%-off welcome popup).
