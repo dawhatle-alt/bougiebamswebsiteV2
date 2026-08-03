@@ -35,6 +35,7 @@ import {
   parseEventDate,
 } from "../lib/businessTax";
 import { getBusinessAddress as getBusinessAddressForOrigin } from "../lib/marketingList";
+import { drivingMiles, isDistanceLookupConfigured } from "../lib/distance";
 import { TAX_CATEGORIES } from "../lib/taxCategories";
 import { logger } from "../lib/logger";
 
@@ -599,10 +600,43 @@ router.get("/admin/business/mileage/importable", requireAdmin, async (_req, res)
       .filter((e) => e.drivenOn && e.drivenOn <= today)
       .sort((a, b) => (a.drivenOn! < b.drivenOn! ? 1 : -1));
 
-    res.json({ origin, events: rows });
+    res.json({ origin, events: rows, distanceLookup: isDistanceLookupConfigured() });
   } catch (err) {
     logger.error({ err }, "Failed to list importable events");
     res.status(500).json({ error: "Failed to load events" });
+  }
+});
+
+// Looks up real driving distances from Google and remembers them per venue, so
+// the lookup only ever has to run once for a given place.
+router.post("/admin/business/mileage/lookup-distances", requireAdmin, async (req, res): Promise<void> => {
+  const schema = z.object({
+    origin: z.string().trim().min(3).max(300),
+    destinations: z.array(z.string().trim().min(3).max(300)).min(1).max(25),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "origin and destinations are required" });
+    return;
+  }
+  if (!isDistanceLookupConfigured()) {
+    res.status(503).json({ error: "Distance lookup isn't configured — add GOOGLE_MAPS_API_KEY." });
+    return;
+  }
+  try {
+    const { origin, destinations } = parsed.data;
+    const miles = await drivingMiles(origin, destinations);
+    const learned: Record<string, number> = {};
+    destinations.forEach((d, i) => {
+      const m = miles[i];
+      if (m != null && m > 0) learned[normalizeVenue(d)] = m;
+    });
+    if (Object.keys(learned).length > 0) await saveVenueDistances(learned);
+    if (origin) await saveMileageOrigin(origin);
+    res.json({ results: destinations.map((d, i) => ({ destination: d, miles: miles[i] })) });
+  } catch (err) {
+    logger.error({ err }, "Distance lookup failed");
+    res.status(500).json({ error: "Distance lookup failed" });
   }
 });
 

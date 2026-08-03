@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, X, Download, Car, Package, Receipt, AlertTriangle, CalendarPlus } from "lucide-react";
+import { Loader2, Plus, X, Download, Car, Package, Receipt, AlertTriangle, CalendarPlus, MapPin } from "lucide-react";
 import { bizFetch, bizJson } from "./api";
 
 // Tax records: dated expenses, business mileage, and inventory bought for
@@ -106,11 +106,14 @@ export default function BizTaxCenter() {
   const [importPicked, setImportPicked] = useState<Record<number, boolean>>({});
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState("");
+  const [distanceLookup, setDistanceLookup] = useState(false);
+  const [looking, setLooking] = useState(false);
 
   const loadImportable = useCallback(async () => {
     try {
-      const d = await bizJson<{ origin: string; events: ImportableEvent[] }>("/mileage/importable");
+      const d = await bizJson<{ origin: string; events: ImportableEvent[]; distanceLookup?: boolean }>("/mileage/importable");
       setImportable(d.events ?? []);
+      setDistanceLookup(!!d.distanceLookup);
       setImportOrigin((prev) => prev || d.origin || "");
       const miles: Record<number, string> = {};
       const picked: Record<number, boolean> = {};
@@ -125,6 +128,47 @@ export default function BizTaxCenter() {
       setError("Could not load events to import.");
     }
   }, []);
+
+  // Fills in miles from Google for every unimported event that has an address.
+  async function lookUpDistances() {
+    const targets = importable.filter((e) => !e.imported && e.location.trim());
+    if (targets.length === 0 || !importOrigin.trim()) {
+      setImportMsg("Enter a starting address first.");
+      return;
+    }
+    setLooking(true);
+    setImportMsg("");
+    try {
+      const r = await bizJson<{ results: { destination: string; miles: number | null }[] }>(
+        "/mileage/lookup-distances",
+        { method: "POST", body: JSON.stringify({ origin: importOrigin.trim(), destinations: targets.map((t) => t.location) }) },
+      );
+      const byDest = new Map(r.results.map((x) => [x.destination, x.miles]));
+      let found = 0;
+      setImportMiles((prev) => {
+        const next = { ...prev };
+        for (const t of targets) {
+          const m = byDest.get(t.location);
+          if (m != null && m > 0) { next[t.eventId] = String(m); found += 1; }
+        }
+        return next;
+      });
+      setImportPicked((prev) => {
+        const next = { ...prev };
+        for (const t of targets) if (byDest.get(t.location) != null) next[t.eventId] = true;
+        return next;
+      });
+      const missed = targets.length - found;
+      setImportMsg(
+        `Looked up ${found} venue${found === 1 ? "" : "s"}.` +
+          (missed > 0 ? ` ${missed} address${missed === 1 ? "" : "es"} couldn't be resolved — enter those by hand.` : ""),
+      );
+    } catch {
+      setImportMsg("Distance lookup failed. Check the Google Maps API key, or enter miles by hand.");
+    } finally {
+      setLooking(false);
+    }
+  }
 
   async function runImport() {
     const trips = importable
@@ -453,12 +497,20 @@ export default function BizTaxCenter() {
                     <label className={label}>Starting point (used as "from" for every trip)</label>
                     <input value={importOrigin} onChange={(e) => setImportOrigin(e.target.value)} className={input} placeholder="3400 Prairie Heights Dr, Leander, TX 78641" />
                   </div>
+                  {distanceLookup && (
+                    <button onClick={() => void lookUpDistances()} disabled={looking} className="h-[34px] flex items-center gap-1 border border-border rounded-lg px-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 disabled:opacity-40">
+                      {looking ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />} Look up distances
+                    </button>
+                  )}
                   <button onClick={() => void runImport()} disabled={importing} className="h-[34px] flex items-center gap-1 bg-primary text-primary-foreground rounded-lg px-3 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
                     {importing ? <Loader2 size={14} className="animate-spin" /> : <CalendarPlus size={14} />} Import selected
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Enter each venue's <strong>one-way</strong> distance — it's saved and reused for every future event at the same place. All imports are logged as round trips.
+                  {distanceLookup
+                    ? "Look up distances fills these from Google Maps and remembers each venue. "
+                    : "Enter each venue's one-way distance — it's saved and reused for every future event at the same place. "}
+                  Distances are <strong>one way</strong>; all imports are logged as round trips.
                 </p>
                 {importable.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-3">No past events found.</p>
