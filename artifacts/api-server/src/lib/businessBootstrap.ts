@@ -231,6 +231,59 @@ export function ensureExpensesTable(): Promise<void> {
   return expensesReady;
 }
 
+// Tax-record ledgers (mileage, inventory purchases) — own guard, same reason.
+let taxTablesReady: Promise<void> | null = null;
+
+export function ensureTaxTables(): Promise<void> {
+  if (!taxTablesReady) {
+    taxTablesReady = tableExists("biz_mileage")
+      .then(async (exists) => {
+        if (exists) return;
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS biz_mileage (
+            id serial PRIMARY KEY,
+            driven_on date NOT NULL,
+            purpose text NOT NULL,
+            from_location text,
+            to_location text,
+            miles numeric NOT NULL DEFAULT 0,
+            round_trip boolean NOT NULL DEFAULT false,
+            event_id integer,
+            notes text,
+            created_at timestamptz NOT NULL DEFAULT now()
+          )
+        `);
+        await db.execute(sql`ALTER TABLE biz_mileage ENABLE ROW LEVEL SECURITY`);
+        await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_biz_mileage_driven_on ON biz_mileage (driven_on)`);
+
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS biz_inventory_purchases (
+            id serial PRIMARY KEY,
+            purchased_on date NOT NULL,
+            product_id text,
+            item_name text NOT NULL,
+            vendor text,
+            quantity integer NOT NULL DEFAULT 1,
+            unit_cost_cents integer NOT NULL DEFAULT 0,
+            shipping_cents integer NOT NULL DEFAULT 0,
+            tax_cents integer NOT NULL DEFAULT 0,
+            total_cents integer NOT NULL DEFAULT 0,
+            receipt_ref text,
+            notes text,
+            created_at timestamptz NOT NULL DEFAULT now()
+          )
+        `);
+        await db.execute(sql`ALTER TABLE biz_inventory_purchases ENABLE ROW LEVEL SECURITY`);
+        await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_biz_inv_purchases_on ON biz_inventory_purchases (purchased_on)`);
+      })
+      .catch((err) => {
+        taxTablesReady = null;
+        throw err;
+      });
+  }
+  return taxTablesReady;
+}
+
 // Advisor chat tables ship after the phase-1 tables, so they need their own
 // guard — environments that already have biz_assumptions would otherwise
 // never create them.

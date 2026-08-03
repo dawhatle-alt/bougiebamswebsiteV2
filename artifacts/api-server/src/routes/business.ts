@@ -10,14 +10,19 @@ import {
   bizScenariosTable,
   bizEventCostsTable,
   bizExpensesTable,
+  bizMileageTable,
+  bizInventoryPurchasesTable,
+  siteSettingsTable,
   eventsTable,
   registrationsTable,
   productsTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middleware/auth";
-import { ensureBusinessTables, ensureEventCostsTable, ensureExpensesTable } from "../lib/businessBootstrap";
+import { ensureBusinessTables, ensureEventCostsTable, ensureExpensesTable, ensureTaxTables } from "../lib/businessBootstrap";
 import { computeActuals } from "../lib/businessActuals";
 import { computePnl, EXPENSE_CATEGORIES } from "../lib/businessPnl";
+import { computeTaxSummary, taxCsv } from "../lib/businessTax";
+import { TAX_CATEGORIES } from "../lib/taxCategories";
 import { logger } from "../lib/logger";
 
 // Business HQ (forecasting/planning) endpoints, ported from the
@@ -376,11 +381,17 @@ function prevMonth(month: string): string {
 }
 
 const expenseCreateSchema = z.object({
-  month: z.string().regex(MONTH_RE),
-  category: z.enum(EXPENSE_CATEGORIES),
+  // month stays for the P&L; spentOn is the exact date a deduction needs.
+  month: z.string().regex(MONTH_RE).optional(),
+  spentOn: z.string().regex(DATE_RE).optional(),
+  category: z.string().refine((c) => TAX_CATEGORIES.some((t) => t.key === c), "Unknown category"),
   description: z.string().trim().max(200).default(""),
   amountCents: z.number().int().nonnegative(),
-});
+  vendor: z.string().trim().max(200).optional(),
+  paymentMethod: z.string().trim().max(80).optional(),
+  receiptRef: z.string().trim().max(500).optional(),
+  notes: z.string().trim().max(500).optional(),
+}).refine((d) => d.month || d.spentOn, { message: "month or spentOn is required" });
 
 router.get("/admin/business/pnl", requireAdmin, async (req, res): Promise<void> => {
   const month = typeof req.query.month === "string" ? req.query.month : "";
@@ -405,7 +416,13 @@ router.post("/admin/business/expenses", requireAdmin, async (req, res): Promise<
   }
   try {
     await ensureExpensesTable();
-    const [row] = await db.insert(bizExpensesTable).values(parsed.data).returning();
+    const d = parsed.data;
+    // Keep month and spentOn consistent whichever one the caller supplied.
+    const month = d.month ?? d.spentOn!.slice(0, 7);
+    const [row] = await db
+      .insert(bizExpensesTable)
+      .values({ ...d, month, spentOn: d.spentOn ?? null })
+      .returning();
     res.status(201).json(row);
   } catch (err) {
     logger.error({ err }, "Failed to create expense");
@@ -459,6 +476,191 @@ router.post("/admin/business/expenses/copy-previous", requireAdmin, async (req, 
   } catch (err) {
     logger.error({ err }, "Failed to copy expenses");
     res.status(500).json({ error: "Failed to copy expenses" });
+  }
+});
+
+// ---------- Tax records: mileage + inventory purchases ----------
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const mileageSchema = z.object({
+  drivenOn: z.string().regex(DATE_RE),
+  purpose: z.string().trim().min(1).max(200),
+  fromLocation: z.string().trim().max(200).optional(),
+  toLocation: z.string().trim().max(200).optional(),
+  miles: z.number().finite().positive().max(10000),
+  roundTrip: z.boolean().optional(),
+  eventId: z.number().int().positive().nullable().optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+const purchaseSchema = z.object({
+  purchasedOn: z.string().regex(DATE_RE),
+  productId: z.string().trim().max(120).nullable().optional(),
+  itemName: z.string().trim().min(1).max(200),
+  vendor: z.string().trim().max(200).optional(),
+  quantity: z.number().int().min(1).max(100000),
+  unitCostCents: z.number().int().nonnegative(),
+  shippingCents: z.number().int().nonnegative().optional(),
+  taxCents: z.number().int().nonnegative().optional(),
+  receiptRef: z.string().trim().max(500).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+router.get("/admin/business/mileage", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    await ensureTaxTables();
+    const year = typeof req.query.year === "string" ? req.query.year : "";
+    const rows = /^\d{4}$/.test(year)
+      ? await db
+          .select()
+          .from(bizMileageTable)
+          .where(sql`${bizMileageTable.drivenOn} BETWEEN ${`${year}-01-01`} AND ${`${year}-12-31`}`)
+          .orderBy(desc(bizMileageTable.drivenOn))
+      : await db.select().from(bizMileageTable).orderBy(desc(bizMileageTable.drivenOn));
+    res.json({ trips: rows });
+  } catch (err) {
+    logger.error({ err }, "Failed to list mileage");
+    res.status(500).json({ error: "Failed to load mileage" });
+  }
+});
+
+router.post("/admin/business/mileage", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = mileageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
+    return;
+  }
+  try {
+    await ensureTaxTables();
+    const [row] = await db.insert(bizMileageTable).values(parsed.data).returning();
+    res.status(201).json({ trip: row });
+  } catch (err) {
+    logger.error({ err }, "Failed to create mileage entry");
+    res.status(500).json({ error: "Failed to save the trip" });
+  }
+});
+
+router.delete("/admin/business/mileage/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    await ensureTaxTables();
+    await db.delete(bizMileageTable).where(eq(bizMileageTable.id, id));
+    res.status(204).send();
+  } catch (err) {
+    logger.error({ err }, "Failed to delete mileage entry");
+    res.status(500).json({ error: "Failed to delete the trip" });
+  }
+});
+
+router.get("/admin/business/inventory-purchases", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    await ensureTaxTables();
+    const year = typeof req.query.year === "string" ? req.query.year : "";
+    const rows = /^\d{4}$/.test(year)
+      ? await db
+          .select()
+          .from(bizInventoryPurchasesTable)
+          .where(sql`${bizInventoryPurchasesTable.purchasedOn} BETWEEN ${`${year}-01-01`} AND ${`${year}-12-31`}`)
+          .orderBy(desc(bizInventoryPurchasesTable.purchasedOn))
+      : await db.select().from(bizInventoryPurchasesTable).orderBy(desc(bizInventoryPurchasesTable.purchasedOn));
+    res.json({ purchases: rows });
+  } catch (err) {
+    logger.error({ err }, "Failed to list inventory purchases");
+    res.status(500).json({ error: "Failed to load purchases" });
+  }
+});
+
+router.post("/admin/business/inventory-purchases", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = purchaseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
+    return;
+  }
+  try {
+    await ensureTaxTables();
+    const d = parsed.data;
+    const totalCents = d.unitCostCents * d.quantity + (d.shippingCents ?? 0) + (d.taxCents ?? 0);
+    const [row] = await db
+      .insert(bizInventoryPurchasesTable)
+      .values({ ...d, shippingCents: d.shippingCents ?? 0, taxCents: d.taxCents ?? 0, totalCents })
+      .returning();
+    res.status(201).json({ purchase: row });
+  } catch (err) {
+    logger.error({ err }, "Failed to create inventory purchase");
+    res.status(500).json({ error: "Failed to save the purchase" });
+  }
+});
+
+router.delete("/admin/business/inventory-purchases/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    await ensureTaxTables();
+    await db.delete(bizInventoryPurchasesTable).where(eq(bizInventoryPurchasesTable.id, id));
+    res.status(204).send();
+  } catch (err) {
+    logger.error({ err }, "Failed to delete inventory purchase");
+    res.status(500).json({ error: "Failed to delete the purchase" });
+  }
+});
+
+router.get("/admin/business/tax-summary", requireAdmin, async (req, res): Promise<void> => {
+  const year = typeof req.query.year === "string" && /^\d{4}$/.test(req.query.year)
+    ? req.query.year
+    : String(new Date().getFullYear());
+  try {
+    res.json({ summary: await computeTaxSummary(year), categories: TAX_CATEGORIES });
+  } catch (err) {
+    logger.error({ err }, "Failed to compute tax summary");
+    res.status(500).json({ error: "Failed to compute the tax summary" });
+  }
+});
+
+router.get("/admin/business/tax-export", requireAdmin, async (req, res): Promise<void> => {
+  const year = typeof req.query.year === "string" && /^\d{4}$/.test(req.query.year)
+    ? req.query.year
+    : String(new Date().getFullYear());
+  const type = String(req.query.type ?? "summary");
+  if (!["expenses", "mileage", "inventory", "summary"].includes(type)) {
+    res.status(400).json({ error: "Unknown export type" });
+    return;
+  }
+  try {
+    const csv = await taxCsv(year, type as "expenses" | "mileage" | "inventory" | "summary");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="bougiebams-${year}-${type}.csv"`);
+    res.setHeader("Cache-Control", "no-store");
+    res.send(csv);
+  } catch (err) {
+    logger.error({ err, type }, "Failed to export tax records");
+    res.status(500).json({ error: "Failed to export" });
+  }
+});
+
+// The IRS standard mileage rate changes yearly, so the owner sets it.
+router.put("/admin/business/mileage-rate", requireAdmin, async (req, res): Promise<void> => {
+  const { year, rateCents } = req.body as { year?: unknown; rateCents?: unknown };
+  if (typeof year !== "string" || !/^\d{4}$/.test(year) || typeof rateCents !== "number" || rateCents < 0) {
+    res.status(400).json({ error: "year (YYYY) and rateCents (number) are required" });
+    return;
+  }
+  try {
+    await db
+      .insert(siteSettingsTable)
+      .values({ key: `mileage_rate_cents_${year}`, value: String(Math.round(rateCents)) })
+      .onConflictDoUpdate({ target: siteSettingsTable.key, set: { value: String(Math.round(rateCents)) } });
+    res.json({ year, rateCents: Math.round(rateCents) });
+  } catch (err) {
+    logger.error({ err }, "Failed to save mileage rate");
+    res.status(500).json({ error: "Failed to save the rate" });
   }
 });
 

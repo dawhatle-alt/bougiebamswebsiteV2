@@ -7,15 +7,30 @@ import { bizFetch, bizJson } from "./api";
 // unit costs and event costs; operating expenses come from the owner-entered
 // ledger below the statement.
 
+// Mirrors the server's TAX_CATEGORIES so labels resolve for every category,
+// including the tax-only ones entered from the Tax Records tab.
 export const EXPENSE_CATEGORIES: { key: string; label: string }[] = [
   { key: "processing-fees", label: "Processing Fees" },
   { key: "software", label: "Software & Tools" },
+  { key: "advertising", label: "Advertising & Marketing" },
   { key: "marketing", label: "Marketing" },
-  { key: "shipping-supplies", label: "Shipping & Supplies" },
+  { key: "shipping-supplies", label: "Shipping & Packaging" },
+  { key: "supplies", label: "Supplies" },
   { key: "travel", label: "Travel" },
+  { key: "car-truck", label: "Car & Truck" },
   { key: "event-fees", label: "Event Fees" },
-  { key: "event-food", label: "Event Food & Beverage" },
+  { key: "venue-rent", label: "Venue & Space Rental" },
+  { key: "event-food", label: "Meals (Events & Business)" },
   { key: "insurance", label: "Insurance" },
+  { key: "contract-labor", label: "Contract Labor" },
+  { key: "legal-professional", label: "Legal & Professional" },
+  { key: "equipment", label: "Equipment & Depreciation" },
+  { key: "office", label: "Office Expense" },
+  { key: "taxes-licenses", label: "Taxes & Licenses" },
+  { key: "utilities", label: "Utilities & Phone" },
+  { key: "home-office", label: "Home Office" },
+  { key: "bank-fees", label: "Bank & Merchant Fees" },
+  { key: "inventory", label: "Inventory for Resale" },
   { key: "other", label: "Other" },
 ];
 const categoryLabel = (key: string) => EXPENSE_CATEGORIES.find((c) => c.key === key)?.label ?? key;

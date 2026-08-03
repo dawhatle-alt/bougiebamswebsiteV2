@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, numeric, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, date, integer, numeric, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
 // Business HQ (forecasting/planning) tables, ported from the BougieBams-Business
 // repo. Prefixed biz_ to stay clear of the storefront's events/conversations
@@ -103,6 +103,50 @@ export const bizExpensesTable = pgTable("biz_expenses", {
   category: text("category").notNull(),
   description: text("description").notNull().default(""),
   amountCents: integer("amount_cents").notNull().default(0),
+  // Tax-record fields. The IRS wants a dated, sourced record per expense —
+  // month alone is enough for a P&L but not for a deduction.
+  spentOn: date("spent_on"),
+  vendor: text("vendor"),
+  paymentMethod: text("payment_method"),
+  // Where the receipt lives (uploaded object path, or a note like a Drive link).
+  receiptRef: text("receipt_ref"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+// Business mileage log. The standard-mileage deduction needs date, purpose and
+// distance per trip — a monthly total isn't substantiation.
+export const bizMileageTable = pgTable("biz_mileage", {
+  id: serial("id").primaryKey(),
+  drivenOn: date("driven_on").notNull(),
+  purpose: text("purpose").notNull(),
+  fromLocation: text("from_location"),
+  toLocation: text("to_location"),
+  miles: num("miles").notNull().default(0),
+  roundTrip: boolean("round_trip").notNull().default(false),
+  // Optional link to the storefront event this trip was for.
+  eventId: integer("event_id"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+// Inventory bought for resale, recorded as purchase lots with cost basis.
+// Distinct from biz_inventory_items, which tracks how many are on hand today;
+// COGS needs what was paid and when.
+export const bizInventoryPurchasesTable = pgTable("biz_inventory_purchases", {
+  id: serial("id").primaryKey(),
+  purchasedOn: date("purchased_on").notNull(),
+  // Optional link to a catalog product (products.id).
+  productId: text("product_id"),
+  itemName: text("item_name").notNull(),
+  vendor: text("vendor"),
+  quantity: integer("quantity").notNull().default(1),
+  unitCostCents: integer("unit_cost_cents").notNull().default(0),
+  shippingCents: integer("shipping_cents").notNull().default(0),
+  taxCents: integer("tax_cents").notNull().default(0),
+  totalCents: integer("total_cents").notNull().default(0),
+  receiptRef: text("receipt_ref"),
+  notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 
