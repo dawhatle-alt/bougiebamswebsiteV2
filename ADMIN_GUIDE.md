@@ -41,6 +41,11 @@ Everyone who joined the mailing list (mostly via the 15%-off welcome popup).
 
 Every event signup, across all events.
 
+- **Summary cards at the top** count whatever the event filter is currently showing, so you never have to count rows by hand:
+  - **Attending** — the real head-count (a 2-seat booking counts as 2 people), with the number of registrations behind it.
+  - **Paid seats** — how many of those seats were paid for, and how many are free or comped.
+  - **Pending** — seats in unpaid checkouts. These hold no spot and are cleared automatically after 48 hours.
+  - **Rows shown** — how many table rows match the filter.
 - **Sort any column** by clicking its header (Event, Name, Email, Status, Paid, Date).
 - **Event column** shows the event's **date underneath its title**, so repeat events with the same name are easy to tell apart. The check-in report dropdown and the CSV export include the date too, and sorting by Event groups each occurrence by date.
 - **Status**: `confirmed` = attending (paid, or a free event); `pending` = started paid checkout but payment never completed on that attempt. A **Verify** link appears next to pending rows — it checks Square for a completed payment on that registration's checkout and confirms it on the spot if the money is there.

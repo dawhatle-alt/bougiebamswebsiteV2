@@ -131,6 +131,28 @@ export default function RegistrationsManager({ onAuthError }: Props) {
     [sorted, eventFilter],
   );
 
+  // Head-count for whatever is currently filtered. People ≠ rows: one
+  // registration can cover several seats, so attendance is the seat sum.
+  const totals = useMemo(() => {
+    let attending = 0;
+    let confirmedRegs = 0;
+    let paidSeats = 0;
+    let pendingSeats = 0;
+    let pendingRegs = 0;
+    for (const r of visible) {
+      const seats = Math.max(1, r.seats ?? 1);
+      if (r.status === "confirmed") {
+        attending += seats;
+        confirmedRegs += 1;
+        if (r.paid) paidSeats += seats;
+      } else if (r.status === "pending") {
+        pendingSeats += seats;
+        pendingRegs += 1;
+      }
+    }
+    return { attending, confirmedRegs, paidSeats, pendingSeats, pendingRegs };
+  }, [visible]);
+
   async function handleDownloadReport() {
     if (eventFilter === "all") return;
     setDownloading(true);
@@ -390,6 +412,42 @@ export default function RegistrationsManager({ onAuthError }: Props) {
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
+        </div>
+      </div>
+
+      {/* Head-count for the current filter — a multi-seat booking is several
+          people, so counting rows by eye undercounts attendance. */}
+      <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-md border border-[#D4AF37]/40 bg-[#FDFBF6] p-3">
+          <div className="text-xs font-medium text-[#5A6178] uppercase tracking-wider">
+            {eventFilter === "all" ? "Attending (all events)" : "Attending this event"}
+          </div>
+          <div className="text-2xl font-semibold text-[#1E2A5A] mt-0.5">{totals.attending}</div>
+          <div className="text-xs text-[#9A8F7E]">
+            {totals.confirmedRegs} registration{totals.confirmedRegs === 1 ? "" : "s"}
+            {totals.attending !== totals.confirmedRegs && " · includes guest seats"}
+          </div>
+        </div>
+        <div className="rounded-md border border-[#E2DBCD] bg-white p-3">
+          <div className="text-xs font-medium text-[#5A6178] uppercase tracking-wider">Paid seats</div>
+          <div className="text-2xl font-semibold text-[#1E2A5A] mt-0.5">{totals.paidSeats}</div>
+          <div className="text-xs text-[#9A8F7E]">
+            {Math.max(0, totals.attending - totals.paidSeats)} free or comped
+          </div>
+        </div>
+        <div className="rounded-md border border-[#E2DBCD] bg-white p-3">
+          <div className="text-xs font-medium text-[#5A6178] uppercase tracking-wider">Pending</div>
+          <div className="text-2xl font-semibold text-[#1E2A5A] mt-0.5">{totals.pendingSeats}</div>
+          <div className="text-xs text-[#9A8F7E]">
+            {totals.pendingRegs} unpaid checkout{totals.pendingRegs === 1 ? "" : "s"} · holds no spot
+          </div>
+        </div>
+        <div className="rounded-md border border-[#E2DBCD] bg-white p-3">
+          <div className="text-xs font-medium text-[#5A6178] uppercase tracking-wider">Rows shown</div>
+          <div className="text-2xl font-semibold text-[#1E2A5A] mt-0.5">{visible.length}</div>
+          <div className="text-xs text-[#9A8F7E]">
+            {eventFilter === "all" ? "all events" : `of ${registrations.length} total`}
+          </div>
         </div>
       </div>
 
