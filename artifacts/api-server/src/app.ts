@@ -5,6 +5,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import ogPreviewRouter from "./routes/ogPreview";
 import fbCheckoutRouter from "./routes/fbCheckout";
+import unsubscribeRouter from "./routes/unsubscribe";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { injectShopperUser } from "./middleware/auth";
@@ -49,6 +50,10 @@ app.use("/api", router);
 app.use(ogPreviewRouter);
 // Meta Shop offsite checkout — /fb-checkout is rewritten here too.
 app.use(fbCheckoutRouter);
+// Email footers link to the bare /unsubscribe/:token (rewritten here) rather
+// than the /api-prefixed path, so it also has to be reachable off /api. The
+// same router is mounted under /api above for the List-Unsubscribe header.
+app.use(unsubscribeRouter);
 
 // Express's default handler swallows the underlying error (generic HTML 500,
 // nothing in the logs) — log it so production failures are diagnosable.
