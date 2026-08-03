@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { count, eq, sql, inArray, asc, desc, or } from "drizzle-orm";
+import { and, count, eq, sql, inArray, asc, desc, or } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -353,9 +353,54 @@ router.delete("/admin/blog/:id", requireAdmin, async (req, res): Promise<void> =
   res.sendStatus(204);
 });
 
+/** Seats actually held per event — the sum of confirmed registrations' seats.
+ * This is the truth; events.spots_left is a running counter that drifts when
+ * spots are hand-edited or registrations are removed outside the normal flow. */
+async function confirmedSeatsByEvent(): Promise<Map<number, number>> {
+  const rows = await db
+    .select({
+      eventId: registrationsTable.eventId,
+      seats: sql<number>`coalesce(sum(${registrationsTable.seats}), 0)`,
+    })
+    .from(registrationsTable)
+    .where(eq(registrationsTable.status, "confirmed"))
+    .groupBy(registrationsTable.eventId);
+  return new Map(rows.map((r) => [r.eventId, Number(r.seats)]));
+}
+
 router.get("/admin/events", requireAdmin, async (_req, res): Promise<void> => {
+  // Sequential on purpose (transaction pooler — see the dashboard route).
   const rows = await db.select().from(eventsTable).orderBy(eventsTable.createdAt);
-  res.json({ events: rows.map(toApiEvent) });
+  const seats = await confirmedSeatsByEvent();
+  res.json({
+    events: rows.map((r) => ({ ...toApiEvent(r), confirmedSeats: seats.get(r.id) ?? 0 })),
+  });
+});
+
+/** Resets spots_left to capacity minus seats actually held, curing any drift. */
+router.post("/admin/events/:id/recalculate-spots", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, id)).limit(1);
+  if (!event) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+  const [row] = await db
+    .select({ seats: sql<number>`coalesce(sum(${registrationsTable.seats}), 0)` })
+    .from(registrationsTable)
+    .where(and(eq(registrationsTable.eventId, id), eq(registrationsTable.status, "confirmed")));
+  const confirmedSeats = Number(row?.seats ?? 0);
+  const [updated] = await db
+    .update(eventsTable)
+    .set({ spotsLeft: Math.max(0, event.totalSpots - confirmedSeats) })
+    .where(eq(eventsTable.id, id))
+    .returning();
+  logger.info({ eventId: id, confirmedSeats, spotsLeft: updated.spotsLeft }, "Recalculated event spots");
+  res.json({ event: { ...toApiEvent(updated), confirmedSeats } });
 });
 
 router.post("/admin/events", requireAdmin, async (req, res): Promise<void> => {

@@ -126,10 +126,33 @@ export default function EventsManager({ onAuthError }: Props) {
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [syncingId, setSyncingId] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const authHeaders: Record<string, string> = {};
+
+  // Resets Spots Left to capacity minus the seats actually held, curing drift
+  // from hand-edited spots or registrations removed outside the normal flow.
+  async function handleRecalculateSpots(id: number) {
+    setSyncingId(id);
+    setLoadError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/events/${id}/recalculate-spots`, {
+        method: "POST",
+        headers: authHeaders,
+        credentials: "include",
+      });
+      if (res.status === 401 || res.status === 403) { onAuthError(); return; }
+      if (!res.ok) throw new Error("Recalculate failed");
+      const { event } = await res.json() as { event: ApiEvent };
+      setEvents((prev) => prev.map((e) => (e.id === event.id ? event : e)));
+    } catch {
+      setLoadError("Could not recalculate spots. Please try again.");
+    } finally {
+      setSyncingId(null);
+    }
+  }
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -617,19 +640,43 @@ export default function EventsManager({ onAuthError }: Props) {
                   <TableCell className="text-[#5A6178]">{e.category}</TableCell>
                   <TableCell className="text-[#5A6178]">{formatPrice(e)}</TableCell>
                   <TableCell className="text-[#5A6178] whitespace-nowrap">
-                    {/* Capacity can be missing (event saved with Total Spots 0),
-                        which used to render a nonsensical "0/0 filled". */}
-                    {e.totalSpots > 0 ? (
-                      <>
-                        {Math.max(0, e.totalSpots - e.spotsLeft)}/{e.totalSpots} filled
-                        <span className="block text-xs text-[#9A8F7E]">{e.spotsLeft} left</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-amber-700 font-medium">Capacity not set</span>
-                        <span className="block text-xs text-[#9A8F7E]">{e.spotsLeft} left · edit to add Total Spots</span>
-                      </>
-                    )}
+                    {/* "Filled" comes from the real confirmed seat count, not
+                        from Spots Left — that counter drifts. When the two
+                        disagree, offer a one-click resync. */}
+                    {(() => {
+                      const seats = e.confirmedSeats ?? Math.max(0, e.totalSpots - e.spotsLeft);
+                      const expectedLeft = Math.max(0, e.totalSpots - seats);
+                      const drifted = e.totalSpots > 0 && expectedLeft !== e.spotsLeft;
+                      if (e.totalSpots <= 0) {
+                        return (
+                          <>
+                            <span className="text-amber-700 font-medium">Capacity not set</span>
+                            <span className="block text-xs text-[#9A8F7E]">{seats} seated · edit to add Total Spots</span>
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          {seats}/{e.totalSpots} filled
+                          {seats > e.totalSpots && (
+                            <span className="ml-1.5 text-xs text-amber-700 font-medium">over capacity</span>
+                          )}
+                          <span className="block text-xs text-[#9A8F7E]">
+                            {e.spotsLeft} left
+                            {drifted && (
+                              <button
+                                onClick={() => void handleRecalculateSpots(e.id)}
+                                disabled={syncingId === e.id}
+                                className="ml-1.5 text-amber-700 hover:text-amber-800 underline underline-offset-2 disabled:opacity-50"
+                                title={`Spots Left says ${e.spotsLeft} but ${seats} of ${e.totalSpots} seats are taken — click to reset it to ${expectedLeft}`}
+                              >
+                                {syncingId === e.id ? "fixing…" : `out of sync — fix (${expectedLeft})`}
+                              </button>
+                            )}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     {e.archived ? (

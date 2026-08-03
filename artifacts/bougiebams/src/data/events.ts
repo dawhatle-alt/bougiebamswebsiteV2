@@ -42,6 +42,9 @@ export interface ApiEvent {
   compCodeLimit?: number | null;
   allowWelcomeCode?: boolean;
   sortOrder?: number | null;
+  // Seats actually held by confirmed registrations (admin list only) — the
+  // truth behind the "filled" figure, which spotsLeft can drift away from.
+  confirmedSeats?: number;
 }
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
