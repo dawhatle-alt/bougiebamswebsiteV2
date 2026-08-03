@@ -271,38 +271,39 @@ export default function BizTaxCenter() {
               </button>
             </div>
 
-            <div className="px-5 py-3 grid grid-cols-2 md:grid-cols-7 gap-2 items-end border-b border-border/60">
-              <div className="flex flex-col gap-1">
+            {/* Flex-wrap rather than a fixed column count: the fields have very
+                different natural widths, and a rigid grid stretched some while
+                stranding the button. */}
+            <div className="px-5 py-3 flex flex-wrap items-end gap-2 border-b border-border/60">
+              <div className="flex flex-col gap-1 w-[9.5rem]">
                 <label className={label}>Date</label>
                 <input type="date" value={expenseForm.spentOn} onChange={(e) => setExpenseForm((f) => ({ ...f, spentOn: e.target.value }))} className={input} />
               </div>
-              <div className="flex flex-col gap-1 md:col-span-2">
+              <div className="flex flex-col gap-1 flex-1 min-w-[11rem]">
                 <label className={label}>Category</label>
                 <select value={expenseForm.category} onChange={(e) => setExpenseForm((f) => ({ ...f, category: e.target.value }))} className={input}>
                   {categories.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
                 </select>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-[2] min-w-[12rem]">
                 <label className={label}>Description</label>
                 <input value={expenseForm.description} onChange={(e) => setExpenseForm((f) => ({ ...f, description: e.target.value }))} className={input} placeholder="What was it?" />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-[9rem]">
                 <label className={label}>Vendor</label>
                 <input value={expenseForm.vendor} onChange={(e) => setExpenseForm((f) => ({ ...f, vendor: e.target.value }))} className={input} placeholder="Who from" />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-[9rem]">
                 <label className={label}>Receipt</label>
                 <input value={expenseForm.receiptRef} onChange={(e) => setExpenseForm((f) => ({ ...f, receiptRef: e.target.value }))} className={input} placeholder="Link or ref" />
               </div>
-              <div className="flex gap-2 items-end">
-                <div className="flex flex-col gap-1 flex-1">
-                  <label className={label}>Amount</label>
-                  <input type="number" step={0.01} min={0} value={expenseForm.amount} onChange={(e) => setExpenseForm((f) => ({ ...f, amount: e.target.value }))} className={`${input} text-right tabular-nums`} />
-                </div>
-                <button onClick={() => void addExpense()} disabled={saving || !expenseForm.amount} className="h-[34px] flex items-center bg-primary text-primary-foreground rounded-lg px-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
-                  <Plus size={14} />
-                </button>
+              <div className="flex flex-col gap-1 w-28">
+                <label className={label}>Amount</label>
+                <input type="number" step={0.01} min={0} value={expenseForm.amount} onChange={(e) => setExpenseForm((f) => ({ ...f, amount: e.target.value }))} className={`${input} text-right tabular-nums`} />
               </div>
+              <button onClick={() => void addExpense()} disabled={saving || !expenseForm.amount} className="h-[34px] flex items-center gap-1 bg-primary text-primary-foreground rounded-lg px-3 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
+                <Plus size={14} /> Add
+              </button>
             </div>
 
             {categories.find((c) => c.key === expenseForm.category)?.hint && (
@@ -367,35 +368,34 @@ export default function BizTaxCenter() {
               </p>
             )}
 
-            <div className="px-5 py-3 grid grid-cols-2 md:grid-cols-6 gap-2 items-end border-b border-border/60">
-              <div className="flex flex-col gap-1">
+            <div className="px-5 py-3 flex flex-wrap items-end gap-2 border-b border-border/60">
+              <div className="flex flex-col gap-1 w-[9.5rem]">
                 <label className={label}>Date</label>
                 <input type="date" value={tripForm.drivenOn} onChange={(e) => setTripForm((f) => ({ ...f, drivenOn: e.target.value }))} className={input} />
               </div>
-              <div className="flex flex-col gap-1 md:col-span-2">
+              <div className="flex flex-col gap-1 flex-[2] min-w-[12rem]">
                 <label className={label}>Purpose</label>
                 <input value={tripForm.purpose} onChange={(e) => setTripForm((f) => ({ ...f, purpose: e.target.value }))} className={input} placeholder="e.g. Rabbit Hole event setup" />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className={label}>From → To</label>
-                <div className="flex gap-1">
-                  <input value={tripForm.fromLocation} onChange={(e) => setTripForm((f) => ({ ...f, fromLocation: e.target.value }))} className={`${input} w-full`} placeholder="Home" />
-                  <input value={tripForm.toLocation} onChange={(e) => setTripForm((f) => ({ ...f, toLocation: e.target.value }))} className={`${input} w-full`} placeholder="Venue" />
-                </div>
+              <div className="flex flex-col gap-1 flex-1 min-w-[8rem]">
+                <label className={label}>From</label>
+                <input value={tripForm.fromLocation} onChange={(e) => setTripForm((f) => ({ ...f, fromLocation: e.target.value }))} className={input} placeholder="Home" />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className={label}>Miles (one way)</label>
+              <div className="flex flex-col gap-1 flex-1 min-w-[8rem]">
+                <label className={label}>To</label>
+                <input value={tripForm.toLocation} onChange={(e) => setTripForm((f) => ({ ...f, toLocation: e.target.value }))} className={input} placeholder="Venue" />
+              </div>
+              <div className="flex flex-col gap-1 w-28">
+                <label className={label}>Miles one way</label>
                 <input type="number" step={0.1} min={0} value={tripForm.miles} onChange={(e) => setTripForm((f) => ({ ...f, miles: e.target.value }))} className={`${input} text-right tabular-nums`} />
               </div>
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                  <input type="checkbox" checked={tripForm.roundTrip} onChange={(e) => setTripForm((f) => ({ ...f, roundTrip: e.target.checked }))} className="accent-primary" />
-                  Round trip
-                </label>
-                <button onClick={() => void addTrip()} disabled={saving || !tripForm.miles} className="h-[34px] flex items-center bg-primary text-primary-foreground rounded-lg px-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
-                  <Plus size={14} />
-                </button>
-              </div>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer h-[34px] whitespace-nowrap">
+                <input type="checkbox" checked={tripForm.roundTrip} onChange={(e) => setTripForm((f) => ({ ...f, roundTrip: e.target.checked }))} className="accent-primary" />
+                Round trip
+              </label>
+              <button onClick={() => void addTrip()} disabled={saving || !tripForm.miles} className="h-[34px] flex items-center gap-1 bg-primary text-primary-foreground rounded-lg px-3 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
+                <Plus size={14} /> Add
+              </button>
             </div>
 
             {trips.length === 0 ? (
@@ -443,45 +443,44 @@ export default function BizTaxCenter() {
               Log everything you buy as stock and mark what it's for — the three are deducted differently, so keeping them apart here is what makes the year-end numbers right.
             </p>
 
-            <div className="px-5 py-3 grid grid-cols-2 md:grid-cols-8 gap-2 items-end border-b border-border/60">
-              <div className="flex flex-col gap-1">
+            <div className="px-5 py-3 flex flex-wrap items-end gap-2 border-b border-border/60">
+              <div className="flex flex-col gap-1 w-[9.5rem]">
                 <label className={label}>Date</label>
                 <input type="date" value={purchaseForm.purchasedOn} onChange={(e) => setPurchaseForm((f) => ({ ...f, purchasedOn: e.target.value }))} className={input} />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-44">
                 <label className={label}>What for</label>
                 <select value={purchaseForm.purpose} onChange={(e) => setPurchaseForm((f) => ({ ...f, purpose: e.target.value }))} className={input}>
                   {purposes.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
                 </select>
               </div>
-              <div className="flex flex-col gap-1 md:col-span-2">
+              <div className="flex flex-col gap-1 flex-[2] min-w-[12rem]">
                 <label className={label}>Item</label>
                 <input value={purchaseForm.itemName} onChange={(e) => setPurchaseForm((f) => ({ ...f, itemName: e.target.value }))} className={input} placeholder="e.g. Racks, winner brags" />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-[9rem]">
                 <label className={label}>Vendor</label>
                 <input value={purchaseForm.vendor} onChange={(e) => setPurchaseForm((f) => ({ ...f, vendor: e.target.value }))} className={input} />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-20">
                 <label className={label}>Qty</label>
                 <input type="number" min={1} value={purchaseForm.quantity} onChange={(e) => setPurchaseForm((f) => ({ ...f, quantity: e.target.value }))} className={`${input} text-right tabular-nums`} />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-28">
                 <label className={label}>Unit cost</label>
                 <input type="number" step={0.01} min={0} value={purchaseForm.unitCost} onChange={(e) => setPurchaseForm((f) => ({ ...f, unitCost: e.target.value }))} className={`${input} text-right tabular-nums`} />
               </div>
-              <div className="flex gap-2 items-end">
-                <div className="flex flex-col gap-1 flex-1">
-                  <label className={label}>Ship + tax</label>
-                  <div className="flex gap-1">
-                    <input type="number" step={0.01} min={0} value={purchaseForm.shipping} onChange={(e) => setPurchaseForm((f) => ({ ...f, shipping: e.target.value }))} className={`${input} w-full text-right tabular-nums`} placeholder="0" />
-                    <input type="number" step={0.01} min={0} value={purchaseForm.tax} onChange={(e) => setPurchaseForm((f) => ({ ...f, tax: e.target.value }))} className={`${input} w-full text-right tabular-nums`} placeholder="0" />
-                  </div>
-                </div>
-                <button onClick={() => void addPurchase()} disabled={saving || !purchaseForm.itemName || !purchaseForm.unitCost} className="h-[34px] flex items-center bg-primary text-primary-foreground rounded-lg px-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
-                  <Plus size={14} />
-                </button>
+              <div className="flex flex-col gap-1 w-24">
+                <label className={label}>Shipping</label>
+                <input type="number" step={0.01} min={0} value={purchaseForm.shipping} onChange={(e) => setPurchaseForm((f) => ({ ...f, shipping: e.target.value }))} className={`${input} text-right tabular-nums`} placeholder="0" />
               </div>
+              <div className="flex flex-col gap-1 w-24">
+                <label className={label}>Tax</label>
+                <input type="number" step={0.01} min={0} value={purchaseForm.tax} onChange={(e) => setPurchaseForm((f) => ({ ...f, tax: e.target.value }))} className={`${input} text-right tabular-nums`} placeholder="0" />
+              </div>
+              <button onClick={() => void addPurchase()} disabled={saving || !purchaseForm.itemName || !purchaseForm.unitCost} className="h-[34px] flex items-center gap-1 bg-primary text-primary-foreground rounded-lg px-3 text-sm font-semibold hover:opacity-90 disabled:opacity-40">
+                <Plus size={14} /> Add
+              </button>
             </div>
 
             {purposes.find((p) => p.key === purchaseForm.purpose) && (
