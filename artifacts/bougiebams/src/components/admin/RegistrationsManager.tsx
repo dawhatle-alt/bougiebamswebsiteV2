@@ -15,6 +15,7 @@ interface Registration {
   id: number;
   eventId: number;
   eventTitle: string;
+  eventDate?: string | null;
   name: string;
   email: string;
   notes: string | null;
@@ -101,6 +102,10 @@ export default function RegistrationsManager({ onAuthError }: Props) {
         // ISO timestamps sort chronologically as plain strings.
         av = a.createdAt;
         bv = b.createdAt;
+      } else if (sortKey === "eventTitle") {
+        // Recurring events share a title — group each occurrence by its date.
+        av = `${a.eventTitle} ${a.eventDate ?? ""}`.toLowerCase();
+        bv = `${b.eventTitle} ${b.eventDate ?? ""}`.toLowerCase();
       } else {
         av = (a[sortKey] ?? "").toString().toLowerCase();
         bv = (b[sortKey] ?? "").toString().toLowerCase();
@@ -113,12 +118,12 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   }, [registrations, sortKey, sortDir]);
 
   const events = useMemo(() => {
-    const map = new Map<number, string>();
+    const map = new Map<number, { title: string; date: string | null }>();
     for (const r of registrations) {
-      if (!map.has(r.eventId)) map.set(r.eventId, r.eventTitle);
+      if (!map.has(r.eventId)) map.set(r.eventId, { title: r.eventTitle, date: r.eventDate ?? null });
     }
-    return Array.from(map, ([id, title]) => ({ id, title }))
-      .sort((a, b) => a.title.localeCompare(b.title));
+    return Array.from(map, ([id, e]) => ({ id, title: e.title, date: e.date }))
+      .sort((a, b) => a.title.localeCompare(b.title) || (a.date ?? "").localeCompare(b.date ?? ""));
   }, [registrations]);
 
   const visible = useMemo(
@@ -299,10 +304,11 @@ export default function RegistrationsManager({ onAuthError }: Props) {
   }
 
   function handleExport() {
-    const header = ["ID", "Event", "Name", "Email", "Status", "Paid", "Seats", "Guest Names", "Notes", "Sit With", "Blanks & Jokers", "Skill Level", "Comp Code", "Date"];
+    const header = ["ID", "Event", "Event Date", "Name", "Email", "Status", "Paid", "Seats", "Guest Names", "Notes", "Sit With", "Blanks & Jokers", "Skill Level", "Comp Code", "Registered"];
     const rows = visible.map((r) => [
       String(r.id),
       r.eventTitle,
+      r.eventDate ?? "",
       r.name,
       r.email,
       r.status,
@@ -493,7 +499,7 @@ export default function RegistrationsManager({ onAuthError }: Props) {
         >
           <option value="all">All events…</option>
           {events.map((e) => (
-            <option key={e.id} value={String(e.id)}>{e.title}</option>
+            <option key={e.id} value={String(e.id)}>{e.date ? `${e.title} — ${e.date}` : e.title}</option>
           ))}
         </select>
         {eventFilter !== "all" && (
@@ -570,6 +576,9 @@ export default function RegistrationsManager({ onAuthError }: Props) {
                       long prefix, so a cut-off title is ambiguous. */}
                   <TableCell className="font-medium text-[#1E2A5A] max-w-[260px] whitespace-normal break-words leading-snug">
                     {r.eventTitle}
+                    {r.eventDate && (
+                      <div className="text-[11px] font-normal text-[#9A8F7E] mt-0.5">{r.eventDate}</div>
+                    )}
                   </TableCell>
                   <TableCell className="text-[#1E2A5A]">
                     {r.name}

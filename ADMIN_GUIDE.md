@@ -42,6 +42,7 @@ Everyone who joined the mailing list (mostly via the 15%-off welcome popup).
 Every event signup, across all events.
 
 - **Sort any column** by clicking its header (Event, Name, Email, Status, Paid, Date).
+- **Event column** shows the event's **date underneath its title**, so repeat events with the same name are easy to tell apart. The check-in report dropdown and the CSV export include the date too, and sorting by Event groups each occurrence by date.
 - **Status**: `confirmed` = attending (paid, or a free event); `pending` = started paid checkout but payment never completed on that attempt. A **Verify** link appears next to pending rows — it checks Square for a completed payment on that registration's checkout and confirms it on the spot if the money is there.
 - **Multi-seat registrations**: guests can book several seats in one payment (e.g. a mother buying a seat for her daughter). Those rows show a gold **×2** badge next to the name, with the seat count and any guest names underneath. One registration = several spots: the event's fill count, revenue, and the check-in list all count every seat.
 - **Abandoned checkouts clean themselves up**: a pending registration whose payment never completed is deleted automatically after 48 hours (they hold no spots). Repeatedly clicking Register no longer creates a new row each time either — a second attempt by the same name and email reuses the existing pending row. Registering a *different* person always creates its own row, even under the same email.

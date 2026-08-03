@@ -489,6 +489,7 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
       id: registrationsTable.id,
       eventId: registrationsTable.eventId,
       eventTitle: eventsTable.title,
+      eventDate: eventsTable.date,
       name: registrationsTable.name,
       email: registrationsTable.email,
       notes: registrationsTable.notes,
@@ -511,6 +512,9 @@ router.get("/admin/registrations", requireAdmin, async (_req, res): Promise<void
       id: r.id,
       eventId: r.eventId,
       eventTitle: r.eventTitle ?? "Unknown Event",
+      // Recurring events reuse the same title, so the date is what tells them
+      // apart in the registrations list.
+      eventDate: r.eventDate ?? null,
       name: r.name,
       email: r.email,
       notes: r.notes ?? null,
@@ -580,6 +584,7 @@ router.post("/admin/registrations", requireAdmin, async (req, res): Promise<void
       id: row.id,
       eventId: row.eventId,
       eventTitle: event.title,
+      eventDate: event.date,
       name: row.name,
       email: row.email,
       notes: row.notes ?? null,
