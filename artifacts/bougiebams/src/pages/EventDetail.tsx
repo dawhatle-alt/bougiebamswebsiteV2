@@ -258,11 +258,19 @@ export default function EventDetail() {
                   </div>
                 </a>
 
-                {event.totalSpots > 0 && (
+                {/* Capacity may be missing (Total Spots left at 0 in admin) —
+                    still show how many seats remain rather than nothing. */}
+                {(event.totalSpots > 0 || event.spotsLeft > 0) && (
                   <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-primary flex-shrink-0" />
                     <span className={`font-medium ${event.spotsLeft <= 5 ? "text-destructive" : "text-foreground"}`}>
-                      {isSoldOut ? "Sold out" : event.spotsLeft <= 5 ? `Only ${event.spotsLeft} spot${event.spotsLeft !== 1 ? "s" : ""} left!` : `${event.spotsLeft} of ${event.totalSpots} spots available`}
+                      {isSoldOut
+                        ? "Sold out"
+                        : event.spotsLeft <= 5
+                          ? `Only ${event.spotsLeft} spot${event.spotsLeft !== 1 ? "s" : ""} left!`
+                          : event.totalSpots > 0
+                            ? `${event.spotsLeft} of ${event.totalSpots} spots available`
+                            : `${event.spotsLeft} spots available`}
                     </span>
                   </div>
                 )}

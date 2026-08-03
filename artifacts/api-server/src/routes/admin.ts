@@ -364,6 +364,12 @@ router.post("/admin/events", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: "title and date are required" });
     return;
   }
+  if (Number(b.spotsLeft) > Number(b.totalSpots)) {
+    res.status(400).json({
+      error: `Spots Left (${Number(b.spotsLeft)}) can't be more than Total Spots (${Number(b.totalSpots)}). Set Total Spots to the venue's capacity.`,
+    });
+    return;
+  }
   const [row] = await db
     .insert(eventsTable)
     .values({
@@ -398,6 +404,19 @@ router.put("/admin/events/:id", requireAdmin, async (req, res): Promise<void> =>
     return;
   }
   const b = req.body as Record<string, unknown>;
+  // Spots Left above Total Spots is an impossible state: it renders as
+  // "0/0 filled" in the events list and hides the availability line on the
+  // public page. Reject it here so capacity can't silently go missing.
+  if (b.totalSpots !== undefined && b.spotsLeft !== undefined) {
+    const total = Number(b.totalSpots);
+    const left = Number(b.spotsLeft);
+    if (Number.isFinite(total) && Number.isFinite(left) && left > total) {
+      res.status(400).json({
+        error: `Spots Left (${left}) can't be more than Total Spots (${total}). Set Total Spots to the venue's capacity.`,
+      });
+      return;
+    }
+  }
   const updateData: Record<string, unknown> = {};
   if (b.title !== undefined) updateData.title = b.title;
   if (b.description !== undefined) updateData.description = b.description;

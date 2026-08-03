@@ -617,8 +617,19 @@ export default function EventsManager({ onAuthError }: Props) {
                   <TableCell className="text-[#5A6178]">{e.category}</TableCell>
                   <TableCell className="text-[#5A6178]">{formatPrice(e)}</TableCell>
                   <TableCell className="text-[#5A6178] whitespace-nowrap">
-                    {Math.max(0, e.totalSpots - e.spotsLeft)}/{e.totalSpots} filled
-                    <span className="block text-xs text-[#9A8F7E]">{e.spotsLeft} left</span>
+                    {/* Capacity can be missing (event saved with Total Spots 0),
+                        which used to render a nonsensical "0/0 filled". */}
+                    {e.totalSpots > 0 ? (
+                      <>
+                        {Math.max(0, e.totalSpots - e.spotsLeft)}/{e.totalSpots} filled
+                        <span className="block text-xs text-[#9A8F7E]">{e.spotsLeft} left</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-amber-700 font-medium">Capacity not set</span>
+                        <span className="block text-xs text-[#9A8F7E]">{e.spotsLeft} left · edit to add Total Spots</span>
+                      </>
+                    )}
                   </TableCell>
                   <TableCell>
                     {e.archived ? (
