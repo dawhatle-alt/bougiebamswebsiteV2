@@ -23,6 +23,7 @@ import { listOrders, syncOrdersFromSquare } from "../lib/orders";
 import { sendCheckinReportEmail } from "../lib/email";
 import { listRedemptions, deleteRedemption, getWelcomeCode, ensureWelcomeCodeRow, DEFAULT_WELCOME_CODE } from "../lib/discounts";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
+import { getFollowupConfig, saveFollowupConfig, listFollowupStatus, runEventFollowups } from "../lib/eventFollowup";
 
 const router: IRouter = Router();
 
@@ -507,6 +508,58 @@ router.delete("/admin/events/:id", requireAdmin, async (req, res): Promise<void>
     return;
   }
   res.sendStatus(204);
+});
+
+// --- Post-event follow-up email -------------------------------------------
+
+router.get("/admin/event-followup", requireAdmin, async (_req, res): Promise<void> => {
+  try {
+    res.json({ config: await getFollowupConfig(), events: await listFollowupStatus() });
+  } catch (err) {
+    logger.error({ err }, "Failed to load follow-up settings");
+    res.status(500).json({ error: "Could not load the follow-up settings." });
+  }
+});
+
+router.put("/admin/event-followup", requireAdmin, async (req, res): Promise<void> => {
+  const b = req.body as Record<string, unknown>;
+  const hours = Number(b.hoursAfter);
+  const config = {
+    enabled: b.enabled === true,
+    hoursAfter: Number.isFinite(hours) && hours >= 0 && hours <= 720 ? Math.round(hours) : 20,
+    subject: typeof b.subject === "string" ? b.subject.slice(0, 200) : "",
+    body: typeof b.body === "string" ? b.body.slice(0, 5000) : "",
+    discountCode: typeof b.discountCode === "string" ? b.discountCode.trim().slice(0, 40) : "",
+    discountBlurb: typeof b.discountBlurb === "string" ? b.discountBlurb.slice(0, 300) : "",
+  };
+  if (!config.subject.trim() || !config.body.trim()) {
+    res.status(400).json({ error: "Subject and message are both required." });
+    return;
+  }
+  try {
+    await saveFollowupConfig(config);
+    res.json({ config });
+  } catch (err) {
+    logger.error({ err }, "Failed to save follow-up settings");
+    res.status(500).json({ error: "Could not save the settings." });
+  }
+});
+
+// Sends the follow-up for one event immediately, ignoring the schedule — used
+// to catch up on an event that finished before follow-ups were switched on.
+router.post("/admin/event-followup/send/:eventId", requireAdmin, async (req, res): Promise<void> => {
+  const eventId = parseInt(req.params.eventId as string, 10);
+  if (Number.isNaN(eventId)) {
+    res.status(400).json({ error: "Invalid event id" });
+    return;
+  }
+  try {
+    const result = await runEventFollowups({ force: eventId });
+    res.json(result);
+  } catch (err) {
+    logger.error({ err, eventId }, "Manual follow-up send failed");
+    res.status(500).json({ error: "Could not send the follow-up." });
+  }
 });
 
 router.get("/hero-images", async (_req, res): Promise<void> => {

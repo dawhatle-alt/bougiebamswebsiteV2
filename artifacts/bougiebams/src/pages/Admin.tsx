@@ -35,6 +35,7 @@ import {
   Blocks,
   Sparkles,
   Gift,
+  Send,
   Trash2,
 } from "lucide-react";
 import BlogManager from "@/components/admin/BlogManager";
@@ -54,6 +55,7 @@ import ChatbotManager from "@/components/admin/ChatbotManager";
 import BuildYourSetManager from "@/components/admin/BuildYourSetManager";
 import TablescapeManager from "@/components/admin/TablescapeManager";
 import WelcomePopupManager from "@/components/admin/WelcomePopupManager";
+import EventFollowupManager from "@/components/admin/EventFollowupManager";
 import CuratedCollectionsManager from "@/components/admin/CuratedCollectionsManager";
 import OrdersManager from "@/components/admin/OrdersManager";
 import BusinessManager from "@/components/admin/business/BusinessManager";
@@ -76,6 +78,7 @@ type AdminView =
   | "pressbar"
   | "chatbot"
   | "welcomepopup"
+  | "eventfollowup"
   | "buildyourset"
   | "tablescape"
   | "curated"
@@ -151,6 +154,7 @@ const NAV_GROUPS = [
     items: [
       { key: "subscribers" as AdminView, label: "Subscribers", icon: Mail },
       { key: "registrations" as AdminView, label: "Registrations", icon: Users },
+      { key: "eventfollowup" as AdminView, label: "Post-Event Email", icon: Send },
     ],
   },
   {
@@ -189,6 +193,7 @@ const NAV_GROUPS = [
 const VIEW_LABELS: Record<AdminView, string> = {
   dashboard: "Overview",
   subscribers: "Email Subscribers",
+  eventfollowup: "Post-Event Follow-Up Email",
   blog: "Blog Manager",
   products: "Products",
   events: "Events",
@@ -541,6 +546,8 @@ export default function Admin() {
             <ChatbotManager onAuthError={handleAuthError} />
           ) : view === "welcomepopup" ? (
             <WelcomePopupManager onAuthError={handleAuthError} />
+          ) : view === "eventfollowup" ? (
+            <EventFollowupManager onAuthError={handleAuthError} />
           ) : view === "buildyourset" ? (
             <BuildYourSetManager onAuthError={handleAuthError} />
           ) : view === "tablescape" ? (

@@ -4,6 +4,7 @@ import { db, registrationsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { getSquareClient, getSquareLocationId, isSquareLocationConfigured } from "../lib/square";
 import { syncOrdersFromSquare } from "../lib/orders";
+import { runEventFollowups } from "../lib/eventFollowup";
 
 const router: IRouter = Router();
 
@@ -67,7 +68,18 @@ router.get("/cron/reconcile-orders", async (req: Request, res: Response): Promis
     } catch (err) {
       logger.error({ err }, "Stale pending registration cleanup failed");
     }
-    res.json({ ok: true, stalePendingCleared });
+    // Post-event thank-yous. Off until the owner enables them, and each event
+    // is claimed before sending so a retry can't double-send.
+    let followups = { eventsProcessed: 0, emailsSent: 0 };
+    try {
+      const r = await runEventFollowups();
+      followups = { eventsProcessed: r.eventsProcessed, emailsSent: r.emailsSent };
+      if (r.emailsSent > 0) logger.info(followups, "Sent post-event follow-ups");
+    } catch (err) {
+      logger.error({ err }, "Post-event follow-up run failed");
+    }
+
+    res.json({ ok: true, stalePendingCleared, followups });
   } catch (err) {
     logger.error({ err }, "Cron order/registration reconciliation failed");
     res.status(500).json({ ok: false });

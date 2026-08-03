@@ -56,6 +56,16 @@ Pick an audience, see how many people it contains, and download it as a CSV to p
 
 Each row carries name, email, events attended, last event and its date, product orders, total spent, whether they're on the email list, and their signup source — enough to personalise a campaign ("you were at Rabbit Hole in July…").
 
+## Post-Event Email
+
+An automatic thank-you sent to everyone who attended, once the event is over. **Off until you switch it on** — set the copy first, then enable.
+
+- **Timing** — hours after the event (20 ≈ next morning). Sending rides the daily job, so it's approximate, not to the minute.
+- **Subject and message** — use `{{name}}` for the guest's first name, `{{event}}` for the title, `{{date}}` for the date. The unsubscribe link and your mailing address are added automatically.
+- **Discount code** (optional) — shows an offer block with the code. Leave blank for none.
+- **Who gets it** — everyone confirmed for that event, once each. Recipients are added to your email list so the unsubscribe link works; **anyone who has opted out is skipped**.
+- **Past events** are listed at the bottom with a **Send now** button — events that finished before you turned this on don't send automatically, so use that to catch up. Once sent, an event shows "Sent to N" and can never be sent twice.
+
 ## Subscribers
 
 Everyone who joined the mailing list (mostly via the 15%-off welcome popup).

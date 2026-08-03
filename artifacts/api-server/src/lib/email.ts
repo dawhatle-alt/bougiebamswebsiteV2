@@ -177,6 +177,54 @@ export async function sendRegistrationConfirmationEmail(opts: {
   }
 }
 
+/** Post-event thank-you. Commercial mail: carries the opt-out footer and the
+ * one-click headers. */
+export async function sendEventFollowupEmail(opts: {
+  to: string;
+  subject: string;
+  body: string;
+  discountCode?: string;
+  discountBlurb?: string;
+  unsubscribeToken: string;
+  postalAddress?: string;
+}): Promise<void> {
+  const client = getClient();
+  if (!client) return;
+
+  const { to, subject, body, discountCode, discountBlurb, unsubscribeToken, postalAddress } = opts;
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const bodyHtml = esc(body).replace(/\n/g, "<br/>");
+
+  const offerHtml = discountCode
+    ? `<p style="margin:18px 0 6px">${esc(discountBlurb ?? "")}</p>
+       <div style="margin:8px 0 18px;padding:16px;border:2px dashed #C9A227;border-radius:8px;text-align:center">
+         <span style="font-size:22px;font-weight:bold;letter-spacing:5px;color:#1E2A5A">${esc(discountCode)}</span>
+       </div>`
+    : "";
+  const offerText = discountCode ? `\n\n${discountBlurb ?? ""}\n${discountCode}\n` : "";
+
+  const { error } = await client.emails.send({
+    from: FROM_EMAIL,
+    to: [to],
+    replyTo: CONTACT_EMAIL,
+    headers: marketingHeaders(unsubscribeToken),
+    subject,
+    html: `${logoHeader}
+      <div style="font-size:15px;line-height:1.6;color:#1E2A5A">${bodyHtml}</div>
+      ${offerHtml}
+      <p style="margin-top:18px"><a href="${WEB_ORIGIN}/events" style="color:#8A6D1A">See what's coming up →</a></p>
+      ${marketingFooterHtml({ unsubscribeToken, postalAddress })}
+    `,
+    text: `${body}${offerText}\n\nSee what's coming up: ${WEB_ORIGIN}/events${marketingFooterText({ unsubscribeToken, postalAddress })}`,
+  });
+
+  if (error) {
+    logger.error({ error, to }, "Failed to send event follow-up email");
+    throw new Error("Follow-up email failed");
+  }
+  logger.info({ to }, "Event follow-up email sent");
+}
+
 // Sent when someone claims the welcome offer — the popup vanishes after one
 // visit, so the email is how they find their code again.
 export async function sendWelcomeOfferEmail(opts: {
