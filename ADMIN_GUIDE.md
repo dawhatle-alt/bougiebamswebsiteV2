@@ -251,6 +251,7 @@ The floating chat bubble in the bottom-right corner of the site.
 The custom set-building experience where shoppers hand-pick pieces into a bundled set.
 
 - **Toggle** it on or off site-wide. When off: the homepage "Build Your Own Set" teaser and the shop-menu "Build Your Set" card are hidden, and anyone visiting the page directly sees a "coming soon" message with a link to the shop.
+- **Shop menu card image**: the picture on this feature's card in the Shop drop-down. Both cards shared one stock photo before, so neither looked like its own feature — give each its own. The preview shows the real crop and title overlay, so what you see is what shoppers get. Landscape, roughly 1200×900, subject in the **upper two-thirds** (the bottom third sits under the title). Remove the image to fall back to the default photo. The same control is in **Design Your Table**.
 - Use this while inventory or marketing collateral isn't ready — flip it back on when you're ready for folks to curate sets.
 - Which products appear inside Build Your Set is controlled separately, per product, via the **Build Set** toggle in Products.
 

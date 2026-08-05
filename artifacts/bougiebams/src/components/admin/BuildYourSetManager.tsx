@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check } from "lucide-react";
+import MenuCardImage from "@/components/admin/MenuCardImage";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -69,6 +70,15 @@ export default function BuildYourSetManager({ onAuthError }: Props) {
       <p className="text-sm text-[#5A6178] mb-6">
         Build Your Set lets shoppers curate a custom mahjong set. When turned off, the homepage teaser and shop-menu card are hidden and the Build Your Set page shows a "coming soon" message instead.
       </p>
+
+      <div className="mb-6">
+        <MenuCardImage
+          card="buildYourSet"
+          title="Shop menu card image"
+          hint="The Build Your Set card in the Shop menu. Show pieces laid out ready to be chosen — it should look different from the Design Your Table card beside it."
+          onAuthError={onAuthError}
+        />
+      </div>
 
       {error && (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

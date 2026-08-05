@@ -183,6 +183,12 @@ function curatedToApi(items: CuratedItem[]) {
   }));
 }
 
+async function readSetting(key: string): Promise<string | null> {
+  await ensureSettingsTable();
+  const rows = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, key));
+  return rows[0]?.value ?? null;
+}
+
 async function writeSetting(key: string, value: string): Promise<void> {
   await ensureSettingsTable();
   await db
@@ -1212,6 +1218,50 @@ router.put("/admin/build-your-set", requireAdmin, async (req, res): Promise<void
   } catch (err) {
     logger.error({ err }, "Failed to update Build Your Set setting");
     res.status(500).json({ error: "Could not save the Build Your Set setting." });
+  }
+});
+
+// --- Shop menu feature cards ----------------------------------------------
+// The two promo cards in the Shop megamenu. Both used to render the same
+// stock lifestyle photo, so neither read as its own feature; each now carries
+// its own owner-uploaded image.
+
+const MENU_CARD_KEYS = {
+  tablescape: "shop_menu_card_tablescape",
+  buildYourSet: "shop_menu_card_build_your_set",
+} as const;
+
+async function readMenuCards(): Promise<{ tablescape: string | null; buildYourSet: string | null }> {
+  const [t, b] = [
+    await readSetting(MENU_CARD_KEYS.tablescape),
+    await readSetting(MENU_CARD_KEYS.buildYourSet),
+  ];
+  return { tablescape: t?.trim() || null, buildYourSet: b?.trim() || null };
+}
+
+router.get("/shop-menu-cards", async (_req, res): Promise<void> => {
+  try {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(await readMenuCards());
+  } catch (err) {
+    logger.error({ err }, "Failed to read shop menu cards");
+    res.json({ tablescape: null, buildYourSet: null });
+  }
+});
+
+router.put("/admin/shop-menu-cards", requireAdmin, async (req, res): Promise<void> => {
+  const b = req.body as { tablescape?: unknown; buildYourSet?: unknown };
+  try {
+    if ("tablescape" in b) {
+      await writeSetting(MENU_CARD_KEYS.tablescape, typeof b.tablescape === "string" ? b.tablescape.trim() : "");
+    }
+    if ("buildYourSet" in b) {
+      await writeSetting(MENU_CARD_KEYS.buildYourSet, typeof b.buildYourSet === "string" ? b.buildYourSet.trim() : "");
+    }
+    res.json(await readMenuCards());
+  } catch (err) {
+    logger.error({ err }, "Failed to save shop menu cards");
+    res.status(500).json({ error: "Could not save the menu card image." });
   }
 });
 

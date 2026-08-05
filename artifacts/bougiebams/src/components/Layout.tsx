@@ -8,6 +8,7 @@ import SearchDialog from "@/components/SearchDialog";
 import { SHOP_CATEGORIES } from "@/data/categories";
 import { useProducts } from "@/hooks/useProducts";
 import { useBuildYourSetEnabled } from "@/hooks/useBuildYourSet";
+import { useShopMenuCards } from "@/hooks/useShopMenuCards";
 import { useTablescapeConfig } from "@/hooks/useTablescape";
 import shopMenuImg from "@assets/images/mahjong-lifestyle.png";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
   const [announcement, setAnnouncement] = useState<{ enabled: boolean; text: string } | null>(null);
   const buildYourSetEnabled = useBuildYourSetEnabled() === true;
+  const menuCards = useShopMenuCards();
   const tablescapeEnabled = useTablescapeConfig()?.enabled === true;
 
   useEffect(() => {
@@ -720,13 +722,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       onClick={() => setShopMenuOpen(false)}
                       className="relative block flex-1 overflow-hidden rounded-md group min-h-[220px]"
                     >
-                      <img src={shopMenuImg} alt="Design your mahjong tablescape" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                      <img src={menuCards.tablescape ?? shopMenuImg} alt="A mahjong table designed with your chosen mat and tiles" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      {/* Navy scrim rather than black — the cards sit in a cream
+                          and navy palette, and pure black read as foreign. */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#1E2A5A]/85 via-[#1E2A5A]/25 to-transparent" />
                       <div className="absolute bottom-0 left-0 p-6 text-white">
-                        <span className="text-[11px] tracking-[0.2em] uppercase text-white/80">New</span>
-                        <p className="font-serif text-2xl mt-1">Design Your Table</p>
+                        <span className="inline-block rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold tracking-[0.15em] uppercase text-primary-foreground">New</span>
+                        <p className="font-serif text-2xl mt-2">Design Your Table</p>
                         <span className="inline-flex items-center gap-1 text-sm text-white/90 mt-1">
-                          See it before you buy it <ArrowRight className="w-4 h-4" />
+                          Pick your mat and tiles, see the finished table <ArrowRight className="w-4 h-4 flex-shrink-0" />
                         </span>
                       </div>
                     </Link>
@@ -737,13 +741,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       onClick={() => setShopMenuOpen(false)}
                       className="relative block flex-1 overflow-hidden rounded-md group min-h-[220px]"
                     >
-                      <img src={shopMenuImg} alt="Build your own mahjong set" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                      <img src={menuCards.buildYourSet ?? shopMenuImg} alt="Mahjong pieces laid out to build a custom set" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#1E2A5A]/85 via-[#1E2A5A]/25 to-transparent" />
                       <div className="absolute bottom-0 left-0 p-6 text-white">
                         <span className="text-[11px] tracking-[0.2em] uppercase text-white/80">Made Your Way</span>
                         <p className="font-serif text-2xl mt-1">Build Your Set</p>
                         <span className="inline-flex items-center gap-1 text-sm text-white/90 mt-1">
-                          Start customizing <ArrowRight className="w-4 h-4" />
+                          Choose every piece <ArrowRight className="w-4 h-4 flex-shrink-0" />
                         </span>
                       </div>
                     </Link>
